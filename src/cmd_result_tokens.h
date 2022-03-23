@@ -21,22 +21,18 @@ struct Token
     };
 
     Token() :
-        type(Undefined)
-    {
+        type(Undefined) {
     }
     Token(int start_, int end_, Type type_) :
         start(start_),
         end(end_),
-        type(type_)
-    {
+        type(type_) {
     }
 
-    bool operator == (Token const &t) const
-    {
+    bool operator == (Token const & t) const {
         return start == t.start && end == t.end && type == t.type;
     }
-    wxString ExtractString(wxString const &s) const
-    {
+    wxString ExtractString(wxString const & s) const {
         assert(end <= static_cast<int>(s.length()));
         return s.substr(start, end - start);
     }
@@ -45,7 +41,7 @@ struct Token
     Type type;
 };
 
-bool GetNextToken(wxString const &str, int pos, Token &token);
+bool GetNextToken(wxString const & str, int pos, Token & token);
 
 } // namespace dbg_mi
 

@@ -13,105 +13,94 @@ namespace dbg_mi
 
 class SimpleAction : public Action
 {
-public:
-    SimpleAction(wxString const &cmd) :
-        m_command(cmd)
-    {
-    }
+    public:
+        SimpleAction(wxString const & cmd) :
+            m_command(cmd) {
+        }
 
-    virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/)
-    {
-        Finish();
-    }
-protected:
-    virtual void OnStart()
-    {
-        Execute(m_command);
-    }
-private:
-    wxString m_command;
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/) {
+            Finish();
+        }
+    protected:
+        virtual void OnStart() {
+            Execute(m_command);
+        }
+    private:
+        wxString m_command;
 };
 
 class BarrierAction : public Action
 {
-public:
-    BarrierAction()
-    {
-        SetWaitPrevious(true);
-    }
-    virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/) {}
-protected:
-    virtual void OnStart()
-    {
-        Finish();
-    }
+    public:
+        BarrierAction() {
+            SetWaitPrevious(true);
+        }
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/) {}
+    protected:
+        virtual void OnStart() {
+            Finish();
+        }
 };
 
 class Breakpoint;
 
 class BreakpointAddAction : public Action
 {
-public:
-    BreakpointAddAction(std::tr1::shared_ptr<Breakpoint> const &breakpoint, Logger &logger) :
-        m_breakpoint(breakpoint),
-        m_logger(logger)
-    {
-    }
-    virtual ~BreakpointAddAction()
-    {
-        m_logger.Debug(wxT("BreakpointAddAction::destructor"));
-    }
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
+    public:
+        BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, Logger & logger) :
+            m_breakpoint(breakpoint),
+            m_logger(logger) {
+        }
+        virtual ~BreakpointAddAction() {
+            m_logger.Debug("BreakpointAddAction::destructor");
+        }
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
 
-private:
-    std::tr1::shared_ptr<Breakpoint> m_breakpoint;
-    CommandID m_initial_cmd, m_disable_cmd;
+    private:
+        cb::shared_ptr<Breakpoint> m_breakpoint;
+        CommandID m_initial_cmd, m_disable_cmd;
 
-    Logger &m_logger;
+        Logger & m_logger;
 };
 
 template<typename StopNotification>
 class RunAction : public Action
 {
-public:
-    RunAction(cbDebuggerPlugin *plugin, const wxString &command,
-              StopNotification notification, Logger &logger) :
-        m_plugin(plugin),
-        m_command(command),
-        m_notification(notification),
-        m_logger(logger)
-    {
-        SetWaitPrevious(true);
-    }
-    virtual ~RunAction()
-    {
-        m_logger.Debug(wxT("RunAction::destructor"));
-    }
-
-    virtual void OnCommandOutput(CommandID const &/*id*/, ResultParser const &result)
-    {
-        if(result.GetResultClass() == ResultParser::ClassRunning)
-        {
-            m_logger.Debug(wxT("RunAction success, the debugger is !stopped!"));
-            m_logger.Debug(wxT("RunAction::Output - ") + result.MakeDebugString());
-            m_notification(false);
+    public:
+        RunAction(cbDebuggerPlugin * plugin, const wxString & command,
+                  StopNotification notification, Logger & logger) :
+            m_plugin(plugin),
+            m_command(command),
+            m_notification(notification),
+            m_logger(logger) {
+            SetWaitPrevious(true);
         }
-        Finish();
-    }
-protected:
-    virtual void OnStart()
-    {
-        Execute(m_command);
-        m_logger.Debug(wxT("RunAction::OnStart -> ") + m_command);
-    }
+        virtual ~RunAction() {
+            m_logger.Debug("RunAction::destructor");
+        }
 
-private:
-    cbDebuggerPlugin *m_plugin;
-    wxString m_command;
-    StopNotification m_notification;
-    Logger &m_logger;
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result) {
+            if (result.GetResultClass() == ResultParser::ClassRunning) {
+                m_logger.Debug("RunAction success, the debugger is !stopped!");
+                m_logger.Debug("RunAction::Output - " + result.MakeDebugString());
+                m_notification(false);
+            }
+
+            Finish();
+        }
+    protected:
+        virtual void OnStart() {
+            Execute(m_command);
+            m_logger.Debug("RunAction::OnStart -> " + m_command);
+        }
+
+    private:
+        cbDebuggerPlugin * m_plugin;
+        wxString m_command;
+        StopNotification m_notification;
+        Logger & m_logger;
 };
 
 struct SwitchToFrameInvoker
@@ -123,205 +112,199 @@ struct SwitchToFrameInvoker
 
 class GenerateBacktrace : public Action
 {
-    GenerateBacktrace(GenerateBacktrace &);
-    GenerateBacktrace& operator =(GenerateBacktrace &);
-public:
-    GenerateBacktrace(SwitchToFrameInvoker *switch_to_frame, BacktraceContainer &backtrace,
-                      CurrentFrame &current_frame, Logger &logger);
-    virtual ~GenerateBacktrace();
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
-private:
-    SwitchToFrameInvoker *m_switch_to_frame;
-    CommandID m_backtrace_id, m_args_id, m_frame_info_id;
-    BacktraceContainer &m_backtrace;
-    Logger &m_logger;
-    CurrentFrame &m_current_frame;
-    int m_first_valid, m_old_active_frame;
-    bool m_parsed_backtrace, m_parsed_args, m_parsed_frame_info;
+        GenerateBacktrace(GenerateBacktrace &);
+        GenerateBacktrace & operator =(GenerateBacktrace &);
+    public:
+        GenerateBacktrace(SwitchToFrameInvoker * switch_to_frame, BacktraceContainer & backtrace,
+                          CurrentFrame & current_frame, Logger & logger);
+        virtual ~GenerateBacktrace();
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
+    private:
+        SwitchToFrameInvoker * m_switch_to_frame;
+        CommandID m_backtrace_id, m_args_id, m_frame_info_id;
+        BacktraceContainer & m_backtrace;
+        Logger & m_logger;
+        CurrentFrame & m_current_frame;
+        int m_first_valid, m_old_active_frame;
+        bool m_parsed_backtrace, m_parsed_args, m_parsed_frame_info;
 };
 
 class GenerateThreadsList : public Action
 {
-public:
-    GenerateThreadsList(ThreadsContainer &threads, int current_thread_id, Logger &logger);
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
-private:
-    ThreadsContainer &m_threads;
-    Logger &m_logger;
-    int m_current_thread_id;
+    public:
+        GenerateThreadsList(ThreadsContainer & threads, int current_thread_id, Logger & logger);
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
+    private:
+        ThreadsContainer & m_threads;
+        Logger & m_logger;
+        int m_current_thread_id;
 };
 
 
 template<typename Notification>
 class SwitchToThread : public Action
 {
-public:
-    SwitchToThread(int thread_id, Logger &logger, Notification const &notification) :
-        m_thread_id(thread_id),
-        m_logger(logger),
-        m_notification(notification)
-    {
-    }
+    public:
+        SwitchToThread(int thread_id, Logger & logger, Notification const & notification) :
+            m_thread_id(thread_id),
+            m_logger(logger),
+            m_notification(notification) {
+        }
 
-    virtual void OnCommandOutput(CommandID const &/*id*/, ResultParser const &result)
-    {
-        m_notification(result);
-        Finish();
-    }
-protected:
-    virtual void OnStart()
-    {
-        Execute(wxString::Format(wxT("-thread-select %d"), m_thread_id));
-    }
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result) {
+            m_notification(result);
+            Finish();
+        }
+    protected:
+        virtual void OnStart() {
+            Execute(wxString::Format("-thread-select %d", m_thread_id));
+        }
 
-private:
-    int m_thread_id;
-    Logger &m_logger;
-    Notification m_notification;
+    private:
+        int m_thread_id;
+        Logger & m_logger;
+        Notification m_notification;
 };
 
 template<typename Notification>
 class SwitchToFrame : public Action
 {
-public:
-    SwitchToFrame(int frame_id, Notification const &notification, bool user_action) :
-        m_frame_id(frame_id),
-        m_notification(notification),
-        m_user_action(user_action)
-    {
-    }
+    public:
+        SwitchToFrame(int frame_id, Notification const & notification, bool user_action) :
+            m_frame_id(frame_id),
+            m_notification(notification),
+            m_user_action(user_action) {
+        }
 
-    virtual void OnCommandOutput(CommandID const &/*id*/, ResultParser const &result)
-    {
-        m_notification(result, m_frame_id, m_user_action);
-        Finish();
-    }
-protected:
-    virtual void OnStart()
-    {
-        Execute(wxString::Format(wxT("-stack-select-frame %d"), m_frame_id));
-    }
-private:
-    int m_frame_id;
-    Notification m_notification;
-    bool m_user_action;
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result) {
+            m_notification(result, m_frame_id, m_user_action);
+            Finish();
+        }
+    protected:
+        virtual void OnStart() {
+            Execute(wxString::Format("-stack-select-frame %d", m_frame_id));
+        }
+    private:
+        int m_frame_id;
+        Notification m_notification;
+        bool m_user_action;
 };
 
 class WatchBaseAction : public Action
 {
-public:
-    WatchBaseAction(WatchesContainer &watches, Logger &logger);
-    virtual ~WatchBaseAction();
+    public:
+        WatchBaseAction(WatchesContainer & watches, Logger & logger);
+        virtual ~WatchBaseAction();
 
-protected:
-    void ExecuteListCommand(cb::shared_ptr<Watch> watch, cb::shared_ptr<Watch> parent = cb::shared_ptr<Watch>());
-    void ExecuteListCommand(wxString const &watch_id, cb::shared_ptr<Watch> parent);
-    bool ParseListCommand(CommandID const &id, ResultValue const &value);
+    protected:
+        void ExecuteListCommand(cb::shared_ptr<Watch> watch, cb::shared_ptr<Watch> parent = cb::shared_ptr<Watch>());
+        void ExecuteListCommand(wxString const & watch_id, cb::shared_ptr<Watch> parent);
+        bool ParseListCommand(CommandID const & id, ResultValue const & value);
 
-    void SetRange(int start, int end) { m_start = start; m_end = end; }
-protected:
-    typedef std::tr1::unordered_map<CommandID, cb::shared_ptr<Watch> > ListCommandParentMap;
-protected:
-    ListCommandParentMap m_parent_map;
-    WatchesContainer &m_watches;
-    Logger &m_logger;
-    int m_sub_commands_left;
-    int m_start, m_end;
+        void SetRange(int start, int end) {
+            m_start = start;
+            m_end = end;
+        }
+    protected:
+        typedef std::tr1::unordered_map<CommandID, cb::shared_ptr<Watch> > ListCommandParentMap;
+    protected:
+        ListCommandParentMap m_parent_map;
+        WatchesContainer & m_watches;
+        Logger & m_logger;
+        int m_sub_commands_left;
+        int m_start, m_end;
 };
 
 class WatchCreateAction : public WatchBaseAction
 {
-    enum Step
-    {
-        StepCreate = 0,
-        StepListChildren,
-        StepSetRange
-    };
-public:
-    WatchCreateAction(cb::shared_ptr<Watch> const &watch, WatchesContainer &watches, Logger &logger);
+        enum Step
+        {
+            StepCreate = 0,
+            StepListChildren,
+            StepSetRange
+        };
+    public:
+        WatchCreateAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches, Logger & logger);
 
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
 
-protected:
-    cb::shared_ptr<Watch> m_watch;
-    Step m_step;
+    protected:
+        cb::shared_ptr<Watch> m_watch;
+        Step m_step;
 };
 
 class WatchCreateTooltipAction : public WatchCreateAction
 {
-public:
-    WatchCreateTooltipAction(cb::shared_ptr<Watch> const &watch, WatchesContainer &watches,
-                             Logger &logger, wxRect const &rect) :
-        WatchCreateAction(watch, watches, logger),
-        m_rect(rect)
-    {
-    }
-    virtual ~WatchCreateTooltipAction();
-private:
-    wxRect m_rect;
+    public:
+        WatchCreateTooltipAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches,
+                                 Logger & logger, wxRect const & rect) :
+            WatchCreateAction(watch, watches, logger),
+            m_rect(rect) {
+        }
+        virtual ~WatchCreateTooltipAction();
+    private:
+        wxRect m_rect;
 };
 
 class WatchesUpdateAction : public WatchBaseAction
 {
-public:
-    WatchesUpdateAction(WatchesContainer &watches, Logger &logger);
+    public:
+        WatchesUpdateAction(WatchesContainer & watches, Logger & logger);
 
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
 
-private:
-    bool ParseUpdate(ResultParser const &result);
-private:
-    CommandID   m_update_command;
+    private:
+        bool ParseUpdate(ResultParser const & result);
+    private:
+        CommandID   m_update_command;
 };
 
 class WatchExpandedAction : public WatchBaseAction
 {
-public:
-    WatchExpandedAction(cb::shared_ptr<Watch> parent_watch, cb::shared_ptr<Watch> expanded_watch,
-                        WatchesContainer &watches, Logger &logger) :
-        WatchBaseAction(watches, logger),
-        m_watch(parent_watch),
-        m_expanded_watch(expanded_watch)
-    {
-        SetRange(0, 100);
-    }
+    public:
+        WatchExpandedAction(cb::shared_ptr<Watch> parent_watch, cb::shared_ptr<Watch> expanded_watch,
+                            WatchesContainer & watches, Logger & logger) :
+            WatchBaseAction(watches, logger),
+            m_watch(parent_watch),
+            m_expanded_watch(expanded_watch) {
+            SetRange(0, 100);
+        }
 
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
 
-private:
-    CommandID m_update_id;
-    cb::shared_ptr<Watch> m_watch;
-    cb::shared_ptr<Watch> m_expanded_watch;
+    private:
+        CommandID m_update_id;
+        cb::shared_ptr<Watch> m_watch;
+        cb::shared_ptr<Watch> m_expanded_watch;
 };
 
 class WatchCollapseAction : public WatchBaseAction
 {
-public:
-    WatchCollapseAction(cb::shared_ptr<Watch> parent_watch, cb::shared_ptr<Watch> collapsed_watch,
-                        WatchesContainer &watches, Logger &logger) :
-        WatchBaseAction(watches, logger),
-        m_watch(parent_watch),
-        m_collapsed_watch(collapsed_watch)
-    {
-    }
+    public:
+        WatchCollapseAction(cb::shared_ptr<Watch> parent_watch, cb::shared_ptr<Watch> collapsed_watch,
+                            WatchesContainer & watches, Logger & logger) :
+            WatchBaseAction(watches, logger),
+            m_watch(parent_watch),
+            m_collapsed_watch(collapsed_watch) {
+        }
 
-    virtual void OnCommandOutput(CommandID const &id, ResultParser const &result);
-protected:
-    virtual void OnStart();
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
 
-private:
-    cb::shared_ptr<Watch> m_watch;
-    cb::shared_ptr<Watch> m_collapsed_watch;
+    private:
+        cb::shared_ptr<Watch> m_watch;
+        cb::shared_ptr<Watch> m_collapsed_watch;
 };
 
 } // namespace dbg_mi

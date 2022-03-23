@@ -30,7 +30,7 @@ class Compiler;
 
 namespace dbg_mi
 {
-class Configuration;
+class DebuggerConfiguration;
 } // namespace dbg_mi
 
 
@@ -43,19 +43,21 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual ~Debugger_GDB_MI();
 
     public:
-        virtual void SetupToolsMenu(wxMenu &menu);
-        virtual bool ToolMenuEnabled() const { return true; }
+        virtual void SetupToolsMenu(wxMenu & menu);
+        virtual bool ToolMenuEnabled() const {
+            return true;
+        }
 
         virtual bool SupportsFeature(cbDebuggerFeature::Flags flag);
 
-        virtual cbDebuggerConfiguration* LoadConfig(const ConfigManagerWrapper &config);
+        virtual cbDebuggerConfiguration * LoadConfig(const ConfigManagerWrapper & config);
 
-        dbg_mi::Configuration& GetActiveConfigEx();
+        dbg_mi::DebuggerConfiguration & GetActiveConfigEx();
 
         virtual bool Debug(bool breakOnEntry);
         virtual void Continue();
-        virtual bool RunToCursor(const wxString& filename, int line, const wxString& line_text);
-        virtual void SetNextStatement(const wxString& filename, int line);
+        virtual bool RunToCursor(const wxString & filename, int line, const wxString & line_text);
+        virtual void SetNextStatement(const wxString & filename, int line);
         virtual void Next();
         virtual void NextInstruction();
         virtual void StepIntoInstruction();
@@ -67,17 +69,19 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual bool IsStopped() const;
         virtual bool IsBusy() const;
         virtual int GetExitCode() const;
-        void SetExitCode(int code) { m_exit_code = code; }
+        void SetExitCode(int code) {
+            m_exit_code = code;
+        }
 
-		// stack frame calls;
-		virtual int GetStackFrameCount() const;
-		virtual cb::shared_ptr<const cbStackFrame> GetStackFrame(int index) const;
-		virtual void SwitchToFrame(int number);
-		virtual int GetActiveStackFrame() const;
+        // stack frame calls;
+        virtual int GetStackFrameCount() const;
+        virtual cb::shared_ptr<const cbStackFrame> GetStackFrame(int index) const;
+        virtual void SwitchToFrame(int number);
+        virtual int GetActiveStackFrame() const;
 
         // breakpoints calls
-        virtual cb::shared_ptr<cbBreakpoint> AddBreakpoint(const wxString& filename, int line);
-        virtual cb::shared_ptr<cbBreakpoint> AddDataBreakpoint(const wxString& dataExpression);
+        virtual cb::shared_ptr<cbBreakpoint> AddBreakpoint(const wxString & filename, int line);
+        virtual cb::shared_ptr<cbBreakpoint> AddDataBreakpoint(const wxString & dataExpression);
         virtual int GetBreakpointsCount() const;
         virtual cb::shared_ptr<cbBreakpoint> GetBreakpoint(int index);
         virtual cb::shared_ptr<const cbBreakpoint> GetBreakpoint(int index) const;
@@ -93,25 +97,27 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual bool SwitchToThread(int thread_number);
 
         // watches
-        virtual cb::shared_ptr<cbWatch> AddWatch(const wxString &symbol);
-        void AddTooltipWatch(const wxString &symbol, wxRect const &rect);
+        virtual cb::shared_ptr<cbWatch> AddWatch(const wxString & symbol, bool update);
+        virtual cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size, const wxString & symbol, bool update);
+        void AddTooltipWatch(const wxString & symbol, wxRect const & rect);
         virtual void DeleteWatch(cb::shared_ptr<cbWatch> watch);
         virtual bool HasWatch(cb::shared_ptr<cbWatch> watch);
         virtual void ShowWatchProperties(cb::shared_ptr<cbWatch> watch);
-        virtual bool SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString &value);
+        virtual bool SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString & value);
         virtual void ExpandWatch(cb::shared_ptr<cbWatch> watch);
         virtual void CollapseWatch(cb::shared_ptr<cbWatch> watch);
+        virtual void UpdateWatch(cb::shared_ptr<cbWatch> watch);
 
-        virtual void SendCommand(const wxString& cmd, bool debugLog);
+        virtual void SendCommand(const wxString & cmd, bool debugLog);
 
-        virtual void AttachToProcess(const wxString& pid);
+        virtual void AttachToProcess(const wxString & pid);
         virtual void DetachFromProcess();
         virtual bool IsAttachedToProcess() const;
 
-        virtual void GetCurrentPosition(wxString &filename, int &line);
+        virtual void GetCurrentPosition(wxString & filename, int & line);
         virtual void RequestUpdate(DebugWindows window);
 
-        virtual void OnValueTooltip(const wxString &token, const wxRect &evalRect);
+        virtual void OnValueTooltip(const wxString & token, const wxRect & evalRect);
         virtual bool ShowValueTooltip(int style);
     protected:
         /** Any descendent plugin should override this virtual method and
@@ -138,50 +144,58 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual void OnReleaseReal(bool appShutDown);
 
     protected:
-        virtual void ConvertDirectory(wxString& /*str*/, wxString /*base*/, bool /*relative*/);
-        virtual cbProject* GetProject() { return m_project; }
-        virtual void ResetProject() { m_project = NULL; }
-        virtual void CleanupWhenProjectClosed(cbProject *project);
+        virtual void ConvertDirectory(wxString & /*str*/, wxString /*base*/, bool /*relative*/);
+        virtual cbProject * GetProject() {
+            return m_project;
+        }
+        virtual void ResetProject() {
+            m_project = NULL;
+        }
+        virtual void CleanupWhenProjectClosed(cbProject * project);
         virtual bool CompilerFinished(bool compilerFailed, StartType startType);
 
     public:
         void UpdateWhenStopped();
         void UpdateOnFrameChanged(bool wait);
-        dbg_mi::CurrentFrame& GetCurrentFrame() { return m_current_frame; }
+        dbg_mi::CurrentFrame & GetCurrentFrame() {
+            return m_current_frame;
+        }
 
-        dbg_mi::GDBExecutor& GetGDBExecutor() { return m_executor; }
+        dbg_mi::GDBExecutor & GetGDBExecutor() {
+            return m_executor;
+        }
     private:
         DECLARE_EVENT_TABLE();
 
-        void OnGDBOutput(wxCommandEvent& event);
-        void OnGDBTerminated(wxCommandEvent& event);
+        void OnGDBOutput(wxCommandEvent & event);
+        void OnGDBTerminated(wxCommandEvent & event);
 
-        void OnTimer(wxTimerEvent& event);
-        void OnIdle(wxIdleEvent& event);
+        void OnTimer(wxTimerEvent & event);
+        void OnIdle(wxIdleEvent & event);
 
-        void OnMenuInfoCommandStream(wxCommandEvent& event);
+        void OnMenuInfoCommandStream(wxCommandEvent & event);
 
-        int LaunchDebugger(wxString const &debugger, wxString const &debuggee, wxString const &args,
-                           wxString const &working_dir, int pid, bool console, StartType start_type);
+        int LaunchDebugger(wxString const & debugger, wxString const & debuggee, wxString const & args,
+                           wxString const & working_dir, int pid, bool console, StartType start_type);
 
     private:
-        void AddStringCommand(wxString const &command);
-        void DoSendCommand(const wxString& cmd);
+        void AddStringCommand(wxString const & command);
+        void DoSendCommand(const wxString & cmd);
         void RunQueue();
-        void ParseOutput(wxString const &str);
+        void ParseOutput(wxString const & str);
 
-        bool SelectCompiler(cbProject &project, Compiler *&compiler,
-                            ProjectBuildTarget *&target, long pid_to_attach);
-        int StartDebugger(cbProject *project, StartType startType);
+        bool SelectCompiler(cbProject & project, Compiler *& compiler,
+                            ProjectBuildTarget *& target, long pid_to_attach);
+        int StartDebugger(cbProject * project, StartType startType);
         void CommitBreakpoints(bool force);
-        void CommitRunCommand(wxString const &command);
+        void CommitRunCommand(wxString const & command);
         void CommitWatches();
 
         void KillConsole();
 
     private:
         wxTimer m_timer_poll_debugger;
-        cbProject *m_project;
+        cbProject * m_project;
 
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
@@ -195,7 +209,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::ThreadsContainer m_threads;
         dbg_mi::WatchesContainer m_watches;
 
-        dbg_mi::TextInfoWindow *m_command_stream_dialog;
+        dbg_mi::TextInfoWindow * m_command_stream_dialog;
 
         dbg_mi::CurrentFrame m_current_frame;
         int m_exit_code;

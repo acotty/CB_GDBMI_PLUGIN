@@ -18,7 +18,7 @@ int Breakpoint::GetLine() const
 
 wxString Breakpoint::GetLineString() const
 {
-    return wxString::Format(wxT("%d"), m_line);
+    return wxString::Format("%d", m_line);
 }
 
 wxString Breakpoint::GetType() const
@@ -46,29 +46,35 @@ bool Breakpoint::IsTemporary() const
     return m_temporary;
 }
 
-cb::shared_ptr<Watch> FindWatch(wxString const &expression, WatchesContainer &watches)
+cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & watches)
 {
-    for(WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
+    for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
     {
-        if(expression.StartsWith(it->get()->GetID()))
+        if (expression.StartsWith(it->get()->GetID()))
         {
-            if(expression.length() == it->get()->GetID().length())
+            if (expression.length() == it->get()->GetID().length())
+            {
                 return *it;
+            }
             else
             {
                 cb::shared_ptr<Watch> curr = *it;
-                while(curr)
+
+                while (curr)
                 {
                     cb::shared_ptr<Watch> temp = curr;
                     curr = cb::shared_ptr<Watch>();
 
-                    for(int child = 0; child < temp->GetChildCount(); ++child)
+                    for (int child = 0; child < temp->GetChildCount(); ++child)
                     {
                         cb::shared_ptr<Watch> p = cb::static_pointer_cast<Watch>(temp->GetChild(child));
-                        if(expression.StartsWith(p->GetID()))
+
+                        if (expression.StartsWith(p->GetID()))
                         {
-                            if(expression.length() == p->GetID().length())
+                            if (expression.length() == p->GetID().length())
+                            {
                                 return p;
+                            }
                             else
                             {
                                 curr = p;
@@ -77,11 +83,15 @@ cb::shared_ptr<Watch> FindWatch(wxString const &expression, WatchesContainer &wa
                         }
                     }
                 }
-                if(curr)
+
+                if (curr)
+                {
                     return curr;
+                }
             }
         }
     }
+
     return cb::shared_ptr<Watch>();
 }
 

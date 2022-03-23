@@ -6,8 +6,8 @@
 namespace dbg_mi
 {
 
-wxString EscapePath(wxString const &path);
-void ConvertDirectory(wxString& str, wxString base, bool relative);
+wxString EscapePath(wxString const & path);
+void ConvertDirectory(wxString & str, wxString base, bool relative);
 
 } // namespace dbg_mi
 
