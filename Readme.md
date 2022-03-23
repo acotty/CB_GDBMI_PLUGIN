@@ -1,7 +1,7 @@
 # Description
 This GitHub repo has the source code for the new Code::Blocks GDB/MI debugger. The source is to be built with the current C::B nightly and a GCC compiler that supports C++11. The code is desigend for GDB 9 or later using the GDB/MI version 3 interface.
 
-This uses the GDB Machine Interface instead of the old console type interface. This has a number of advantages:
+This uses the GDB Machine Interface instead of the old annotations (deprecated) interface. This has a number of advantages:
 
 1. Supports all of the existing GDB debugger features once finished
 2. Quicker
