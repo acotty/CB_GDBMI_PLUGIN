@@ -35,20 +35,20 @@ bool StripEnclosingQuotes(wxString & str)
         str = str.substr(1, str.length() - 2);
     }
     else
-        if (str[0] == _T('"'))
+        if (str[0] == '"')
         {
             return false;
         }
         else
-            if (str[str.length() - 1] == _T('"'))
+            if (str[str.length() - 1] == '"')
             {
-                if (str.length() >= 2 && str[str.length() - 2] != _T('\\'))
+                if ((str.length() >= 2) && (str[str.length() - 2] != '\\'))
                 {
                     return false;
                 }
             }
 
-    find_and_replace(str, _T("\\\""), _T("\""));
+    find_and_replace(str, "\\\"", "\"");
     return true;
 }
 
@@ -137,7 +137,7 @@ bool ParseTuple(wxString const & str, int & start, ResultValue & tuple, bool wan
                     {
                         curr_value->SetType(ResultValue::Simple);
                         curr_value->SetSimpleValue(curr_value->GetName());
-                        curr_value->SetName(_T(""));
+                        curr_value->SetName("");
                     }
                     else
                         if (step != Value)
@@ -262,7 +262,7 @@ bool ParseTuple(wxString const & str, int & start, ResultValue & tuple, bool wan
                 {
                     curr_value->SetType(ResultValue::Simple);
                     curr_value->SetSimpleValue(curr_value->GetName());
-                    curr_value->SetName(_T(""));
+                    curr_value->SetName("");
                     tuple.SetTupleValue(curr_value);
                 }
                 else
@@ -387,7 +387,7 @@ wxString ResultValue::MakeDebugString() const
             }
             else
             {
-                return m_name + _T("=") + m_value.simple;
+                return m_name + "=" + m_value.simple;
             }
 
             break;
@@ -398,11 +398,11 @@ wxString ResultValue::MakeDebugString() const
 
             if (m_name.empty())
             {
-                s = _T("{");
+                s = "{";
             }
             else
             {
-                s = m_name + _T("={");
+                s = m_name + "={";
             }
 
             bool first = true;
@@ -415,13 +415,13 @@ wxString ResultValue::MakeDebugString() const
                 }
                 else
                 {
-                    s += _T(",");
+                    s += ",";
                 }
 
                 s += (*it)->MakeDebugString();
             }
 
-            s += _T("}");
+            s += "}";
             return s;
         }
 
@@ -431,11 +431,11 @@ wxString ResultValue::MakeDebugString() const
 
             if (m_name.empty())
             {
-                s = _T("[");
+                s = "[";
             }
             else
             {
-                s = m_name + _T("=[");
+                s = m_name + "=[";
             }
 
             bool first = true;
@@ -448,18 +448,18 @@ wxString ResultValue::MakeDebugString() const
                 }
                 else
                 {
-                    s += _T(",");
+                    s += ",";
                 }
 
                 s += (*it)->MakeDebugString();
             }
 
-            s += _T("]");
+            s += "]";
             return s;
         }
 
         default:
-            return _T("not_initialized");
+            return "not_initialized";
     }
 }
 
@@ -492,37 +492,37 @@ bool ResultParser::Parse(wxString const & s)
     }
     else
     {
-        if (str.StartsWith(_T("done")))
+        if (str.StartsWith("done"))
         {
             m_class = ClassDone;
             after_class_index = 4;
         }
         else
-            if (str.StartsWith(_T("stopped")))
+            if (str.StartsWith("stopped"))
             {
                 m_class = ClassStopped;
                 after_class_index = 7;
             }
             else
-                if (str.StartsWith(_T("running")))
+                if (str.StartsWith("running"))
                 {
                     m_class = ClassRunning;
                     after_class_index = 7;
                 }
                 else
-                    if (str.StartsWith(_T("connected")))
+                    if (str.StartsWith("connected"))
                     {
                         m_class = ClassConnected;
                         after_class_index = 9;
                     }
                     else
-                        if (str.StartsWith(_T("error")))
+                        if (str.StartsWith("error"))
                         {
                             m_class = ClassError;
                             after_class_index = 5;
                         }
                         else
-                            if (str.StartsWith(_T("exit")))
+                            if (str.StartsWith("exit"))
                             {
                                 m_class = ClassExit;
                                 after_class_index = 4;
@@ -533,7 +533,7 @@ bool ResultParser::Parse(wxString const & s)
                             }
     }
 
-    if (str[after_class_index] == _T(','))
+    if (str[after_class_index] == ',')
     {
         return ParseValue(str, m_value, after_class_index + 1);
     }
@@ -578,7 +578,7 @@ ResultParser::Type ResultParser::ParseType(wxString const & str)
 
 wxString ResultParser::MakeDebugString() const
 {
-    wxString s(_T("type: "));
+    wxString s("type: ");
 
     switch (m_type)
     {
@@ -632,8 +632,13 @@ wxString ResultParser::MakeDebugString() const
             s += " , class unknown";
     }
 
-    s += " , value: ";
-    s += m_value.MakeDebugString();
+    wxString valueString = m_value.MakeDebugString();
+
+    if (!valueString.empty())
+    {
+        s += "  , { m_value results: " + valueString + " }";
+    }
+
     return s;
 }
 

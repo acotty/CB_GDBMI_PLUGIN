@@ -21,7 +21,7 @@
 namespace
 {
 // function pointer to DebugBreakProcess under windows (XP+)
-#if (_WIN32_WINNT >= 0x0501)
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0501)
 #include "Tlhelp32.h"
 typedef BOOL WINAPI(*DebugBreakProcessApiCall)(HANDLE);
 typedef HANDLE WINAPI(*CreateToolhelp32SnapshotApiCall)(DWORD  dwFlags,   DWORD             th32ProcessID);
@@ -193,23 +193,56 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
 
     // start the gdb process
     m_process = new PipedProcess(&m_process, event_handler, id_gdb_process, true, cwd);
-    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Starting debugger:"), cmd), LogPaneLogger::LineType::UserDisplay);
     m_pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER, m_process);
     m_child_pid = -1;
 #ifdef __WXMAC__
-
-    if (m_pid == -1)
+    if (m_Pid == -1)
     {
-        logger.Log(_("debugger has fake macos PID"), Logger::Log::Error);
-    }
+        // Great! We got a fake PID. Time to Go Fish with our "ps" rod:
 
+        m_Pid = 0;
+        pid_t mypid = getpid();
+        wxString mypidStr;
+        mypidStr << mypid;
+
+        long pspid = 0;
+        wxString psCmd;
+        wxArrayString psOutput;
+        wxArrayString psErrors;
+
+        psCmd << wxT("/bin/ps -o ppid,pid,command");
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Executing: %s"), psCmd), LogPaneLogger::LineType::Debug);
+        int result = wxExecute(psCmd, psOutput, psErrors, wxEXEC_SYNC);
+
+        mypidStr << wxT(" ");
+
+        for (int i = 0; i < psOutput.GetCount(); ++i)
+        { //  PPID   PID COMMAND
+           wxString psLine = psOutput.Item(i);
+           if (psLine.StartsWith(mypidStr) && psLine.Contains(wxT("gdb")))
+           {
+               wxString pidStr = psLine.Mid(mypidStr.Length());
+               pidStr = pidStr.BeforeFirst(' ');
+               if (pidStr.ToLong(&pspid))
+               {
+                   m_Pid = pspid;
+                   break;
+               }
+           }
+         }
+
+        for (int i = 0; i < psErrors.GetCount(); ++i)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("PS Error: %s"), psErrors.Item(i)), LogPaneLogger::LineType::Debug);
+        }
+    }
 #endif
 
     if (!m_pid)
     {
         delete m_process;
         m_process = 0;
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed"), LogPaneLogger::LineType::Error);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Failed to start debugger! (%s)"), cmd), LogPaneLogger::LineType::Error);
         return -1;
     }
     else
@@ -217,7 +250,7 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
         {
             delete m_process;
             m_process = 0;
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed (to get debugger's stdin)"), LogPaneLogger::LineType::Error);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Failed to start debugger! (could not get debugger's stdin) (%s)"), cmd), LogPaneLogger::LineType::Error);
             return -2;
         }
         else
@@ -225,7 +258,7 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
             {
                 delete m_process;
                 m_process = 0;
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed (to get debugger's stdout)"), LogPaneLogger::LineType::Error);
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Failed to start debugger! (could not get debugger's stdout) (%s)"), cmd), LogPaneLogger::LineType::Error);
                 return -2;
             }
             else
@@ -233,11 +266,11 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
                 {
                     delete m_process;
                     m_process = 0;
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed (to get debugger's stderr)"), LogPaneLogger::LineType::Error);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Failed to start debugger! (could not get debugger's stderr) (%s)"), cmd), LogPaneLogger::LineType::Error);
                     return -2;
                 }
 
-    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Debugger starting done."), LogPaneLogger::LineType::UserDisplay);
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Started debugger: %s"), cmd), LogPaneLogger::LineType::UserDisplay);
     return 0;
 }
 

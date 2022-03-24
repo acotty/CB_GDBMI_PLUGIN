@@ -82,7 +82,7 @@ wxString GetLibraryPath(const wxString & oldLibPath, Compiler * compiler, Projec
 BEGIN_EVENT_TABLE(Debugger_GDB_MI, cbDebuggerPlugin)
 
     EVT_PIPEDPROCESS_STDOUT(id_gdb_process, Debugger_GDB_MI::OnGDBOutput)
-    EVT_PIPEDPROCESS_STDERR(id_gdb_process, Debugger_GDB_MI::OnGDBOutput)
+    EVT_PIPEDPROCESS_STDERR(id_gdb_process, Debugger_GDB_MI::OnGDBError)
     EVT_PIPEDPROCESS_TERMINATED(id_gdb_process, Debugger_GDB_MI::OnGDBTerminated)
 
     EVT_IDLE(Debugger_GDB_MI::OnIdle)
@@ -227,6 +227,18 @@ void Debugger_GDB_MI::OnGDBOutput(wxCommandEvent & event)
 
     if (!msg.IsEmpty())
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("\n=>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Receive);
+        ParseOutput(msg);
+    }
+}
+
+void Debugger_GDB_MI::OnGDBError(wxCommandEvent & event)
+{
+    wxString const & msg = event.GetString();
+
+    if (!msg.IsEmpty())
+    {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("\n=>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Receive);
         ParseOutput(msg);
     }
 }
@@ -349,13 +361,13 @@ struct Notifications
                                 wxString signal_name, signal_meaning;
                                 dbg_mi::Lookup(result_value, "signal-name", signal_name);
 
-                                if (signal_name != "SIGTRAP" && signal_name != "SIGINT")
+                                if ((signal_name != "SIGTRAP") && (signal_name != "SIGINT"))
                                 {
                                     dbg_mi::Lookup(result_value, "signal-meaning", signal_meaning);
                                     InfoWindow::Display(_("Signal received"),
                                                         wxString::Format(_("\nProgram received signal: %s (%s)\n\n"),
-                                                                         signal_meaning.c_str(),
-                                                                         signal_name.c_str()));
+                                                                         signal_meaning,
+                                                                         signal_name));
                                 }
 
                                 Manager::Get()->GetDebuggerManager()->ShowBacktraceDialog();
@@ -545,14 +557,66 @@ void Debugger_GDB_MI::ParseOutput(wxString const & str)
 {
     if (!str.IsEmpty())
     {
-        wxArrayString const & lines = GetArrayFromString(str, _T('\n'));
+        bool bProcessedOutput= false;
 
-        for (size_t ii = 0; ii < lines.GetCount(); ++ii)
+        // See CodeLite file Debugger\debuggergdb.cpp function DbgGdb::OnDataRead(..)
+        //wxArrayString const lines = wxStringTokenize(str, "\n", wxTOKEN_STRTOK);
+        wxArrayString const & lines = GetArrayFromString(str, '\n');
+
+        if (lines.IsEmpty())
         {
-            m_executor.ProcessOutput(lines[ii]);
+            return;
         }
 
-        m_actions.Run(m_executor);
+//        // Prepend the partially saved line from previous iteration to the first line
+//        // of this iteration
+//        if (!m_gdbOutputIncompleteLine.empty())
+//        {
+//            lines.Item(0).Prepend(m_gdbOutputIncompleteLine);
+//            m_gdbOutputIncompleteLine.Clear();
+//        }
+
+//        // If the last line is in-complete, remove it from the array and keep it for next iteration
+//        wxChar lastChar = lines[lines.GetCount()-1].Last();
+//        if ((lastChar != '\n') &&  (lastChar != '\"'))
+//        {
+//            m_gdbOutputIncompleteLine = lines.Last();
+//            lines.RemoveAt(lines.GetCount() - 1);
+//        }
+
+        for (size_t i = 0; i < lines.GetCount(); ++i)
+        {
+            wxString processLine = lines.Item(i);
+
+// Codelite!!!!            GetDebugeePID(processLine);
+
+            processLine.Replace("(gdb)", "");
+            processLine.Trim().Trim(false);
+
+            // ">" - Shell line, probably user command line
+            if (!processLine.empty() && !processLine.StartsWith(">"))
+            {
+                // m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Calling m_executor.ProcessOutput with:=>%s<=",processLine), dbg_mi::LogPaneLogger::LineType::Debug);
+                m_executor.ProcessOutput(processLine);
+                bProcessedOutput = true;
+            }
+            else
+            {
+                if (lines.Item(i).Contains("(gdb)"))
+                {
+                    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Line thrown away, was:=>%s<=",lines.Item(i)), dbg_mi::LogPaneLogger::LineType::Debug);
+                }
+                else
+                {
+                    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Line empty, was:=>%s<=", lines.Item(i)), dbg_mi::LogPaneLogger::LineType::Error);
+                }
+            }
+        }
+
+        if (bProcessedOutput)
+        {
+            m_actions.Run(m_executor);
+        }
     }
 }
 
@@ -560,13 +624,16 @@ struct StopNotification
 {
     StopNotification(cbDebuggerPlugin * plugin, dbg_mi::GDBExecutor & executor) :
         m_plugin(plugin),
-        m_executor(executor) {
+        m_executor(executor)
+    {
     }
 
-    void operator()(bool stopped) {
+    void operator()(bool stopped)
+    {
         m_executor.Stopped(stopped);
 
-        if (!stopped) {
+        if (!stopped)
+        {
             m_plugin->ClearActiveMarkFromAllEditors();
         }
     }
@@ -637,7 +704,8 @@ void Debugger_GDB_MI::ConvertDirectory(wxString & str, wxString base, bool relat
 struct BreakpointMatchProject
 {
     BreakpointMatchProject(cbProject * project) : project(project) {}
-    bool operator()(cb::shared_ptr<dbg_mi::Breakpoint> bp) const {
+    bool operator()(cb::shared_ptr<dbg_mi::Breakpoint> bp) const
+    {
         return bp->GetProject() == project;
     }
     cbProject * project;
@@ -737,11 +805,11 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
         return 5;
     }
 
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("GDB path:"), debugger), dbg_mi::LogPaneLogger::LineType::UserDisplay);
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("GDB path: %s"), debugger), dbg_mi::LogPaneLogger::LineType::UserDisplay);
 
     if (pid == 0)
     {
-        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("DEBUGGEE path:"), debuggee), dbg_mi::LogPaneLogger::LineType::UserDisplay);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("DEBUGGEE path: %s"), debuggee), dbg_mi::LogPaneLogger::LineType::UserDisplay);
     }
 
     wxString cmd;
@@ -761,11 +829,11 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
     }
 
     // start the gdb process
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command-line: "), cmd), dbg_mi::LogPaneLogger::LineType::UserDisplay);
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command-line: %s"), cmd), dbg_mi::LogPaneLogger::LineType::UserDisplay);
 
     if (pid == 0)
     {
-        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Working dir: "), working_dir), dbg_mi::LogPaneLogger::LineType::UserDisplay);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Working dir: %s"), working_dir), dbg_mi::LogPaneLogger::LineType::UserDisplay);
     }
 
     int ret = m_executor.LaunchProcess(cmd, working_dir, id_gdb_process, this, m_pLogger);
@@ -841,19 +909,21 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
 
 void Debugger_GDB_MI::CommitBreakpoints(bool force)
 {
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "", dbg_mi::LogPaneLogger::LineType::Debug);
-
     for (Breakpoints::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     {
         // FIXME (obfuscated#): pointers inside the vector can be dangerous!!!
         if ((*it)->GetIndex() == -1 || force)
         {
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("m_actions.Add(BreakpointAddAction: Filename:%s Line:%s)",
+                                                              (*it)->GetLocation(), (*it)->GetLineString()), dbg_mi::LogPaneLogger::LineType::Debug);
+
             m_actions.Add(new dbg_mi::BreakpointAddAction(*it, m_pLogger));
         }
     }
 
     for (Breakpoints::const_iterator it = m_temporary_breakpoints.begin(); it != m_temporary_breakpoints.end(); ++it)
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("AddStringCommand: =>-break-insert -t %s:%d<=", (*it)->GetLocation(), (*it)->GetLine()), dbg_mi::LogPaneLogger::LineType::Command);
         AddStringCommand(wxString::Format(_T("-break-insert -t %s:%d"), (*it)->GetLocation().c_str(),
                                           (*it)->GetLine()));
     }
@@ -863,8 +933,14 @@ void Debugger_GDB_MI::CommitBreakpoints(bool force)
 
 void Debugger_GDB_MI::CommitWatches()
 {
+    if (m_watches.empty())
+    {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "No watches", dbg_mi::LogPaneLogger::LineType::Debug);
+    }
+
     for (dbg_mi::WatchesContainer::iterator it = m_watches.begin(); it != m_watches.end(); ++it)
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Watch clear for symbol %s",(*it)->GetSymbol()), dbg_mi::LogPaneLogger::LineType::Debug);
         (*it)->Reset();
     }
 
@@ -880,6 +956,7 @@ void Debugger_GDB_MI::CommitWatches()
 
 void Debugger_GDB_MI::CommitRunCommand(wxString const & command)
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("=>%s<=", command), dbg_mi::LogPaneLogger::LineType::Command);
     m_current_frame.Reset();
     m_actions.Add(new dbg_mi::RunAction<StopNotification>(this, command,
                                                           StopNotification(this, m_executor),
@@ -893,14 +970,20 @@ bool Debugger_GDB_MI::RunToCursor(const wxString & filename, int line, const wxS
     {
         if (IsStopped())
         {
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("=>-exec-until %s:%d<=", filename, line), dbg_mi::LogPaneLogger::LineType::Command);
             CommitRunCommand(wxString::Format("-exec-until %s:%d", filename.c_str(), line));
             return true;
+        }
+        else
+        {
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("filename:%s line:%d", filename, line), dbg_mi::LogPaneLogger::LineType::Debug);
         }
 
         return false;
     }
     else
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("push_back %s:%d", filename, line), dbg_mi::LogPaneLogger::LineType::Command);
         cb::shared_ptr<dbg_mi::Breakpoint> ptr(new dbg_mi::Breakpoint(filename, line, nullptr));
         m_temporary_breakpoints.push_back(ptr);
         return Debug(false);
@@ -911,6 +994,7 @@ void Debugger_GDB_MI::SetNextStatement(const wxString & filename, int line)
 {
     if (IsStopped())
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-break-insert -t & -exec-jump for filename:=>%s<= line:%d", filename, line), dbg_mi::LogPaneLogger::LineType::Command);
         AddStringCommand(wxString::Format("-break-insert -t %s:%d", filename.c_str(), line));
         CommitRunCommand(wxString::Format("-exec-jump %s:%d", filename.c_str(), line));
     }
@@ -936,31 +1020,37 @@ void Debugger_GDB_MI::Continue()
 
 void Debugger_GDB_MI::Next()
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "=>-exec-next<=", dbg_mi::LogPaneLogger::LineType::Command);
     CommitRunCommand("-exec-next");
 }
 
 void Debugger_GDB_MI::NextInstruction()
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "=>-exec-next-instruction<=", dbg_mi::LogPaneLogger::LineType::Command);
     CommitRunCommand("-exec-next-instruction");
 }
 
 void Debugger_GDB_MI::StepIntoInstruction()
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "=>-exec-step-instruction<=", dbg_mi::LogPaneLogger::LineType::Command);
     CommitRunCommand("-exec-step-instruction");
 }
 
 void Debugger_GDB_MI::Step()
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "=>-exec-step<=", dbg_mi::LogPaneLogger::LineType::Command);
     CommitRunCommand("-exec-step");
 }
 
 void Debugger_GDB_MI::StepOut()
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "=>-exec-finish<=", dbg_mi::LogPaneLogger::LineType::Command);
     CommitRunCommand("-exec-finish");
 }
 
 void Debugger_GDB_MI::Break()
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "future?", dbg_mi::LogPaneLogger::LineType::Command);
     m_executor.Interupt(false);
     // cbEVT_DEBUGGER_PAUSED will be sent, when the debugger has pause for real
 }
@@ -1011,17 +1101,22 @@ cb::shared_ptr<const cbStackFrame> Debugger_GDB_MI::GetStackFrame(int index) con
 struct SwitchToFrameNotification
 {
     SwitchToFrameNotification(Debugger_GDB_MI * plugin) :
-        m_plugin(plugin) {
+        m_plugin(plugin)
+    {
     }
 
-    void operator()(dbg_mi::ResultParser const & result, int frame_number, bool user_action) {
-        if (m_frame_number < m_plugin->GetStackFrameCount()) {
+    void operator()(dbg_mi::ResultParser const & result, int frame_number, bool user_action)
+    {
+        if (m_frame_number < m_plugin->GetStackFrameCount())
+        {
             dbg_mi::CurrentFrame & current_frame = m_plugin->GetCurrentFrame();
 
-            if (user_action) {
+            if (user_action)
+            {
                 current_frame.SwitchToFrame(frame_number);
             }
-            else {
+            else
+            {
                 current_frame.Reset();
                 current_frame.SetFrame(frame_number);
             }
@@ -1030,7 +1125,8 @@ struct SwitchToFrameNotification
             wxString const & filename = frame->GetFilename();
             long line;
 
-            if (frame->GetLine().ToLong(&line)) {
+            if (frame->GetLine().ToLong(&line))
+            {
                 current_frame.SetPosition(filename, line);
                 m_plugin->SyncEditor(filename, line, true);
             }

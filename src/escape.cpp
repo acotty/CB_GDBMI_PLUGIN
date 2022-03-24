@@ -51,7 +51,7 @@ wxString EscapePath(wxString const & path)
 
     wxString result;
 
-    if (path[0] == '"' && path[path.length() - 1] == '"')
+    if ((path[0] == '"') && (path[path.length() - 1] == '"'))
     {
         result = path.substr(1, path.length() - 2);
     }
