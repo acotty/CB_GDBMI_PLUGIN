@@ -11,13 +11,10 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 **The debugger is not production quality at this point in time.** It can be tested, but please wait until the new logging is ready and then give it a go as the logging will be more extensive and will help allot more if you hit a bug.
 
-
 #OUTSTANDING ITEMS
 
 ## High Priority
-1. Fix warnings
-2. Update logged data to be more readable/understanding
-3. Add more logging to help find issues
+1. Update logged data to be more readable/understanding
 
 ## Medium Priority
 2. Add control to vary the amount/type of logging 
@@ -69,3 +66,6 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 #COMPLETED ITEMS
 24MAR2022 Done - Update logging - merge new logging code
+24MAR2022 Done - Fix warnings
+24MAR2022 Done - Update file header - C::B GPL text
+24MAR2022 Done - Add more logging to help find issues
