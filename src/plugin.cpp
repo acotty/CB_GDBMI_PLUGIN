@@ -825,6 +825,10 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
             case StartTypeStepInto:
                 CommitRunCommand("-exec-step");
                 break;
+
+            case StartTypeUnknown:
+                // Keep compiler happy with this case
+                break;
         }
     }
 
@@ -1568,6 +1572,29 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
 
         case Threads:
             m_actions.Add(new dbg_mi::GenerateThreadsList(m_threads, m_current_frame.GetThreadId(), m_pLogger));
+            break;
+
+        case CPURegisters:
+#warning "not implemented"
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for CPURegisters window!"), dbg_mi::LogPaneLogger::LineType::Error);
+            break;
+        case Disassembly:
+#warning "not implemented"
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for Disassembly window!"), dbg_mi::LogPaneLogger::LineType::Error);
+            break;
+        case ExamineMemory:
+#warning "not implemented"
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for ExamineMemory window!"), dbg_mi::LogPaneLogger::LineType::Error);
+            break;
+        case MemoryRange:
+#warning "not implemented"
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for MemoryRange window!"), dbg_mi::LogPaneLogger::LineType::Error);
+            break;
+        case Watches:
+#warning "not implemented"
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for Watches window!"), dbg_mi::LogPaneLogger::LineType::Error);
+            break;
+        default:
             break;
     }
 }

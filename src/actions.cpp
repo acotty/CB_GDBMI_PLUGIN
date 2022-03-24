@@ -775,6 +775,11 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
             case StepListChildren:
                 error = !ParseListCommand(id, value);
                 break;
+
+            case StepSetRange:
+#warning code to be added for this case
+                break;
+
         }
     }
     else
