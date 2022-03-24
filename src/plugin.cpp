@@ -1,7 +1,19 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
+// System include files
 #include <algorithm>
 #include <wx/xrc/xmlres.h>
 #include <wx/wxscintilla.h>
+#ifndef __WX_MSW__
+    #include <dirent.h>
+    #include <stdlib.h>
+#endif
 
+// CB include files (not GDB)
 #include "sdk.h" // Code::Blocks SDK
 
 #include "plugin.h"
@@ -11,24 +23,18 @@
 #include "compilerfactory.h"
 #include "configurationpanel.h"
 #include "configmanager.h"
-//#include "editbreakpointdlg.h"
 #include "infowindow.h"
 #include "macrosmanager.h"
 #include "pipedprocess.h"
 #include "projectmanager.h"
 
+// GDB include files
 #include "actions.h"
 #include "cmd_result_parser.h"
-//#include "config.h"
 #include "escape.h"
 #include "frame.h"
 #include "debuggeroptionsdlg.h"
-
-#ifndef __WX_MSW__
-    #include <dirent.h>
-    #include <stdlib.h>
-#endif
-
+#include "gdb_logger.h"
 
 namespace
 {
@@ -89,7 +95,6 @@ END_EVENT_TABLE()
 Debugger_GDB_MI::Debugger_GDB_MI() :
     cbDebuggerPlugin("GDB/MI", "gdbmi_debugger"),
     m_project(nullptr),
-    m_execution_logger(this),
     m_command_stream_dialog(nullptr),
     m_console_pid(-1),
     m_pid_attached(0)
@@ -102,7 +107,8 @@ Debugger_GDB_MI::Debugger_GDB_MI() :
         NotifyMissingFile("debugger_gdbmi.zip");
     }
 
-    m_executor.SetLogger(&m_execution_logger);
+    m_pLogger = new dbg_mi::LogPaneLogger(this);
+    m_executor.SetLogger(m_pLogger);
 }
 
 // destructor
@@ -119,12 +125,6 @@ void Debugger_GDB_MI::OnAttachReal()
 
 void Debugger_GDB_MI::OnReleaseReal(bool appShutDown)
 {
-    // TODO: remove this when the loggers are fixed in C::B
-    if (appShutDown)
-    {
-        m_execution_logger.MarkAsShutdowned();
-    }
-
     Manager::Get()->GetDebuggerManager()->UnregisterDebugger(this);
     KillConsole();
     m_executor.ForceStop();
@@ -182,15 +182,13 @@ bool Debugger_GDB_MI::SelectCompiler(cbProject & project, Compiler *& compiler,
 
     if (pid_to_attach == 0)
     {
-        Log(_("Selecting target: "));
-
         if (!project.BuildTargetValid(active_build_target, false))
         {
             int tgtIdx = project.SelectTarget();
 
             if (tgtIdx == -1)
             {
-                Log(_("canceled"), Logger::error);
+                m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Selecting target canceled"), dbg_mi::LogPaneLogger::LineType::UserDisplay);
                 return false;
             }
 
@@ -207,11 +205,11 @@ bool Debugger_GDB_MI::SelectCompiler(cbProject & project, Compiler *& compiler,
         {
             cbMessageBox(_("The selected target is only running pre/post build step commands\n"
                            "Can't debug such a target..."), _("Information"), wxICON_INFORMATION);
-            Log(_("aborted"), Logger::error);
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("The selected target is only running pre/post build step commands,Can't debug such a target... ")), dbg_mi::LogPaneLogger::LineType::Error);
             return false;
         }
 
-        Log(target->GetTitle());
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Selecting target: %s"), target->GetTitle()), dbg_mi::LogPaneLogger::LineType::UserDisplay);
         // find the target's compiler (to see which debugger to use)
         compiler = CompilerFactory::GetCompiler(target ? target->GetCompilerID() : project.GetCompilerID());
     }
@@ -236,7 +234,7 @@ void Debugger_GDB_MI::OnGDBOutput(wxCommandEvent & event)
 void Debugger_GDB_MI::OnGDBTerminated(wxCommandEvent & /*event*/)
 {
     ClearActiveMarkFromAllEditors();
-    Log(_T("debugger terminated!"), Logger::warning);
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("debugger terminated!")), dbg_mi::LogPaneLogger::LineType::Warning);
     m_timer_poll_debugger.Stop();
     m_actions.Clear();
     m_executor.Clear();
@@ -281,9 +279,9 @@ void Debugger_GDB_MI::OnMenuInfoCommandStream(wxCommandEvent & /*event*/)
 {
     wxString full;
 
-    for (int ii = 0; ii < m_execution_logger.GetCommandCount(); ++ii)
+    for (int ii = 0; ii < m_executor.GetCommandQueueCount(); ++ii)
     {
-        full += m_execution_logger.GetCommand(ii) + "\n";
+        full += m_executor.GetQueueCommand(ii) + "\n";
     }
 
     if (m_command_stream_dialog)
@@ -300,13 +298,16 @@ void Debugger_GDB_MI::OnMenuInfoCommandStream(wxCommandEvent & /*event*/)
 
 void Debugger_GDB_MI::AddStringCommand(wxString const & command)
 {
-    //-    Manager::Get()->GetLogManager()->Log("Queue command: " + command, m_dbg_page_index);
     //-    dbg_mi::Command *cmd = new dbg_mi::Command();
     //-    cmd->SetString(command);
     //-    m_command_queue.AddCommand(cmd, true);
     //    m_executor.Execute(command);
     if (IsRunning())
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                __LINE__,
+                                wxString::Format(_("Queue command:: %s"), command),
+                                dbg_mi::LogPaneLogger::LineType::Debug);
         m_actions.Add(new dbg_mi::SimpleAction(command));
     }
 }
@@ -323,7 +324,7 @@ struct Notifications
         void operator()(dbg_mi::ResultParser const & parser)
         {
             dbg_mi::ResultValue const & result_value = parser.GetResultValue();
-            m_plugin->DebugLog(wxString::Format(_("notification event received: %s\n"), parser.MakeDebugString()));
+            m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Debug);
 
             if (m_simple_mode)
             {
@@ -414,7 +415,10 @@ struct Notifications
 
             if (!frame.ParseOutput(result_value))
             {
-                m_plugin->DebugLog(wxString::Format("Debugger_GDB_MI::OnGDBNotification(...) can't find/parse frame value: %s", result_value.MakeDebugString()));
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Debugger_GDB_MI::OnGDBNotification(...) can't find/parse frame value: ==>%s<=="), result_value.MakeDebugString()),
+                                                        dbg_mi::LogPaneLogger::LineType::Debug);
             }
             else
             {
@@ -427,9 +431,10 @@ struct Notifications
 
                     if (!thread_id_value->GetSimpleValue().ToLong(&id, 10))
                     {
-                        m_plugin->Log(wxString::Format("Debugger_GDB_MI::OnGDBNotification "
-                                                       " thread_id parsing failed (%s)",
-                                                       result_value.MakeDebugString().c_str()));
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("Debugger_GDB_MI::OnGDBNotification thread_id parsing failed (%s)"), result_value.MakeDebugString()),
+                                                                dbg_mi::LogPaneLogger::LineType::UserDisplay);
                     }
                     else
                     {
@@ -444,7 +449,7 @@ struct Notifications
                 }
                 else
                 {
-                    m_plugin->DebugLog("ParseStateInfo does not have valid source", Logger::error);
+                    m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("ParseStateInfo does not have valid source"), dbg_mi::LogPaneLogger::LineType::Error);
                 }
             }
         }
@@ -455,7 +460,10 @@ struct Notifications
             {
                 int pid;
                 dbg_mi::Lookup(parser.GetResultValue(), "pid", pid);
-                m_plugin->Log(wxString::Format("Found child pid: %d\n", pid));
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Found child pid: %d"), pid),
+                                                        dbg_mi::LogPaneLogger::LineType::UserDisplay);
                 dbg_mi::GDBExecutor & exec = m_plugin->GetGDBExecutor();
 
                 if (!exec.HasChildPID())
@@ -465,7 +473,10 @@ struct Notifications
             }
             else
             {
-                m_plugin->Log(wxString::Format("Notification: %s\n", parser.GetAsyncNotifyType()));
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Notification: %s"), parser.GetAsyncNotifyType()),
+                                                        dbg_mi::LogPaneLogger::LineType::UserDisplay);
             }
         }
 
@@ -491,11 +502,11 @@ void Debugger_GDB_MI::UpdateOnFrameChanged(bool wait)
         {
             if ((*it)->GetID().empty() && !(*it)->ForTooltip())
             {
-                m_actions.Add(new dbg_mi::WatchCreateAction(*it, m_watches, m_execution_logger));
+                m_actions.Add(new dbg_mi::WatchCreateAction(*it, m_watches, m_pLogger));
             }
         }
 
-        m_actions.Add(new dbg_mi::WatchesUpdateAction(m_watches, m_execution_logger));
+        m_actions.Add(new dbg_mi::WatchesUpdateAction(m_watches, m_pLogger));
     }
 }
 
@@ -567,16 +578,15 @@ struct StopNotification
 bool Debugger_GDB_MI::Debug(bool breakOnEntry)
 {
     m_hasStartUpError = false;
-    //    ShowLog(true);
-    Log("start debugger");
     ProjectManager & project_manager = *Manager::Get()->GetProjectManager();
     cbProject * project = project_manager.GetActiveProject();
 
     if (!project)
     {
-        Log("no active project", Logger::error);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Cannot debug as no active project"), dbg_mi::LogPaneLogger::LineType::Error);
         return false;
     }
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("starting debugger"), dbg_mi::LogPaneLogger::LineType::UserDisplay);
 
     StartType start_type = breakOnEntry ? StartTypeStepInto : StartTypeRun;
 
@@ -612,7 +622,7 @@ bool Debugger_GDB_MI::CompilerFinished(bool compilerFailed, StartType startType)
         }
         else
         {
-            Log("no active project", Logger::error);
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Cannot debug as no active project"), dbg_mi::LogPaneLogger::LineType::Error);
         }
     }
 
@@ -651,21 +661,21 @@ void Debugger_GDB_MI::CleanupWhenProjectClosed(cbProject * project)
 int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
 {
     //    ShowLog(true);
-    m_execution_logger.ClearCommand();
+    m_executor.ClearQueueCommand();
     Compiler * compiler;
     ProjectBuildTarget * target;
     SelectCompiler(*project, compiler, target, 0);
 
     if (!compiler)
     {
-        Log(_T("no compiler found!"), Logger::error);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Cannot debug as no compiler found!"), dbg_mi::LogPaneLogger::LineType::Error);
         m_hasStartUpError = true;
         return 2;
     }
 
     if (!target)
     {
-        Log(_T("no target found!"), Logger::error);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Cannot debug as no target found!"), dbg_mi::LogPaneLogger::LineType::Error);
         m_hasStartUpError = true;
         return 3;
     }
@@ -689,7 +699,10 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
     if (oldLibPath != newLibPath)
     {
         wxSetEnv(CB_LIBRARY_ENVVAR, newLibPath);
-        DebugLog(CB_LIBRARY_ENVVAR _T("=") + newLibPath);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                 __LINE__,
+                                 wxString::Format(_("wxSetEnv(%s , %s"), CB_LIBRARY_ENVVAR, newLibPath),
+                                 dbg_mi::LogPaneLogger::LineType::Debug);
     }
 
     int res = LaunchDebugger(debugger, debuggee, args, working_dir, 0, console, start_type);
@@ -720,15 +733,15 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
 
     if (debugger.IsEmpty())
     {
-        Log(_T("no debugger executable found (full path)!"), Logger::error);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Cannot debug as no debugger executable found (full path)!"), dbg_mi::LogPaneLogger::LineType::Error);
         return 5;
     }
 
-    Log(_T("GDB path: ") + debugger);
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("GDB path:"), debugger), dbg_mi::LogPaneLogger::LineType::UserDisplay);
 
     if (pid == 0)
     {
-        Log(_T("DEBUGGEE path: ") + debuggee);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("DEBUGGEE path:"), debuggee), dbg_mi::LogPaneLogger::LineType::UserDisplay);
     }
 
     wxString cmd;
@@ -748,14 +761,14 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
     }
 
     // start the gdb process
-    Log(_T("Command-line: ") + cmd);
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command-line: "), cmd), dbg_mi::LogPaneLogger::LineType::UserDisplay);
 
     if (pid == 0)
     {
-        Log(_T("Working dir : ") + working_dir);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Working dir: "), working_dir), dbg_mi::LogPaneLogger::LineType::UserDisplay);
     }
 
-    int ret = m_executor.LaunchProcess(cmd, working_dir, id_gdb_process, this, m_execution_logger);
+    int ret = m_executor.LaunchProcess(cmd, working_dir, id_gdb_process, this, m_pLogger);
 
     if (ret != 0)
     {
@@ -824,14 +837,14 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
 
 void Debugger_GDB_MI::CommitBreakpoints(bool force)
 {
-    DebugLog("Debugger_GDB_MI::CommitBreakpoints");
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "", dbg_mi::LogPaneLogger::LineType::Debug);
 
     for (Breakpoints::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     {
         // FIXME (obfuscated#): pointers inside the vector can be dangerous!!!
         if ((*it)->GetIndex() == -1 || force)
         {
-            m_actions.Add(new dbg_mi::BreakpointAddAction(*it, m_execution_logger));
+            m_actions.Add(new dbg_mi::BreakpointAddAction(*it, m_pLogger));
         }
     }
 
@@ -866,7 +879,7 @@ void Debugger_GDB_MI::CommitRunCommand(wxString const & command)
     m_current_frame.Reset();
     m_actions.Add(new dbg_mi::RunAction<StopNotification>(this, command,
                                                           StopNotification(this, m_executor),
-                                                          m_execution_logger)
+                                                          m_pLogger)
                  );
 }
 
@@ -903,17 +916,17 @@ void Debugger_GDB_MI::Continue()
 {
     if (!IsStopped() && !m_executor.Interupting())
     {
-        dbg_mi::Logger * log = m_executor.GetLogger();
+        dbg_mi::LogPaneLogger * logger = m_executor.GetLogger();
 
-        if (log)
+        if (logger)
         {
-            log->Debug("Continue failed -> debugger is not interupted!");
+            logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Continue failed -> debugger is not interupted!"), dbg_mi::LogPaneLogger::LineType::UserDisplay);
         }
 
         return;
     }
 
-    DebugLog("Debugger_GDB_MI::Continue");
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "Debugger_GDB_MI::Continue", dbg_mi::LogPaneLogger::LineType::Debug);
     CommitRunCommand("-exec-continue");
 }
 
@@ -956,7 +969,7 @@ void Debugger_GDB_MI::Stop()
     }
 
     ClearActiveMarkFromAllEditors();
-    Log("stop debugger");
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("stop debugger"), dbg_mi::LogPaneLogger::LineType::UserDisplay);
     m_executor.ForceStop();
     MarkAsStopped();
 }
@@ -1029,13 +1042,13 @@ struct SwitchToFrameNotification
 
 void Debugger_GDB_MI::SwitchToFrame(int number)
 {
-    m_execution_logger.Debug("Debugger_GDB_MI::SwitchToFrame");
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Debugger_GDB_MI::SwitchToFrame"), dbg_mi::LogPaneLogger::LineType::Debug);
 
     if (IsRunning() && IsStopped())
     {
         if (number < static_cast<int>(m_backtrace.size()))
         {
-            m_execution_logger.Debug("Debugger_GDB_MI::SwitchToFrame - adding commnad");
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Debugger_GDB_MI::SwitchToFrame - adding commnad"), dbg_mi::LogPaneLogger::LineType::Debug);
             int frame = m_backtrace[number]->GetNumber();
             typedef dbg_mi::SwitchToFrame<SwitchToFrameNotification> SwitchType;
             m_actions.Add(new SwitchType(frame, SwitchToFrameNotification(this), true));
@@ -1054,14 +1067,13 @@ cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddBreakpoint(const wxString & fil
     {
         if (!IsStopped())
         {
-            DebugLog(wxString::Format("Debugger_GDB_MI::Addbreakpoint: %s:%d",
-                                      filename.c_str(), line));
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("%s:%d"), filename, line), dbg_mi::LogPaneLogger::LineType::Debug);
             m_executor.Interupt();
             cbProject * project;
             project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
             cb::shared_ptr<dbg_mi::Breakpoint> ptr(new dbg_mi::Breakpoint(filename, line, project));
             m_breakpoints.push_back(ptr);
-            m_actions.Add(new dbg_mi::BreakpointAddAction(ptr, m_execution_logger));
+            m_actions.Add(new dbg_mi::BreakpointAddAction(ptr, m_pLogger));
             Continue();
         }
         else
@@ -1070,7 +1082,7 @@ cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddBreakpoint(const wxString & fil
             project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
             cb::shared_ptr<dbg_mi::Breakpoint> ptr(new dbg_mi::Breakpoint(filename, line, project));
             m_breakpoints.push_back(ptr);
-            m_actions.Add(new dbg_mi::BreakpointAddAction(ptr, m_execution_logger));
+            m_actions.Add(new dbg_mi::BreakpointAddAction(ptr, m_pLogger));
         }
     }
     else
@@ -1166,8 +1178,10 @@ void Debugger_GDB_MI::DeleteBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 
     if (it != m_breakpoints.end())
     {
-        DebugLog(wxString::Format("Debugger_GDB_MI::DeleteBreakpoint: %s:%d",
-                                  breakpoint->GetLocation().c_str(), breakpoint->GetLine()));
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                         __LINE__,
+                                         wxString::Format(_("%s:%d"), breakpoint->GetLocation(), breakpoint->GetLine()),
+                                         dbg_mi::LogPaneLogger::LineType::Debug);
         int index = (*it)->GetIndex();
 
         if (index != -1)
@@ -1192,9 +1206,10 @@ void Debugger_GDB_MI::DeleteBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
     //        dbg_mi::Breakpoint &current = **it;
     //        if(&current.Get() == breakpoint)
     //        {
-    //            DebugLog(wxString::Format("Debugger_GDB_MI::DeleteBreakpoint: %s:%d",
-    //                                      breakpoint->GetFilename().c_str(),
-    //                                      breakpoint->GetLine()));
+    //            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+    //                                             __LINE__,
+    //                                             wxString::Format(_("%s:%d"), breakpoint->GetFilename(),breakpoint->GetLine() ),
+    //                                             LogPaneLogger::LineType::Debug);
     //            if(current.GetIndex() != -1)
     //            {
     //                if(!IsStopped())
@@ -1302,8 +1317,10 @@ bool Debugger_GDB_MI::SwitchToThread(int thread_number)
     if (IsStopped())
     {
         dbg_mi::SwitchToThread<Notifications> * a;
-        a = new dbg_mi::SwitchToThread<Notifications>(thread_number, m_execution_logger,
-                                                      Notifications(this, m_executor, true));
+        a = new dbg_mi::SwitchToThread<Notifications>(thread_number,
+                                                      m_pLogger,
+                                                      Notifications(this, m_executor, true)
+                                                      );
         m_actions.Add(a);
         return true;
     }
@@ -1320,7 +1337,7 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(const wxString & symbol, cb_un
 
     if (IsRunning())
     {
-        m_actions.Add(new dbg_mi::WatchCreateAction(w, m_watches, m_execution_logger));
+        m_actions.Add(new dbg_mi::WatchCreateAction(w, m_watches, m_pLogger));
     }
 
     return w;
@@ -1342,7 +1359,7 @@ void Debugger_GDB_MI::AddTooltipWatch(const wxString & symbol, wxRect const & re
 
     if (IsRunning())
     {
-        m_actions.Add(new dbg_mi::WatchCreateTooltipAction(w, m_watches, m_execution_logger, rect));
+        m_actions.Add(new dbg_mi::WatchCreateTooltipAction(w, m_watches, m_pLogger, rect));
     }
 }
 
@@ -1401,8 +1418,8 @@ bool Debugger_GDB_MI::SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxStrin
 
     cb::shared_ptr<dbg_mi::Watch> real_watch = cb::static_pointer_cast<dbg_mi::Watch>(watch);
     AddStringCommand("-var-assign " + real_watch->GetID() + " " + value);
-    //    m_actions.Add(new dbg_mi::WatchSetValueAction(*it, static_cast<dbg_mi::Watch*>(watch), value, m_execution_logger));
-    dbg_mi::Action * update_action = new dbg_mi::WatchesUpdateAction(m_watches, m_execution_logger);
+    //    m_actions.Add(new dbg_mi::WatchSetValueAction(*it, static_cast<dbg_mi::Watch*>(watch), value, m_pLogger));
+    dbg_mi::Action * update_action = new dbg_mi::WatchesUpdateAction(m_watches, m_pLogger);
     update_action->SetWaitPrevious(true);
     m_actions.Add(update_action);
     return true;
@@ -1424,7 +1441,7 @@ void Debugger_GDB_MI::ExpandWatch(cb::shared_ptr<cbWatch> watch)
 
         if (!real_watch->HasBeenExpanded())
         {
-            m_actions.Add(new dbg_mi::WatchExpandedAction(*it, real_watch, m_watches, m_execution_logger));
+            m_actions.Add(new dbg_mi::WatchExpandedAction(*it, real_watch, m_watches, m_pLogger));
         }
     }
 }
@@ -1445,7 +1462,7 @@ void Debugger_GDB_MI::CollapseWatch(cb::shared_ptr<cbWatch> watch)
 
         if (real_watch->HasBeenExpanded() && real_watch->DeleteOnCollapse())
         {
-            m_actions.Add(new dbg_mi::WatchCollapseAction(*it, real_watch, m_watches, m_execution_logger));
+            m_actions.Add(new dbg_mi::WatchCollapseAction(*it, real_watch, m_watches, m_pLogger));
         }
     }
 }
@@ -1459,17 +1476,13 @@ void Debugger_GDB_MI::SendCommand(const wxString & cmd, bool debugLog)
 {
     if (!IsRunning())
     {
-        wxString message("Command will not be executed because the debugger is not running!");
-        Log(message);
-        DebugLog(message);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Command will not be executed because the debugger is not running!"), dbg_mi::LogPaneLogger::LineType::UserDisplay);
         return;
     }
 
     if (!IsStopped())
     {
-        wxString message("Command will not be executed because the debugger/debuggee is not paused/interupted!");
-        Log(message);
-        DebugLog(message);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Command will not be executed because the debugger/debuggee is not paused/interupted!"), dbg_mi::LogPaneLogger::LineType::UserDisplay);
         return;
     }
 
@@ -1549,12 +1562,12 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
                 dbg_mi::ActionsMap & m_actions;
             };
             Switcher * switcher = new Switcher(this, m_actions);
-            m_actions.Add(new dbg_mi::GenerateBacktrace(switcher, m_backtrace, m_current_frame, m_execution_logger));
+            m_actions.Add(new dbg_mi::GenerateBacktrace(switcher, m_backtrace, m_current_frame, m_pLogger));
         }
         break;
 
         case Threads:
-            m_actions.Add(new dbg_mi::GenerateThreadsList(m_threads, m_current_frame.GetThreadId(), m_execution_logger));
+            m_actions.Add(new dbg_mi::GenerateThreadsList(m_threads, m_current_frame.GetThreadId(), m_pLogger));
             break;
     }
 }

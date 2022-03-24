@@ -1,5 +1,11 @@
-#ifndef _DEBUGGER_GDB_MI_CMD_RESULT_TOKENIZE_H_
-#define _DEBUGGER_GDB_MI_CMD_RESULT_TOKENIZE_H_
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
+#ifndef _DEBUGGER_GDB_MI_CMD_RESULT_TOKENS_H_
+#define _DEBUGGER_GDB_MI_CMD_RESULT_TOKENS_H_
 
 #include <wx/string.h>
 
@@ -45,4 +51,4 @@ bool GetNextToken(wxString const & str, int pos, Token & token);
 
 } // namespace dbg_mi
 
-#endif // _DEBUGGER_GDB_MI_CMD_RESULT_TOKENIZE_H_
+#endif // _DEBUGGER_GDB_MI_CMD_RESULT_TOKENS_H_

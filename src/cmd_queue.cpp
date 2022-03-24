@@ -1,3 +1,10 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
+
 #include "cmd_queue.h"
 #include <wx/wxcrt.h>
 
@@ -55,8 +62,8 @@ CommandID CommandExecutor::Execute(wxString const & cmd)
 
     if (m_logger)
     {
-        m_logger->Debug("cmd==>" + id.ToString() + cmd, Logger::Line::Command);
-        m_logger->AddCommand(id.ToString() + cmd);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("cmd==>%s%s==<",  id.ToString(),cmd), LogPaneLogger::LineType::Command);
+        AddCommandQueue(id.ToString() + cmd);
     }
 
     if (DoExecute(id, cmd))
@@ -72,8 +79,8 @@ void CommandExecutor::ExecuteSimple(dbg_mi::CommandID const & id, wxString const
 {
     if (m_logger)
     {
-        m_logger->Debug("cmd==>" + id.ToString() + cmd, Logger::Line::Command);
-        m_logger->AddCommand(id.ToString() + cmd);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("cmd==>%s%s==<",  id.ToString(),cmd), LogPaneLogger::LineType::Command);
+        AddCommandQueue(id.ToString() + cmd);
     }
 
     DoExecute(id, cmd);
@@ -88,7 +95,7 @@ bool CommandExecutor::ProcessOutput(wxString const & output)
     {
         if (m_logger)
         {
-            m_logger->Debug("unparsable_output==>" + output, Logger::Line::Unknown);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("unparsable_output==>%s<==", output), LogPaneLogger::LineType::Error);
         }
         return false;
     }
@@ -96,7 +103,7 @@ bool CommandExecutor::ProcessOutput(wxString const & output)
     {
         if (m_logger)
         {
-            m_logger->Debug("output==>" + output, Logger::Line::CommandResult);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("output==>%s<==", output), LogPaneLogger::LineType::CommandResult);
         }
     }
 
@@ -174,7 +181,7 @@ void ActionsMap::Run(CommandExecutor & executor)
         return;
     }
 
-    Logger * logger = executor.GetLogger();
+    LogPaneLogger * logger = executor.GetLogger();
     bool first = true;
 
     for (Actions::iterator it = m_actions.begin(); it != m_actions.end();)
@@ -191,9 +198,11 @@ void ActionsMap::Run(CommandExecutor & executor)
         {
             if (logger)
             {
-                logger->Debug(wxString::Format("ActionsMap::Run -> starting action: %p id: %d",
-                                               &action, action.GetID()),
-                              Logger::Line::Debug);
+                logger->LogGDBMsgType(  __PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format("ActionsMap::Run -> starting action: %p id: %d", &action, action.GetID()),
+                                        LogPaneLogger::LineType::Debug
+                                     );
             }
 
             action.Start();
@@ -216,10 +225,11 @@ void ActionsMap::Run(CommandExecutor & executor)
         {
             if (logger && action.HasPendingCommands())
             {
-                logger->Debug(wxString::Format("ActionsMap::Run -> action[%p id: %d] "
-                                               "has pending commands but is being removed",
-                                               &action, action.GetID()),
-                              Logger::Line::Debug);
+                logger->LogGDBMsgType(  __PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format("ActionsMap::Run -> action[%p id: %d] has pending commands but is being removed", &action, action.GetID()),
+                                        LogPaneLogger::LineType::Debug
+                                    );
             }
 
             delete *it;

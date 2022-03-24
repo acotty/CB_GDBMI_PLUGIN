@@ -1,24 +1,24 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
 #ifndef _DEBUGGER_MI_GDB_CMD_QUEUE_H_
 #define _DEBUGGER_MI_GDB_CMD_QUEUE_H_
 
-
+// System and library includes
 #include <deque>
 #include <ostream>
 #include <tr1/unordered_map>
-
 #include <wx/string.h>
 
+// GDB includes
 #include "cmd_result_parser.h"
-/*
-#include <wx/thread.h>
-class PipedProcess;
-*/
+#include "gdb_logger.h"
 
 namespace dbg_mi
 {
-
-class Logger;
-
 class CommandID
 {
     public:
@@ -174,7 +174,8 @@ class CommandExecutor
     public:
         CommandExecutor() :
             m_last(0),
-            m_logger(NULL) {
+            m_logger(NULL)
+        {
         }
         virtual ~CommandExecutor() {}
 
@@ -190,13 +191,15 @@ class CommandExecutor
 
         void Clear();
 
-        dbg_mi::ResultParser * GetResult(dbg_mi::CommandID & id) {
+        dbg_mi::ResultParser * GetResult(dbg_mi::CommandID & id)
+        {
             assert(!m_results.empty());
             Result const & r = m_results.front();
             id = r.id;
             dbg_mi::ResultParser * parser = new dbg_mi::ResultParser;
 
-            if (!parser->Parse(r.output)) {
+            if (!parser->Parse(r.output))
+            {
                 delete parser;
                 parser = NULL;
             }
@@ -205,16 +208,46 @@ class CommandExecutor
             return parser;
         }
 
-        void SetLogger(Logger * logger) {
+        void SetLogger(dbg_mi::LogPaneLogger * logger)
+        {
             m_logger = logger;
         }
-        Logger * GetLogger() {
+
+        dbg_mi::LogPaneLogger * GetLogger()
+        {
             return m_logger;
         }
 
-        int32_t GetLastID() const {
+        int32_t GetLastID() const
+        {
             return m_last;
         }
+
+        void AddCommandQueue(wxString const & command)
+        {
+            m_CMDQueue.push_back(command);
+        }
+
+        int GetCommandQueueCount() const
+        {
+            return m_CMDQueue.size();
+        }
+
+        wxString const & GetQueueCommand(long index) const
+        {
+            static const wxString emptyString = wxEmptyString;
+            if (index < (long) m_CMDQueue.size())
+            {
+                return m_CMDQueue[index];
+            }
+            return  emptyString;
+        }
+
+        void ClearQueueCommand()
+        {
+            m_CMDQueue.clear();
+        }
+
     protected:
         virtual bool DoExecute(dbg_mi::CommandID const & id, wxString const & cmd) = 0;
         virtual void DoClear() = 0;
@@ -223,7 +256,10 @@ class CommandExecutor
         typedef std::deque<Result> Results;
         Results m_results;
         int32_t m_last;
-        Logger * m_logger;
+
+        std::vector<wxString> m_CMDQueue;
+
+        dbg_mi::LogPaneLogger * m_logger;
 };
 
 class ActionsMap
@@ -289,45 +325,6 @@ bool DispatchResults(CommandExecutor & exec, ActionsMap & actions_map, OnNotify 
 
     return true;
 }
-
-class Logger
-{
-    public:
-        struct Line
-        {
-            enum Type
-            {
-                Unknown = 0,
-                Debug,
-                Command,
-                CommandResult,
-                ProgramState
-            };
-
-            wxString line;
-            Type type;
-        };
-
-        struct Log
-        {
-            enum Type
-            {
-                Normal = 0,
-                Error
-            };
-        };
-    public:
-        virtual ~Logger() {}
-
-        virtual void Log(wxString const & line, Log::Type type = Log::Normal) = 0;
-        virtual void Debug(wxString const & line, Line::Type type = Line::Debug) = 0;
-        virtual Line const * GetDebugLine(int index) const = 0;
-
-        virtual void AddCommand(wxString const & command) = 0;
-        virtual int GetCommandCount() const = 0;
-        virtual wxString const & GetCommand(int index) const = 0;
-        virtual void ClearCommand() = 0;
-};
 
 } // namespace dbg_mi
 

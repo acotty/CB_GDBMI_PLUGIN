@@ -3,8 +3,8 @@
  * http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-#ifndef DEBUGGEROPTIONSDLG_H
-#define DEBUGGEROPTIONSDLG_H
+#ifndef _DEBUGGER_GDB_MI_CMD_DEBUGGEROPTIONSDLG_H_
+#define _DEBUGGER_GDB_MI_CMD_DEBUGGEROPTIONSDLG_H_
 
 #include <debuggermanager.h>
 
@@ -45,4 +45,4 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
 
 } // namespace dbg_mi
 
-#endif // DEBUGGEROPTIONSDLG_H
+#endif // _DEBUGGER_GDB_MI_CMD_DEBUGGEROPTIONSDLG_H_

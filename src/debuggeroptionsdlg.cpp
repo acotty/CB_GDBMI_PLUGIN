@@ -3,7 +3,6 @@
  * http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-
 #include <wx/checkbox.h>
 #include <wx/choice.h>
 #include <wx/filedlg.h>

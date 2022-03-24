@@ -1,3 +1,9 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
 #ifndef _DEBUGGER_GDB_MI_GDB_EXECUTOR_H_
 #define _DEBUGGER_GDB_MI_GDB_EXECUTOR_H_
 
@@ -9,41 +15,6 @@ class wxEvtHandler;
 
 namespace dbg_mi
 {
-class LogPaneLogger : public Logger
-{
-    public:
-        LogPaneLogger(cbDebuggerPlugin * plugin) : m_plugin(plugin), m_shutdowned(false) {}
-
-        virtual void Log(wxString const & line, Log::Type type = Log::Normal);
-        virtual void Debug(wxString const & line, Line::Type type = Line::Debug);
-        virtual Line const * GetDebugLine(int index) const {
-            return NULL;
-        }
-
-        virtual void AddCommand(wxString const & command) {
-            m_commands.push_back(command);
-        }
-        virtual int GetCommandCount() const {
-            return m_commands.size();
-        }
-        virtual wxString const & GetCommand(int index) const {
-            Commands::const_iterator it = m_commands.begin();
-            std::advance(it, index);
-            return *it;
-        }
-        virtual void ClearCommand() {
-            m_commands.clear();
-        }
-
-        void MarkAsShutdowned() {
-            m_shutdowned = true;
-        }
-    private:
-        typedef std::vector<wxString> Commands;
-        Commands m_commands;
-        cbDebuggerPlugin * m_plugin;
-        bool m_shutdowned;
-};
 
 class GDBExecutor : public CommandExecutor
 {
@@ -53,7 +24,7 @@ class GDBExecutor : public CommandExecutor
         GDBExecutor();
         ~GDBExecutor();
 
-        int LaunchProcess(wxString const & cmd, wxString const & cwd, int id_gdb_process, wxEvtHandler * event_handler, Logger & logger);
+        int LaunchProcess(wxString const & cmd, wxString const & cwd, int id_gdb_process, wxEvtHandler * event_handler, LogPaneLogger * logger);
 
         bool ProcessHasInput();
         bool IsRunning() const;

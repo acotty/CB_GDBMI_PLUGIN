@@ -1,3 +1,9 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
 #include "gdb_executor.h"
 
 #include <cassert>
@@ -160,60 +166,6 @@ void GetChildPIDs(int parent, std::vector<int> & childs)
 namespace dbg_mi
 {
 
-void LogPaneLogger::Log(wxString const & line, Log::Type type)
-{
-    if (m_shutdowned)
-    {
-        return;
-    }
-
-    int index;
-
-    switch (type)
-    {
-        case Log::Normal:
-            m_plugin->Log(line, ::Logger::info);
-            break;
-
-        case Log::Error:
-            m_plugin->Log(line, ::Logger::error);
-            break;
-    }
-}
-
-void LogPaneLogger::Debug(wxString const & line, Line::Type type)
-{
-    if (m_shutdowned)
-    {
-        return;
-    }
-
-    int index;
-
-    switch (type)
-    {
-        case Line::Debug:
-            m_plugin->DebugLog(line, ::Logger::info);
-            break;
-
-        case Line::Unknown:
-            m_plugin->DebugLog(line, ::Logger::info);
-            break;
-
-        case Line::Command:
-            m_plugin->DebugLog(line, ::Logger::warning);
-            break;
-
-        case Line::CommandResult:
-            m_plugin->DebugLog(line, ::Logger::error);
-            break;
-
-        case Line::ProgramState:
-            m_plugin->DebugLog(line, ::Logger::critical);
-            break;
-    }
-}
-
 GDBExecutor::GDBExecutor() :
     m_process(NULL),
     m_pid(-1),
@@ -232,7 +184,7 @@ GDBExecutor::~GDBExecutor()
 }
 
 int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int id_gdb_process,
-                               wxEvtHandler * event_handler, Logger & logger)
+                               wxEvtHandler * event_handler, LogPaneLogger * logger)
 {
     if (m_process)
     {
@@ -241,8 +193,7 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
 
     // start the gdb process
     m_process = new PipedProcess(&m_process, event_handler, id_gdb_process, true, cwd);
-    logger.Log(_("Starting debugger: "));
-    logger.Debug("Executing command: " + cmd);
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Starting debugger:"), cmd), LogPaneLogger::LineType::UserDisplay);
     m_pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER, m_process);
     m_child_pid = -1;
 #ifdef __WXMAC__
@@ -258,7 +209,7 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
     {
         delete m_process;
         m_process = 0;
-        logger.Log(_("failed"), Logger::Log::Error);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed"), LogPaneLogger::LineType::Error);
         return -1;
     }
     else
@@ -266,7 +217,7 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
         {
             delete m_process;
             m_process = 0;
-            logger.Log(_("failed (to get debugger's stdin)"), Logger::Log::Error);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed (to get debugger's stdin)"), LogPaneLogger::LineType::Error);
             return -2;
         }
         else
@@ -274,7 +225,7 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
             {
                 delete m_process;
                 m_process = 0;
-                logger.Log(_("failed (to get debugger's stdout)"), Logger::Log::Error);
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed (to get debugger's stdout)"), LogPaneLogger::LineType::Error);
                 return -2;
             }
             else
@@ -282,11 +233,11 @@ int GDBExecutor::LaunchProcess(wxString const & cmd, wxString const & cwd, int i
                 {
                     delete m_process;
                     m_process = 0;
-                    logger.Log(_("failed (to get debugger's stderr)"), Logger::Log::Error);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("failed (to get debugger's stderr)"), LogPaneLogger::LineType::Error);
                     return -2;
                 }
 
-    logger.Log(_("done"));
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Debugger starting done."), LogPaneLogger::LineType::UserDisplay);
     return 0;
 }
 
@@ -306,7 +257,7 @@ long GDBExecutor::GetChildPID()
             {
                 if (children.size() > 1)
                 {
-                    Manager::Get()->GetLogManager()->Log("the debugger has more that one child");
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("the debugger has more that one child."), LogPaneLogger::LineType::UserDisplay);
                 }
 
                 m_child_pid = children.front();
@@ -333,11 +284,11 @@ void GDBExecutor::Stopped(bool flag)
     {
         if (flag)
         {
-            m_logger->Debug("Executor stopped");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Executor stopped"), LogPaneLogger::LineType::Debug);
         }
         else
         {
-            m_logger->Debug("Executor started");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Executor started"), LogPaneLogger::LineType::Debug);
         }
     }
 
@@ -362,7 +313,7 @@ void GDBExecutor::Interupt(bool temporary)
 
     if (m_logger)
     {
-        m_logger->Debug("Interupting debugger");
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Interupting debugger"), LogPaneLogger::LineType::Debug);
     }
 
     // FIXME (obfuscated#): do something similar for the windows platform
@@ -440,9 +391,11 @@ bool GDBExecutor::DoExecute(dbg_mi::CommandID const & id, wxString const & cmd)
 
     if (!m_stopped && m_logger)
     {
-        m_logger->Debug(wxString::Format(_("GDBExecutor is not stopped, but command (%s) was executed!"),
-                                         cmd.c_str())
-                       );
+        m_logger->LogGDBMsgType(    __PRETTY_FUNCTION__,
+                                    __LINE__,
+                                    wxString::Format(_("GDBExecutor is not stopped, but command (%s) was executed!"), cmd),
+                                    LogPaneLogger::LineType::Debug
+                                );
     }
 
     m_process->SendString(id.ToString() + cmd);

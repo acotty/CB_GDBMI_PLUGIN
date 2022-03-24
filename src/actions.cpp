@@ -1,3 +1,9 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
 #include "actions.h"
 
 #include <cbdebugger_interfaces.h>
@@ -28,12 +34,12 @@ void BreakpointAddAction::OnStart()
 
     cmd += wxString::Format("%s:%d", m_breakpoint->GetLocation().c_str(), m_breakpoint->GetLine());
     m_initial_cmd = Execute(cmd);
-    m_logger.Debug("BreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString()), LogPaneLogger::LineType::Debug);
 }
 
 void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
 {
-    m_logger.Debug("BreakpointAddAction::OnCommandResult: " + id.ToString());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::OnCommandResult: " + id.ToString()), LogPaneLogger::LineType::Debug);
 
     if (m_initial_cmd == id)
     {
@@ -51,7 +57,7 @@ void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser con
 
                 if (number_value.ToLong(&n, 10))
                 {
-                    m_logger.Debug(wxString::Format("BreakpointAddAction::breakpoint index is %d", n));
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("BreakpointAddAction::breakpoint index is %d"), n), LogPaneLogger::LineType::Debug);
                     m_breakpoint->SetIndex(n);
 
                     if (!m_breakpoint->IsEnabled())
@@ -62,13 +68,12 @@ void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser con
                 }
                 else
                 {
-                    m_logger.Debug("BreakpointAddAction::error getting the index :( ");
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::error getting the index :( "), LogPaneLogger::LineType::Debug);
                 }
             }
             else
             {
-                m_logger.Debug("BreakpointAddAction::error getting number value:( ");
-                m_logger.Debug(value.MakeDebugString());
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("BreakpointAddAction::error getting number value:==>%s<== "),value.MakeDebugString()), LogPaneLogger::LineType::Debug);
             }
         }
         else
@@ -78,26 +83,26 @@ void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser con
 
                 if (Lookup(value, "msg", message))
                 {
-                    m_logger.Log(message, Logger::Log::Error);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Error detected:==>%s<== "),message), LogPaneLogger::LineType::Error);
                 }
             }
 
         if (finish)
         {
-            m_logger.Debug("BreakpointAddAction::Finishing1");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::Finishing1"), LogPaneLogger::LineType::Debug);
             Finish();
         }
     }
     else
         if (m_disable_cmd == id)
         {
-            m_logger.Debug("BreakpointAddAction::Finishing2");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::Finishing2"), LogPaneLogger::LineType::Debug);
             Finish();
         }
 }
 
 GenerateBacktrace::GenerateBacktrace(SwitchToFrameInvoker * switch_to_frame, BacktraceContainer & backtrace,
-                                     CurrentFrame & current_frame, Logger & logger) :
+                                     CurrentFrame & current_frame, LogPaneLogger * logger) :
     m_switch_to_frame(switch_to_frame),
     m_backtrace(backtrace),
     m_logger(logger),
@@ -123,13 +128,16 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
 
         if (!stack)
         {
-            m_logger.Debug("GenerateBacktrace::OnCommandOutput: no stack tuple in the output");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateBacktrace::OnCommandOutput: no stack tuple in the output"), LogPaneLogger::LineType::Debug);
         }
         else
         {
             int size = stack->GetTupleSize();
-            m_logger.Debug(wxString::Format("GenerateBacktrace::OnCommandOutput: tuple size %d %s",
-                                            size, stack->MakeDebugString().c_str()));
+            m_logger->LogGDBMsgType(    __PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("GenerateBacktrace::OnCommandOutput: tuple size %d %s"), size, stack->MakeDebugString()),
+                                        LogPaneLogger::LineType::Debug
+                                    );
             m_backtrace.clear();
 
             for (int ii = 0; ii < size; ++ii)
@@ -165,7 +173,7 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
                 }
                 else
                 {
-                    m_logger.Debug("can't parse frame: " + frame_value->MakeDebugString());
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("can't parse frame:==>%s<=="), frame_value->MakeDebugString()), LogPaneLogger::LineType::Debug);
                 }
             }
         }
@@ -175,18 +183,25 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
     else
         if (id == m_args_id)
         {
-            m_logger.Debug("GenerateBacktrace::OnCommandOutput arguments");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("GenerateBacktrace::OnCommandOutput arguments"), LogPaneLogger::LineType::Debug);
             FrameArguments arguments;
 
             if (!arguments.Attach(result.GetResultValue()))
             {
-                m_logger.Debug("GenerateBacktrace::OnCommandOutput: can't attach to output of command: "
-                               + id.ToString());
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("GenerateBacktrace::OnCommandOutput: can't attach to output of command:==>%s<=="), id.ToString()),
+                                        LogPaneLogger::LineType::Debug
+                                        );
             }
             else
                 if (arguments.GetCount() != static_cast<int>(m_backtrace.size()))
                 {
-                    m_logger.Debug("GenerateBacktrace::OnCommandOutput: stack arg count differ from the number of frames");
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                            __LINE__,
+                                            _("GenerateBacktrace::OnCommandOutput: stack arg count differ from the number of frames"),
+                                            LogPaneLogger::LineType::Debug
+                                           );
                 }
                 else
                 {
@@ -202,9 +217,11 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
                         }
                         else
                         {
-                            m_logger.Debug(wxString::Format("GenerateBacktrace::OnCommandOutput: "
-                                                            "can't get args for frame %d",
-                                                            ii));
+                            m_logger->LogGDBMsgType(    __PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("GenerateBacktrace::OnCommandOutput: can't get args for frame %d"),ii),
+                                                        LogPaneLogger::LineType::Debug
+                                                    );
                         }
                     }
                 }
@@ -221,7 +238,7 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
                 if (result.GetResultClass() != ResultParser::ClassDone)
                 {
                     m_old_active_frame = 0;
-                    m_logger.Debug("Wrong result class, using default value!");
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Wrong result class, using default value!"), LogPaneLogger::LineType::Debug);
                 }
                 else
                 {
@@ -268,7 +285,7 @@ void GenerateBacktrace::OnStart()
     m_args_id = Execute("-stack-list-arguments 1 0 30");
 }
 
-GenerateThreadsList::GenerateThreadsList(ThreadsContainer & threads, int current_thread_id, Logger & logger) :
+GenerateThreadsList::GenerateThreadsList(ThreadsContainer & threads, int current_thread_id, LogPaneLogger * logger) :
     m_threads(threads),
     m_logger(logger),
     m_current_thread_id(current_thread_id)
@@ -283,7 +300,7 @@ void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser
 
     if (!Lookup(result.GetResultValue(), "current-thread-id", current_thread_id))
     {
-        m_logger.Debug("GenerateThreadsList::OnCommandOutput - no current thread id");
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateThreadsList::OnCommandOutput - no current thread id"), LogPaneLogger::LineType::Debug);
         return;
     }
 
@@ -291,7 +308,7 @@ void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser
 
     if (!threads || (threads->GetType() != ResultValue::Tuple && threads->GetType() != ResultValue::Array))
     {
-        m_logger.Debug("GenerateThreadsList::OnCommandOutput - no threads");
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateThreadsList::OnCommandOutput - no threads"), LogPaneLogger::LineType::Debug);
         return;
     }
 
@@ -452,10 +469,11 @@ cb::shared_ptr<Watch> AddChild(cb::shared_ptr<Watch> parent, ResultValue const &
     return child;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void UpdateWatches(Logger & logger)
+void UpdateWatches(LogPaneLogger * logger)
 {
 #ifndef TEST_PROJECT
-    logger.Debug("updating watches");
+    logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("updating watches"), LogPaneLogger::LineType::Debug);
+
     //Manager::Get()->GetDebuggerManager()->GetWatchesDialog()->OnDebuggerUpdated();
 
     CodeBlocksEvent event(cbEVT_DEBUGGER_UPDATED);
@@ -465,13 +483,13 @@ void UpdateWatches(Logger & logger)
 #endif
 }
 
-void UpdateWatchesTooltipOrAll(const cb::shared_ptr<Watch> & watch, Logger & logger)
+void UpdateWatchesTooltipOrAll(const cb::shared_ptr<Watch> & watch, LogPaneLogger * logger)
 {
 #ifndef TEST_PROJECT
 
     if (watch->ForTooltip())
     {
-        logger.Debug("updating tooltip watch");
+        logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("updating tooltip watches"), LogPaneLogger::LineType::Debug);
         Manager::Get()->GetDebuggerManager()->GetInterfaceFactory()->UpdateValueTooltip();
     }
     else
@@ -482,7 +500,7 @@ void UpdateWatchesTooltipOrAll(const cb::shared_ptr<Watch> & watch, Logger & log
 #endif
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-WatchBaseAction::WatchBaseAction(WatchesContainer & watches, Logger & logger) :
+WatchBaseAction::WatchBaseAction(WatchesContainer & watches, LogPaneLogger * logger) :
     m_watches(watches),
     m_logger(logger),
     m_sub_commands_left(0),
@@ -499,13 +517,18 @@ WatchBaseAction::~WatchBaseAction()
 bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const & value)
 {
     bool error = false;
-    m_logger.Debug("WatchBaseAction::ParseListCommand - steplistchildren for id: "
-                   + id.ToString() + " -> " + value.MakeDebugString());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                            __LINE__,
+                            wxString::Format(_("WatchBaseAction::ParseListCommand - steplistchildren for id: %s ==>$s>=="), id.ToString(), value.MakeDebugString()),
+                            LogPaneLogger::LineType::Debug);
     ListCommandParentMap::iterator it = m_parent_map.find(id);
 
     if (it == m_parent_map.end() || !it->second)
     {
-        m_logger.Debug("WatchBaseAction::ParseListCommand - no parent for id: " + id.ToString());
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                __LINE__,
+                                wxString::Format(_("WatchBaseAction::ParseListCommand - no parent for id: ==>%s<=="), id.ToString()),
+                                LogPaneLogger::LineType::Debug);
         return false;
     }
 
@@ -536,7 +559,10 @@ bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const &
     if (children)
     {
         int count = children->GetTupleSize();
-        m_logger.Debug(wxString::Format("WatchBaseAction::ParseListCommand - children %d", count));
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                __LINE__,
+                                wxString::Format(_("WatchBaseAction::ParseListCommand - children %d"), count),
+                                LogPaneLogger::LineType::Debug);
         cb::shared_ptr<Watch> parent_watch = it->second;
         wxString strMapKey;
 
@@ -625,9 +651,11 @@ bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const &
 
                                 child = AddChild(parent_watch, *child_value, (mapValue ? strMapKey : symbol), m_watches);
                                 AppendNullChild(child);
-                                m_logger.Debug("WatchBaseAction::ParseListCommand - adding child "
-                                               + child->GetDebugString()
-                                               + " to " + parent_watch->GetDebugString());
+                                m_logger->LogGDBMsgType(    __PRETTY_FUNCTION__,
+                                                            __LINE__,
+                                                            wxString::Format(_("WatchBaseAction::ParseListCommand - adding child ==>%s<== to ==>%s<=="), child->GetDebugString(),  parent_watch->GetDebugString()),
+                                                            LogPaneLogger::LineType::Debug
+                                                       );
                                 child = cb::shared_ptr<Watch>();
                             }
                             else
@@ -644,8 +672,10 @@ bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const &
             }
             else
             {
-                m_logger.Debug("WatchBaseAction::ParseListCommand - can't find child in "
-                               + children->GetTupleValueByIndex(ii)->MakeDebugString());
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("WatchBaseAction::ParseListCommand - can't find child in ==>%s<=="), children->GetTupleValueByIndex(ii)->MakeDebugString()),
+                                        LogPaneLogger::LineType::Debug);
             }
         }
 
@@ -677,7 +707,7 @@ void WatchBaseAction::ExecuteListCommand(wxString const & watch_id, cb::shared_p
 {
     if (!parent)
     {
-        m_logger.Debug("Parent for '" + watch_id + "' is NULL; skipping this watch");
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Parent for '" + watch_id + "' is NULL; skipping this watch"), LogPaneLogger::LineType::Debug);
         return;
     }
 
@@ -697,7 +727,7 @@ void WatchBaseAction::ExecuteListCommand(wxString const & watch_id, cb::shared_p
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-WatchCreateAction::WatchCreateAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches, Logger & logger) :
+WatchCreateAction::WatchCreateAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches, LogPaneLogger * logger) :
     WatchBaseAction(watches, logger),
     m_watch(watch),
     m_step(StepCreate)
@@ -707,7 +737,7 @@ WatchCreateAction::WatchCreateAction(cb::shared_ptr<Watch> const & watch, Watche
 void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
 {
     --m_sub_commands_left;
-    m_logger.Debug("WatchCreateAction::OnCommandOutput - processing command " + id.ToString());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("WatchCreateAction::OnCommandOutput - processing command ==>%s<=="), id.ToString()), LogPaneLogger::LineType::Debug);
     bool error = false;
 
     if (result.GetResultClass() == ResultParser::ClassDone)
@@ -759,14 +789,20 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
 
     if (error)
     {
-        m_logger.Debug("WatchCreateAction::OnCommandOutput - error in command: " + id.ToString());
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                __LINE__,
+                                wxString::Format(_("WatchCreateAction::OnCommandOutput - error in command: ==>%s<<=="), id.ToString()),
+                                LogPaneLogger::LineType::Debug);
         UpdateWatches(m_logger);
         Finish();
     }
     else
         if (m_sub_commands_left == 0)
         {
-            m_logger.Debug("WatchCreateAction::Output - finishing at" + id.ToString());
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                    __LINE__,
+                                    wxString::Format(_("WatchCreateAction::Output - finishing at ==>%s<<=="),  id.ToString()),
+                                    LogPaneLogger::LineType::Debug);
             UpdateWatches(m_logger);
             Finish();
         }
@@ -790,7 +826,7 @@ WatchCreateTooltipAction::~WatchCreateTooltipAction()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-WatchesUpdateAction::WatchesUpdateAction(WatchesContainer & watches, Logger & logger) :
+WatchesUpdateAction::WatchesUpdateAction(WatchesContainer & watches, LogPaneLogger * logger) :
     WatchBaseAction(watches, logger)
 {
 }
@@ -822,7 +858,10 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
 
             if (!Lookup(*value, "name", expression))
             {
-                m_logger.Debug("WatchesUpdateAction::Output - no name in " + value->MakeDebugString());
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("WatchesUpdateAction::Output - no name in ==>%s<=="),value->MakeDebugString()),
+                                        LogPaneLogger::LineType::Debug);
                 continue;
             }
 
@@ -830,7 +869,10 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
 
             if (!watch)
             {
-                m_logger.Debug("WatchesUpdateAction::Output - can't find watch " + expression);
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("WatchesUpdateAction::Output - can't find watch ==>%s<<=="), expression),
+                                        LogPaneLogger::LineType::Debug);
                 continue;
             }
 
@@ -878,8 +920,10 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
                                     }
                                     else
                                     {
-                                        m_logger.Debug("WatchesUpdateAction::Output - unhandled dynamic variable");
-                                        m_logger.Debug("WatchesUpdateAction::Output - " + updated_var.MakeDebugString());
+                                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("WatchesUpdateAction::Output - unhandled dynamic variable ==>%s<=="),updated_var.MakeDebugString()),
+                                                                LogPaneLogger::LineType::Debug);
                                     }
                         }
                         else
@@ -898,8 +942,11 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
                             {
                                 watch->SetValue(updated_var.GetValue());
                                 watch->MarkAsChanged(true);
-                                m_logger.Debug("WatchesUpdateAction::Output - "
-                                               + expression + " = " + updated_var.GetValue());
+                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("WatchesUpdateAction::Output - ==>%s<<== = ==>%s<<=="),  expression, updated_var.GetValue()),
+                                                        LogPaneLogger::LineType::Debug
+                                                        );
                             }
                             else
                             {
@@ -939,7 +986,10 @@ void WatchesUpdateAction::OnCommandOutput(CommandID const & id, ResultParser con
 
         if (!ParseListCommand(id, value))
         {
-            m_logger.Debug("WatchUpdateAction::Output - ParseListCommand failed " + id.ToString());
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                    __LINE__,
+                                    wxString::Format(_("WatchUpdateAction::Output - ParseListCommand failed ==>%s<<=="), id.ToString()),
+                                    LogPaneLogger::LineType::Debug);
             Finish();
             return;
         }
@@ -947,7 +997,11 @@ void WatchesUpdateAction::OnCommandOutput(CommandID const & id, ResultParser con
 
     if (m_sub_commands_left == 0)
     {
-        m_logger.Debug("WatchUpdateAction::Output - finishing at" + id.ToString());
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                __LINE__,
+                                wxString::Format(_("WatchUpdateAction::Output - finishing at==>%s<<=="), id.ToString()),
+                                LogPaneLogger::LineType::Debug
+                                );
         UpdateWatches(m_logger);
         Finish();
     }
@@ -967,11 +1021,17 @@ void WatchExpandedAction::OnCommandOutput(CommandID const & id, ResultParser con
     }
 
     --m_sub_commands_left;
-    m_logger.Debug("WatchExpandedAction::Output - " + result.GetResultValue().MakeDebugString());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                            __LINE__,
+                            wxString::Format(_("WatchExpandedAction::Output - ==>%s<<=="), result.GetResultValue().MakeDebugString()),
+                            LogPaneLogger::LineType::Debug);
 
     if (!ParseListCommand(id, result.GetResultValue()))
     {
-        m_logger.Debug("WatchExpandedAction::Output - error in command " + id.ToString());
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                __LINE__,
+                                wxString::Format(_("WatchExpandedAction::Output - error in command ==>%s<<=="), id.ToString()),
+                                LogPaneLogger::LineType::Debug);
         // Update the watches even if there is an error, so some partial information can be displayed.
         UpdateWatchesTooltipOrAll(m_expanded_watch, m_logger);
         Finish();
@@ -979,7 +1039,10 @@ void WatchExpandedAction::OnCommandOutput(CommandID const & id, ResultParser con
     else
         if (m_sub_commands_left == 0)
         {
-            m_logger.Debug("WatchExpandedAction::Output - done");
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                    __LINE__,
+                                    _("WatchExpandedAction::Output - done"),
+                                    LogPaneLogger::LineType::Debug);
             UpdateWatchesTooltipOrAll(m_expanded_watch, m_logger);
             Finish();
         }

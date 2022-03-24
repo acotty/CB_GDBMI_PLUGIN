@@ -7,29 +7,29 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 2. Quicker
 3. Supports GDB Python pretty printing if GDB supports it.
 4. Should be easier easier to add new features compared to the old code.
-
+5. The GDB/MI interface is support.
 
 **The debugger is not production quality at this point in time.** It can be tested, but please wait until the new logging is ready and then give it a go as the logging will be more extensive and will help allot more if you hit a bug.
-
 
 
 #OUTSTANDING ITEMS
 
 ## High Priority
-1. Update logging - merge new logging code
+1. Fix warnings
+2. Update logged data to be more readable/understanding
+3. Add more logging to help find issues
 
 ## Medium Priority
-1. Create plugin
-2. Publish plign to github
-3. Fix warnings
-4. Add control to vary the amount/type of logging 
+2. Add control to vary the amount/type of logging 
+3. Create plugin
+4. Publish plign to github
 
 ## Low Priority
-* Create Linux project file
-* Create MacOS project file
-* Update Linux makefile build process
-* Update MSYS2 makefile build process
-* Update MacOS makefile build process
+1. Create Linux project file
+2. Create MacOS project file
+3. Update Linux makefile build process
+4. Update MSYS2 makefile build process
+5. Update MacOS makefile build process
 
 ## Existing/Old Issues/Check List
 
@@ -65,3 +65,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * Memory view
 * System view
 * Show tty for console projects
+
+
+#COMPLETED ITEMS
+24MAR2022 Done - Update logging - merge new logging code

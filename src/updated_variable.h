@@ -1,5 +1,11 @@
-#ifndef _DEBUGGER_GDB_MI_UPDATED_VARIABLE_H_
-#define _DEBUGGER_GDB_MI_UPDATED_VARIABLE_H_
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
+
+#ifndef __DEBUGGER_GDB_MI_UPDATED_VARIABLE_H__
+#define __DEBUGGER_GDB_MI_UPDATED_VARIABLE_H__
 
 #include <wx/string.h>
 
@@ -77,4 +83,4 @@ class UpdatedVariable
 
 } // namespace dbg_mi
 
-#endif // _DEBUGGER_GDB_MI_UPDATED_VARIABLE_H_
+#endif // __DEBUGGER_GDB_MI_UPDATED_VARIABLE_H__

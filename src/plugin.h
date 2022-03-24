@@ -1,36 +1,38 @@
-/***************************************************************
- * Name:      debbugger_gdbmi
- * Purpose:   Code::Blocks plugin
- * Author:    Teodor Petrov a.k.a obfuscated (fuscated@gmail.com)
- * Created:   2009-06-20
- * Copyright: Teodor Petrov a.k.a obfuscated
- * License:   GPL
- **************************************************************/
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+*/
 
 #ifndef _DEBUGGER_GDB_MI_PLUGIN_H_
 #define _DEBUGGER_GDB_MI_PLUGIN_H_
 
-// For compilers that support precompilation, includes <wx/wx.h>
+// System and library includes
 #include <wx/wxprec.h>
-
 #ifndef WX_PRECOMP
+    // For compilers that support precompilation, includes <wx/wx.h>
     #include <wx/wx.h>
 #endif
-
 #include <tr1/memory>
+
+// CB includes
 #include <cbplugin.h> // for "class cbPlugin"
 
+// GDB includes
 #include "cmd_queue.h"
 #include "definitions.h"
 #include "events.h"
 #include "gdb_executor.h"
+#include "gdb_logger.h"
 
 class TextCtrlLogger;
 class Compiler;
 
 namespace dbg_mi
 {
+
 class DebuggerConfiguration;
+
 } // namespace dbg_mi
 
 
@@ -164,6 +166,10 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::GDBExecutor & GetGDBExecutor() {
             return m_executor;
         }
+
+        dbg_mi::LogPaneLogger * GetGDBLogger() {
+            return m_pLogger;
+        }
     private:
         DECLARE_EVENT_TABLE();
 
@@ -199,7 +205,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
 
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
-        dbg_mi::LogPaneLogger m_execution_logger;
+        dbg_mi::LogPaneLogger * m_pLogger;
 
         typedef std::vector<cb::shared_ptr<dbg_mi::Breakpoint> > Breakpoints;
 

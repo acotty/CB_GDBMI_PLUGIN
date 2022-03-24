@@ -62,6 +62,9 @@
 			<Add directory="$(#CB_BUILD)/devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)" />
 			<Add directory="$(#WXWIDGETS.lib)/gcc_dll$(#WXWIDGETS.WX_CFG)" />
 		</Linker>
+		<Unit filename="Makefile.am" />
+		<Unit filename="Readme.md" />
+		<Unit filename="configure.ac" />
 		<Unit filename="resources/debugger_gdbmi_menu.xrc" />
 		<Unit filename="resources/debugger_options_dlg.xrc" />
 		<Unit filename="resources/manifest.xml" />
@@ -73,11 +76,6 @@
 		<Unit filename="src/cmd_result_parser.h" />
 		<Unit filename="src/cmd_result_tokens.cpp" />
 		<Unit filename="src/cmd_result_tokens.h" />
-		<Unit filename="src/config.cpp">
-			<Option compile="0" />
-			<Option link="0" />
-		</Unit>
-		<Unit filename="src/config.h" />
 		<Unit filename="src/debuggeroptionsdlg.cpp" />
 		<Unit filename="src/debuggeroptionsdlg.h" />
 		<Unit filename="src/definitions.cpp" />
@@ -90,6 +88,8 @@
 		<Unit filename="src/frame.h" />
 		<Unit filename="src/gdb_executor.cpp" />
 		<Unit filename="src/gdb_executor.h" />
+		<Unit filename="src/gdb_logger.cpp" />
+		<Unit filename="src/gdb_logger.h" />
 		<Unit filename="src/helpers.cpp" />
 		<Unit filename="src/helpers.h" />
 		<Unit filename="src/plugin.cpp" />
