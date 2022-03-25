@@ -516,9 +516,7 @@ void UpdateWatchesTooltipOrAll(const cb::shared_ptr<Watch> & watch, LogPaneLogge
 WatchBaseAction::WatchBaseAction(WatchesContainer & watches, LogPaneLogger * logger) :
     m_watches(watches),
     m_logger(logger),
-    m_sub_commands_left(0),
-    m_start(-1),
-    m_end(-1)
+    m_sub_commands_left(0)
 {
 }
 
@@ -532,7 +530,7 @@ bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const &
     bool error = false;
     m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                             __LINE__,
-                            wxString::Format(_("WatchBaseAction::ParseListCommand - steplistchildren for id: %s ==>$s>=="), id.ToString(), value.MakeDebugString()),
+                            wxString::Format(_("WatchBaseAction::ParseListCommand - steplistchildren for id: %s ==>%s>=="), id.ToString(), value.MakeDebugString()),
                             LogPaneLogger::LineType::Debug);
     ListCommandParentMap::iterator it = m_parent_map.find(id);
 
@@ -561,10 +559,12 @@ bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const &
             displayHint = DisplayHint::Map;
         }
         else
+        {
             if (strDisplayHint == "array")
             {
                 displayHint = DisplayHint::Array;
             }
+        }
     }
 
     ResultValue const * children = value.GetTupleValue("children");
@@ -701,10 +701,12 @@ bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const &
 void WatchBaseAction::ExecuteListCommand(cb::shared_ptr<Watch> watch, cb::shared_ptr<Watch> parent)
 {
     CommandID id;
+    int iStart = watch->GetRangeStart();
+    int iEnd = watch->GetRangeEnd();
 
-    if (m_start > -1 && m_end > -1)
+    if ((iStart > -1) && (iEnd > -1))
     {
-        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch->GetID(), m_start, m_end));
+        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch->GetID(), iStart, iEnd));
     }
     else
     {
@@ -724,10 +726,12 @@ void WatchBaseAction::ExecuteListCommand(wxString const & watch_id, cb::shared_p
     }
 
     CommandID id;
+    int iStart = parent->GetRangeStart();
+    int iEnd = parent->GetRangeEnd();
 
-    if (m_start > -1 && m_end > -1)
+    if ((iStart > -1) && (iEnd > -1))
     {
-        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch_id, m_start, m_end));
+        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch_id, iStart, iEnd));
     }
     else
     {
@@ -776,6 +780,7 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
                 {
                     if (children > 0)
                     {
+                        m_watch->SetRange(0, children);
                         m_step = StepListChildren;
                         AppendNullChild(m_watch);
                     }
@@ -1040,8 +1045,8 @@ void WatchesUpdateAction::OnCommandOutput(CommandID const & id, ResultParser con
 
 void WatchExpandedAction::OnStart()
 {
-    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-var-update ", m_expanded_watch->GetID()), LogPaneLogger::LineType::Debug);
-    m_update_id = Execute(wxString::Format("-var-update ", m_expanded_watch->GetID()));
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-var-update %s", m_watch->GetID()), LogPaneLogger::LineType::Debug);
+    m_update_id = Execute(wxString::Format("-var-update %s", m_watch->GetID()));
     ExecuteListCommand(m_expanded_watch, cb::shared_ptr<Watch>());
 }
 

@@ -97,63 +97,111 @@ class Watch : public cbWatch
             m_symbol(symbol),
             m_has_been_expanded(false),
             m_for_tooltip(for_tooltip),
-            m_delete_on_collapse(delete_on_collapse) {
+            m_delete_on_collapse(delete_on_collapse),
+            m_start(-1),
+            m_end(-1)
+        {
         }
 
-        void Reset() {
+        void Reset()
+        {
             m_id = m_type = m_value = wxEmptyString;
             m_has_been_expanded = false;
             RemoveChildren();
+            m_start = -1;
+            m_end = -1;
             Expand(false);
         }
 
-        wxString const & GetID() const {
+        void SetRange(int iStart, int iEnd)
+        {
+            m_start = iStart;
+            m_end = iEnd;
+        }
+
+        int GetRangeStart()
+        {
+            return m_start;
+        }
+
+        int GetRangeEnd()
+        {
+            return m_end;
+        }
+
+        wxString const & GetID() const
+        {
             return m_id;
         }
-        void SetID(wxString const & id) {
+
+        void SetID(wxString const & id)
+        {
             m_id = id;
         }
 
-        bool HasBeenExpanded() const {
+        bool HasBeenExpanded() const
+        {
             return m_has_been_expanded;
         }
-        void SetHasBeenExpanded(bool expanded) {
+
+        void SetHasBeenExpanded(bool expanded)
+        {
             m_has_been_expanded = expanded;
         }
-        bool ForTooltip() const {
+
+        bool ForTooltip() const
+        {
             return m_for_tooltip;
         }
-        void SetDeleteOnCollapse(bool delete_on_collapse) {
+
+        void SetDeleteOnCollapse(bool delete_on_collapse)
+        {
             m_delete_on_collapse = delete_on_collapse;
         }
-        bool DeleteOnCollapse() const {
+
+        bool DeleteOnCollapse() const
+        {
             return m_delete_on_collapse;
         }
     public:
-        virtual void GetSymbol(wxString & symbol) const {
+        virtual void GetSymbol(wxString & symbol) const
+        {
             symbol = m_symbol;
         }
-        virtual wxString GetSymbol() const {
+
+        virtual wxString GetSymbol() const
+        {
             return m_symbol;
         }
-        virtual void GetValue(wxString & value) const {
+
+        virtual void GetValue(wxString & value) const
+        {
             value = m_value;
         }
-        virtual bool SetValue(const wxString & value) {
+
+        virtual bool SetValue(const wxString & value)
+        {
             m_value = value;
             return true;
         }
-        virtual void GetFullWatchString(wxString & full_watch) const {
+
+        virtual void GetFullWatchString(wxString & full_watch) const
+        {
             full_watch = m_value;
         }
-        virtual void GetType(wxString & type) const {
+
+        virtual void GetType(wxString & type) const
+        {
             type = m_type;
         }
-        virtual void SetType(const wxString & type) {
+
+        virtual void SetType(const wxString & type)
+        {
             m_type = type;
         }
 
-        virtual wxString GetDebugString() const {
+        virtual wxString GetDebugString() const
+        {
             m_debug_string = m_id + "->" + m_symbol + " = " + m_value;
             return m_debug_string;
         }
@@ -169,6 +217,8 @@ class Watch : public cbWatch
         bool m_has_been_expanded;
         bool m_for_tooltip;
         bool m_delete_on_collapse;
+
+        int m_start, m_end;
 };
 
 typedef std::vector<cb::shared_ptr<Watch> > WatchesContainer;
