@@ -66,8 +66,10 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 
 #COMPLETED ITEMS
-24MAR2022 Done - Update logging - merge new logging code
-24MAR2022 Done - Fix warnings
-24MAR2022 Done - Update file header - C::B GPL text
-24MAR2022 Done - Add more logging to help find issues
-25MAR2022 Done - Update logged data to be more readable/understanding
+* 24MAR2022 Done - Update logging - merge new logging code
+* 24MAR2022 Done - Fix warnings
+* 24MAR2022 Done - Update file header - C::B GPL text
+* 24MAR2022 Done - Add more logging to help find issues
+* 25MAR2022 Done - Update logged data to be more readable/understanding
+* 25MAR2022 Fixed - removed array watch limit of 100
+* 25MAR2022 Fixed - updates of array items > 9
