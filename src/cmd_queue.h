@@ -94,60 +94,93 @@ class Action
             m_last_command_id(0),
             m_started(false),
             m_finished(false),
-            m_wait_previous(false) {
+            m_wait_previous(false)
+        {
         }
 
         virtual ~Action() {}
 
-        void SetID(int id) {
+        void SetID(int id)
+        {
             m_id = id;
         }
-        int GetID() const {
+
+        int GetID() const
+        {
             return m_id;
         }
 
-        void Start() {
+        void Start()
+        {
             m_started = true;
             OnStart();
         }
 
-        void Finish() {
+        void Finish()
+        {
             m_finished = true;
         }
 
-        bool Started() const {
+        bool Started() const
+        {
             return m_started;
         }
-        bool Finished() const {
+
+        bool Finished() const
+        {
             return m_finished;
         }
 
-        void SetWaitPrevious(bool flag) {
+        void SetWaitPrevious(bool flag)
+        {
             m_wait_previous = flag;
         }
-        bool GetWaitPrevious() const {
+
+        bool GetWaitPrevious() const
+        {
             return m_wait_previous;
         }
 
-        CommandID Execute(wxString const & command) {
+        CommandID Execute(wxString const & command)
+        {
             m_pending_commands.push_back(Command(command, m_last_command_id));
             return CommandID(m_id, m_last_command_id++);
         }
 
-        int GetPendingCommandsCount() const {
+        int GetPendingCommandsCount() const
+        {
             return m_pending_commands.size();
         }
-        bool HasPendingCommands() const {
+
+        bool HasPendingCommands() const
+        {
             return !m_pending_commands.empty();
         }
 
-        wxString PopPendingCommand(CommandID & id) {
+        wxString PopPendingCommand(CommandID & id)
+        {
             assert(HasPendingCommands());
             Command cmd = m_pending_commands.front();
             m_pending_commands.pop_front();
             id = CommandID(GetID(), cmd.id);
             return cmd.string;
         }
+
+        bool PeekPendingCommand(CommandID & id, wxString & cmdString)
+        {
+            if (HasPendingCommands())
+            {
+                Command cmd = m_pending_commands.front();
+                id = CommandID(GetID(), cmd.id);
+                cmdString = cmd.string;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
 
 
     public:
@@ -198,8 +231,38 @@ class CommandExecutor
             id = r.id;
             dbg_mi::ResultParser * parser = new dbg_mi::ResultParser;
 
-            if (!parser->Parse(r.output))
+            if (parser->Parse(r.output))
             {
+                dbg_mi::ResultParser::Class rClass = parser->GetResultClass();
+                if (
+                        (rClass == dbg_mi::ResultParser::ClassStopped)                      ||
+                        (r.output.StartsWith("=library-loaded,id="))                        ||
+                        (r.output.StartsWith("=breakpoint-modified,bkpt="))                 ||
+                        (r.output.StartsWith("^done"))
+                   )
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                            __LINE__,
+                                            wxString::Format(_("Parsing: id: %s parser ==>%s<== for ==>%s<=="), id.ToString(), parser->MakeDebugString(), r.output),
+                                            dbg_mi::LogPaneLogger::LineType::Info
+                                            );
+                }
+                else
+                {
+
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                            __LINE__,
+                                            wxString::Format(_("Parsing : id: %s parser ==>%s<== for ==>%s<=="), id.ToString(), parser->MakeDebugString(), r.output),
+                                            dbg_mi::LogPaneLogger::LineType::Receive
+                                            );
+                }
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("Received parsing failed : id: %s for %s"), id.ToString(), r.output),
+                                        dbg_mi::LogPaneLogger::LineType::Error);
                 delete parser;
                 parser = NULL;
             }

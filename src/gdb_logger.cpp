@@ -40,6 +40,15 @@ void LogPaneLogger::LogGDBMsgType(wxString const & functionName, int const iLine
 #warning in release return!!!!!
     }
 
+    if (
+            (type == LineType::Info) ||
+            (type == LineType::Receive_Info)
+        )
+    {
+#warning in release return!!!!!
+        // return;   // Minimise logging
+    }
+
     wxString logMsg = msg;
 
     wxString msgType;
@@ -58,7 +67,7 @@ void LogPaneLogger::LogGDBMsgType(wxString const & functionName, int const iLine
 
         case LineType::Info:
             msgType = "info";
-            break;
+            break;;
 
         case LineType::Debug:
             msgType = "debug";
@@ -101,11 +110,15 @@ void LogPaneLogger::LogGDBMsgType(wxString const & functionName, int const iLine
             msgPrefix.Append(msgNewLine);
             break;
 
+        case LineType::Receive_Info:
+        case LineType::Receive_NoLine:
         case LineType::Receive:
             msgDeliminators = "{}";
             msgType = "Receive";
-            //msgPrefix.Append("\n");
-            msgPrefix.Append(msgNewLine);
+            if (type == LineType::Receive)
+            {
+                msgPrefix.Append(msgNewLine);
+            }
             break;
 
         case LineType::GDB_Stop_Start:

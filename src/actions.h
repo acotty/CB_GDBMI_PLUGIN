@@ -25,10 +25,12 @@ class SimpleAction : public Action
 {
     public:
         SimpleAction(wxString const & cmd) :
-            m_command(cmd) {
+            m_command(cmd)
+        {
         }
 
-        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/) {
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/)
+        {
             Finish();
         }
     protected:
@@ -47,7 +49,8 @@ class BarrierAction : public Action
         }
         virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & /*result*/) {}
     protected:
-        virtual void OnStart() {
+        virtual void OnStart()
+        {
             Finish();
         }
 };
@@ -59,10 +62,14 @@ class BreakpointAddAction : public Action
     public:
         BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, LogPaneLogger * logger) :
             m_breakpoint(breakpoint),
-            m_logger(logger) {
+            m_logger(logger)
+        {
+
         }
-        virtual ~BreakpointAddAction() {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::destructor"), LogPaneLogger::LineType::Debug);
+
+        virtual ~BreakpointAddAction()
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::destructor"), LogPaneLogger::LineType::Info);
         }
         virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
     protected:
@@ -84,15 +91,19 @@ class RunAction : public Action
             m_plugin(plugin),
             m_command(command),
             m_notification(notification),
-            m_logger(logger) {
+            m_logger(logger)
+        {
             SetWaitPrevious(true);
         }
-        virtual ~RunAction() {
+        virtual ~RunAction()
+        {
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction::destructor"), LogPaneLogger::LineType::Debug);
         }
 
-        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result) {
-            if (result.GetResultClass() == ResultParser::ClassRunning) {
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result)
+        {
+            if (result.GetResultClass() == ResultParser::ClassRunning)
+            {
                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction success, the debugger is !stopped!"), LogPaneLogger::LineType::Debug);
                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction::Output - " + result.MakeDebugString()), LogPaneLogger::LineType::Debug);
                 m_notification(false);
@@ -101,7 +112,8 @@ class RunAction : public Action
             Finish();
         }
     protected:
-        virtual void OnStart() {
+        virtual void OnStart()
+        {
             Execute(m_command);
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction::OnStart -> " + m_command), LogPaneLogger::LineType::Debug);
         }
@@ -162,15 +174,18 @@ class SwitchToThread : public Action
         SwitchToThread(int thread_id, LogPaneLogger * logger, Notification const & notification) :
             m_thread_id(thread_id),
             m_logger(logger),
-            m_notification(notification) {
+            m_notification(notification)
+        {
         }
 
-        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result) {
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result)
+        {
             m_notification(result);
             Finish();
         }
     protected:
-        virtual void OnStart() {
+        virtual void OnStart()
+        {
             Execute(wxString::Format("-thread-select %d", m_thread_id));
         }
 
@@ -187,15 +202,18 @@ class SwitchToFrame : public Action
         SwitchToFrame(int frame_id, Notification const & notification, bool user_action) :
             m_frame_id(frame_id),
             m_notification(notification),
-            m_user_action(user_action) {
+            m_user_action(user_action)
+        {
         }
 
-        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result) {
+        virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result)
+        {
             m_notification(result, m_frame_id, m_user_action);
             Finish();
         }
     protected:
-        virtual void OnStart() {
+        virtual void OnStart()
+        {
             Execute(wxString::Format("-stack-select-frame %d", m_frame_id));
         }
     private:
@@ -215,7 +233,8 @@ class WatchBaseAction : public Action
         void ExecuteListCommand(wxString const & watch_id, cb::shared_ptr<Watch> parent);
         bool ParseListCommand(CommandID const & id, ResultValue const & value);
 
-        void SetRange(int start, int end) {
+        void SetRange(int start, int end)
+        {
             m_start = start;
             m_end = end;
         }
@@ -255,7 +274,8 @@ class WatchCreateTooltipAction : public WatchCreateAction
         WatchCreateTooltipAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches,
                                  LogPaneLogger * logger, wxRect const & rect) :
             WatchCreateAction(watch, watches, logger),
-            m_rect(rect) {
+            m_rect(rect)
+        {
         }
         virtual ~WatchCreateTooltipAction();
     private:
@@ -284,7 +304,8 @@ class WatchExpandedAction : public WatchBaseAction
                             WatchesContainer & watches, LogPaneLogger * logger) :
             WatchBaseAction(watches, logger),
             m_watch(parent_watch),
-            m_expanded_watch(expanded_watch) {
+            m_expanded_watch(expanded_watch)
+        {
             SetRange(0, 100);
         }
 
@@ -305,7 +326,8 @@ class WatchCollapseAction : public WatchBaseAction
                             WatchesContainer & watches, LogPaneLogger * logger) :
             WatchBaseAction(watches, logger),
             m_watch(parent_watch),
-            m_collapsed_watch(collapsed_watch) {
+            m_collapsed_watch(collapsed_watch)
+        {
         }
 
         virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);

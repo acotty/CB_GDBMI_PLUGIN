@@ -32,15 +32,13 @@ void BreakpointAddAction::OnStart()
         cmd += "-i " + wxString::Format("%d ", m_breakpoint->GetIgnoreCount());
     }
 
-    cmd += wxString::Format("%s:%d", m_breakpoint->GetLocation().c_str(), m_breakpoint->GetLine());
+    cmd += wxString::Format("%s:%d", m_breakpoint->GetLocation(), m_breakpoint->GetLine());
     m_initial_cmd = Execute(cmd);
     m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString()), LogPaneLogger::LineType::Debug);
 }
 
 void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
 {
-    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::OnCommandResult: " + id.ToString()), LogPaneLogger::LineType::Debug);
-
     if (m_initial_cmd == id)
     {
         bool finish = true;
@@ -57,48 +55,61 @@ void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser con
 
                 if (number_value.ToLong(&n, 10))
                 {
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("BreakpointAddAction::breakpoint index is %d"), n), LogPaneLogger::LineType::Debug);
                     m_breakpoint->SetIndex(n);
 
-                    if (!m_breakpoint->IsEnabled())
+                    if (m_breakpoint->IsEnabled())
                     {
+                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Currently disabled id: %s index is %d for =>%s<="), id.ToString(), n, result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+                    }
+                    else
+                    {
+                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Disabling id: %s index is %d for =>%s<="), id.ToString(), n, result.MakeDebugString()), LogPaneLogger::LineType::Debug);
                         m_disable_cmd = Execute(wxString::Format("-break-disable %d", n));
                         finish = false;
                     }
                 }
                 else
                 {
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::error getting the index :( "), LogPaneLogger::LineType::Debug);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("bkpt.number not a valid number,  id: %s for =>%s<="), id.ToString() , result.MakeDebugString()), LogPaneLogger::LineType::Error);
                 }
             }
             else
             {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("BreakpointAddAction::error getting number value:==>%s<== "),value.MakeDebugString()), LogPaneLogger::LineType::Debug);
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("bkpt.number invalid/missing value, id: %s for ==>%s<== for =>%s<="), id.ToString(), value.MakeDebugString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
             }
         }
         else
+        {
             if (result.GetResultClass() == ResultParser::ClassError)
             {
                 wxString message;
 
                 if (Lookup(value, "msg", message))
                 {
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Error detected:==>%s<== "),message), LogPaneLogger::LineType::Error);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Error detected id: %s ==>%s<== "), id.ToString(), message), LogPaneLogger::LineType::Error);
                 }
             }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("id: %s for =>%s<=", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+
+            }
+        }
 
         if (finish)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::Finishing1"), LogPaneLogger::LineType::Debug);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("finishing for id: %s for =>%s<=", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Debug);
             Finish();
         }
     }
     else
+    {
         if (m_disable_cmd == id)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::Finishing2"), LogPaneLogger::LineType::Debug);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("finishing for id: %s for =>%s<=", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Debug);
             Finish();
         }
+    }
 }
 
 GenerateBacktrace::GenerateBacktrace(SwitchToFrameInvoker * switch_to_frame, BacktraceContainer & backtrace,
@@ -280,6 +291,7 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
 }
 void GenerateBacktrace::OnStart()
 {
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "", LogPaneLogger::LineType::Debug);
     m_frame_info_id = Execute("-stack-info-frame");
     m_backtrace_id = Execute("-stack-list-frames 0 30");
     m_args_id = Execute("-stack-list-arguments 1 0 30");
@@ -360,7 +372,7 @@ void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser
 
             if (Lookup(*frame_value, "file", str) && Lookup(*frame_value, "line", line))
             {
-                info += wxString::Format(" in %s:%d", str.c_str(), line);
+                info += wxString::Format(" in %s:%d", str, line);
             }
             else
                 if (Lookup(*frame_value, "from", str))
@@ -377,6 +389,7 @@ void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser
 
 void GenerateThreadsList::OnStart()
 {
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "-thread-info", LogPaneLogger::LineType::Debug);
     Execute("-thread-info");
 }
 
@@ -691,12 +704,11 @@ void WatchBaseAction::ExecuteListCommand(cb::shared_ptr<Watch> watch, cb::shared
 
     if (m_start > -1 && m_end > -1)
     {
-        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ",
-                                      watch->GetID().c_str(), m_start, m_end));
+        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch->GetID(), m_start, m_end));
     }
     else
     {
-        id = Execute(wxString::Format("-var-list-children 2 \"%s\"", watch->GetID().c_str()));
+        id = Execute(wxString::Format("-var-list-children 2 \"%s\"", watch->GetID()));
     }
 
     m_parent_map[id] = parent ? parent : watch;
@@ -715,11 +727,11 @@ void WatchBaseAction::ExecuteListCommand(wxString const & watch_id, cb::shared_p
 
     if (m_start > -1 && m_end > -1)
     {
-        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch_id.c_str(), m_start, m_end));
+        id = Execute(wxString::Format("-var-list-children 2 \"%s\" %d %d ", watch_id, m_start, m_end));
     }
     else
     {
-        id = Execute(wxString::Format("-var-list-children 2 \"%s\"", watch_id.c_str()));
+        id = Execute(wxString::Format("-var-list-children 2 \"%s\"", watch_id));
     }
 
     m_parent_map[id] = parent;
@@ -737,8 +749,8 @@ WatchCreateAction::WatchCreateAction(cb::shared_ptr<Watch> const & watch, Watche
 void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
 {
     --m_sub_commands_left;
-    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("WatchCreateAction::OnCommandOutput - processing command ==>%s<=="), id.ToString()), LogPaneLogger::LineType::Debug);
     bool error = false;
+    wxString resultDebug = result.MakeDebugString();
 
     if (result.GetResultClass() == ResultParser::ClassDone)
     {
@@ -748,6 +760,7 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
         {
             case StepCreate:
             {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepCreate for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
                 bool dynamic, has_more;
                 int children;
                 ParseWatchInfo(value, children, dynamic, has_more);
@@ -760,6 +773,7 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
                     AppendNullChild(m_watch);
                 }
                 else
+                {
                     if (children > 0)
                     {
                         m_step = StepListChildren;
@@ -769,24 +783,35 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
                     {
                         Finish();
                     }
+                }
             }
             break;
 
             case StepListChildren:
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepListChildren for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
                 error = !ParseListCommand(id, value);
                 break;
 
             case StepSetRange:
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepSetRange for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
 #warning code to be added for this case
                 break;
 
+            default:
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("m_step unknown for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
+                break;
         }
     }
     else
     {
         if (result.GetResultClass() == ResultParser::ClassError)
         {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("The expression can't be evaluated! ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
             m_watch->SetValue("The expression can't be evaluated");
+        }
+        else
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("processing command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
         }
 
         error = true;
@@ -794,23 +819,22 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
 
     if (error)
     {
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                __LINE__,
-                                wxString::Format(_("WatchCreateAction::OnCommandOutput - error in command: ==>%s<<=="), id.ToString()),
-                                LogPaneLogger::LineType::Debug);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
         UpdateWatches(m_logger);
         Finish();
     }
     else
+    {
         if (m_sub_commands_left == 0)
         {
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                     __LINE__,
-                                    wxString::Format(_("WatchCreateAction::Output - finishing at ==>%s<<=="),  id.ToString()),
+                                    wxString::Format(_("Finished sub commands ID: %s"),  id.ToString()),
                                     LogPaneLogger::LineType::Debug);
             UpdateWatches(m_logger);
             Finish();
         }
+    }
 }
 
 void WatchCreateAction::OnStart()
@@ -818,7 +842,8 @@ void WatchCreateAction::OnStart()
     wxString symbol;
     m_watch->GetSymbol(symbol);
     symbol.Replace("\"", "\\\"");
-    Execute(wxString::Format("-var-create - @ \"%s\"", symbol.c_str()));
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Watch variable: \"%s\"", symbol), LogPaneLogger::LineType::UserDisplay);
+    Execute(wxString::Format("-var-create - @ \"%s\"", symbol));
     m_sub_commands_left = 1;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -838,6 +863,7 @@ WatchesUpdateAction::WatchesUpdateAction(WatchesContainer & watches, LogPaneLogg
 
 void WatchesUpdateAction::OnStart()
 {
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "-var-update 1 *", LogPaneLogger::LineType::Debug);
     m_update_command = Execute("-var-update 1 *");
     m_sub_commands_left = 1;
 }
@@ -1014,7 +1040,8 @@ void WatchesUpdateAction::OnCommandOutput(CommandID const & id, ResultParser con
 
 void WatchExpandedAction::OnStart()
 {
-    m_update_id = Execute("-var-update " + m_expanded_watch->GetID());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-var-update ", m_expanded_watch->GetID()), LogPaneLogger::LineType::Debug);
+    m_update_id = Execute(wxString::Format("-var-update ", m_expanded_watch->GetID()));
     ExecuteListCommand(m_expanded_watch, cb::shared_ptr<Watch>());
 }
 
@@ -1056,7 +1083,8 @@ void WatchExpandedAction::OnCommandOutput(CommandID const & id, ResultParser con
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WatchCollapseAction::OnStart()
 {
-    Execute("-var-delete -c " + m_collapsed_watch->GetID());
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-var-delete -c  ", m_collapsed_watch->GetID()), LogPaneLogger::LineType::Debug);
+    Execute(wxString::Format("-var-delete -c  ", m_collapsed_watch->GetID()));
 }
 
 void WatchCollapseAction::OnCommandOutput(CommandID const & id, ResultParser const & result)

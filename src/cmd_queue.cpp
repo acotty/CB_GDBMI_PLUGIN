@@ -15,11 +15,6 @@ bool ParseGDBOutputLine(wxString const & line, CommandID & id, wxString & result
 {
     size_t pos = 0;
 
-if (line.Contains("breakpoint-hit"))
-{
-    printf("breakpoint-hit!");
-}
-
     while (pos < line.length() && wxIsdigit(line[pos]))
     {
         ++pos;
@@ -88,23 +83,23 @@ void CommandExecutor::ExecuteSimple(dbg_mi::CommandID const & id, wxString const
 
 bool CommandExecutor::ProcessOutput(wxString const & output)
 {
-    dbg_mi::CommandID id;
+    //dbg_mi::CommandID id;
     Result r;
 
-    if (!dbg_mi::ParseGDBOutputLine(output, r.id, r.output))
+    if (dbg_mi::ParseGDBOutputLine(output, r.id, r.output))
     {
         if (m_logger)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("unparsable_output==>%s<==", output), LogPaneLogger::LineType::Error);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Receive ==>%s<==", output), LogPaneLogger::LineType::Info);
         }
-        return false;
     }
     else
     {
         if (m_logger)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("output==>%s<==", output), LogPaneLogger::LineType::CommandResult);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("unparsable ==>%s<==", output), LogPaneLogger::LineType::Error);
         }
+        return false;
     }
 
     m_results.push_back(r);
@@ -196,15 +191,6 @@ void ActionsMap::Run(CommandExecutor & executor)
 
         if (!action.Started())
         {
-            if (logger)
-            {
-                logger->LogGDBMsgType(  __PRETTY_FUNCTION__,
-                                        __LINE__,
-                                        wxString::Format("ActionsMap::Run -> starting action: %p id: %d", &action, action.GetID()),
-                                        LogPaneLogger::LineType::Debug
-                                     );
-            }
-
             action.Start();
         }
 
@@ -227,7 +213,7 @@ void ActionsMap::Run(CommandExecutor & executor)
             {
                 logger->LogGDBMsgType(  __PRETTY_FUNCTION__,
                                         __LINE__,
-                                        wxString::Format("ActionsMap::Run -> action[%p id: %d] has pending commands but is being removed", &action, action.GetID()),
+                                        wxString::Format("action[%p id: %d] has pending commands but is being removed", &action, action.GetID()),
                                         LogPaneLogger::LineType::Debug
                                     );
             }

@@ -9,17 +9,18 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 4. Should be easier easier to add new features compared to the old code.
 5. The GDB/MI interface is support.
 
-**The debugger is not production quality at this point in time.** It can be tested, but please wait until the new logging is ready and then give it a go as the logging will be more extensive and will help allot more if you hit a bug.
+**The debugger is not production quality at this point in time.** 
+**It can be tested NOW, so give it a go in order to help with finding missing functionality and/or bugs.** 
 
 #OUTSTANDING ITEMS
 
 ## High Priority
-1. Update logged data to be more readable/understanding
+1. Test the items in the check list.
 
 ## Medium Priority
-2. Add control to vary the amount/type of logging 
-3. Create plugin
-4. Publish plign to github
+1. Add control to vary the amount/type of logging 
+2. Create plugin
+3. Publish plign to github
 
 ## Low Priority
 1. Create Linux project file
@@ -28,7 +29,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 4. Update MSYS2 makefile build process
 5. Update MacOS makefile build process
 
-## Existing/Old Issues/Check List
+## Check List
 
 * Stepping
   * Start/Continue  (F8)
@@ -69,3 +70,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 24MAR2022 Done - Fix warnings
 24MAR2022 Done - Update file header - C::B GPL text
 24MAR2022 Done - Add more logging to help find issues
+25MAR2022 Done - Update logged data to be more readable/understanding

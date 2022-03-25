@@ -172,10 +172,12 @@ class ResultParser
 
     public:
 
-        bool operator ==(ResultParser const & o) const {
+        bool operator ==(ResultParser const & o) const
+        {
             return m_type == o.m_type && m_class == o.m_class && m_value == o.m_value;
         }
-        bool operator !=(ResultParser const & o) const {
+        bool operator !=(ResultParser const & o) const
+        {
             return !(*this == o);
         }
 
@@ -184,18 +186,24 @@ class ResultParser
         static Type ParseType(wxString const & str);
 
         wxString MakeDebugString() const;
-        Type GetResultType() const {
+        
+        Type GetResultType() const
+        {
             return m_type;
         }
-        Class GetResultClass() const {
+        
+        Class GetResultClass() const
+        {
             return m_class;
         }
 
-        wxString GetAsyncNotifyType() const {
+        wxString GetAsyncNotifyType() const
+        {
             return m_async_type;
         }
 
-        ResultValue const & GetResultValue() const {
+        ResultValue const & GetResultValue() const
+        {
             return m_value;
         }
     private:
@@ -251,6 +259,7 @@ inline bool Lookup(ResultValue const & value, wxString const & name, bool & resu
         result_value = true;
     }
     else
+    {
         if (s == "false")
         {
             result_value = false;
@@ -259,6 +268,7 @@ inline bool Lookup(ResultValue const & value, wxString const & name, bool & resu
         {
             return false;
         }
+    }
 
     return true;
 }

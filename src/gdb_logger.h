@@ -34,6 +34,8 @@ class LogPaneLogger
             Event,
             Transmit,
             Receive,
+            Receive_NoLine,
+            Receive_Info
         };
 
     public:

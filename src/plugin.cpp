@@ -225,10 +225,33 @@ void Debugger_GDB_MI::OnGDBOutput(wxCommandEvent & event)
 {
     wxString const & msg = event.GetString();
 
-    if (!msg.IsEmpty())
+    if (    !msg.IsEmpty() &&
+            !msg.IsSameAs("(gdb) ") &&
+            !msg.IsSameAs("\\n") &&
+            !msg.IsSameAs("~\"\\n\"") &&
+            (
+                // Ignore lines like ~"Catchpoint 3 (catch)\n"
+                !msg.StartsWith("~\"Catchpoint ") &&
+                !msg.EndsWith(" (catch)\n\"")
+            ) &&
+            !msg.StartsWith("~\"Reading symbols from ") &&
+            (
+                // Ignore lines like ~"Thread 1 hit Breakpoint 1, main () at D:\\Andrew_Development\\Z_Testing_Apps\\Printf_I64\\main.cpp:13\n"
+                !msg.StartsWith("~\"Thread ") &&
+                !msg.Contains(" hit Breakpoint ")
+            ) &&
+            (
+                // Ignore lines like ~"\032\032D:\\Andrew_Development\\Z_Testing_Apps\\Printf_I64\\main.cpp:13:220:beg:0x7ff6af41155a\n"
+                !msg.StartsWith("~\"\\032\\032") &&
+                !msg.Contains(":beg:")
+            )
+      )
     {
-        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("\n=>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Receive);
         ParseOutput(msg);
+    }
+    else
+    {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Ignore =>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Receive_Info);
     }
 }
 
@@ -238,8 +261,12 @@ void Debugger_GDB_MI::OnGDBError(wxCommandEvent & event)
 
     if (!msg.IsEmpty())
     {
-        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("\n=>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Receive);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Receive: =>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Error);
         ParseOutput(msg);
+    }
+    else
+    {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Receive Ignore =>%s<=", msg), dbg_mi::LogPaneLogger::LineType::Error);
     }
 }
 
@@ -336,10 +363,10 @@ struct Notifications
         void operator()(dbg_mi::ResultParser const & parser)
         {
             dbg_mi::ResultValue const & result_value = parser.GetResultValue();
-            m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Debug);
 
             if (m_simple_mode)
             {
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Receive);
                 ParseStateInfo(result_value);
                 m_plugin->UpdateWhenStopped();
             }
@@ -350,14 +377,17 @@ struct Notifications
                     ParseNotifyAsyncOutput(parser);
                 }
                 else
+                {
                     if (parser.GetResultClass() == dbg_mi::ResultParser::ClassStopped)
                     {
                         dbg_mi::StoppedReason reason = dbg_mi::StoppedReason::Parse(result_value);
 
-                        switch (reason.GetType())
+                        dbg_mi::StoppedReason::Type stopType = reason.GetType();
+                        switch (stopType)
                         {
                             case dbg_mi::StoppedReason::SignalReceived:
                             {
+                                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Receive);
                                 wxString signal_name, signal_meaning;
                                 dbg_mi::Lookup(result_value, "signal-name", signal_name);
 
@@ -377,11 +407,13 @@ struct Notifications
 
                             case dbg_mi::StoppedReason::ExitedNormally:
                             case dbg_mi::StoppedReason::ExitedSignalled:
+                                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Receive);
                                 m_executor.Execute("-gdb-exit");
                                 break;
 
                             case dbg_mi::StoppedReason::Exited:
                             {
+                                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Receive);
                                 int code = -1;
 
                                 if (!dbg_mi::Lookup(result_value, "exit-code", code))
@@ -395,6 +427,10 @@ struct Notifications
                             break;
 
                             default:
+                                if (stopType != dbg_mi::StoppedReason::BreakpointHit)
+                                {
+                                    m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Receive);
+                                }
                                 UpdateCursor(result_value, !m_executor.IsTemporaryInterupt());
                         }
 
@@ -403,6 +439,11 @@ struct Notifications
                             m_plugin->BringCBToFront();
                         }
                     }
+                    else
+                    {
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("notification event received: ==>%s<=="), parser.MakeDebugString()), dbg_mi::LogPaneLogger::LineType::Receive);
+                    }
+                }
             }
         }
 
@@ -425,14 +466,7 @@ struct Notifications
         {
             dbg_mi::Frame frame;
 
-            if (!frame.ParseOutput(result_value))
-            {
-                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                        __LINE__,
-                                                        wxString::Format(_("Debugger_GDB_MI::OnGDBNotification(...) can't find/parse frame value: ==>%s<=="), result_value.MakeDebugString()),
-                                                        dbg_mi::LogPaneLogger::LineType::Debug);
-            }
-            else
+            if (frame.ParseOutput(result_value))
             {
                 dbg_mi::ResultValue const * thread_id_value;
                 thread_id_value = result_value.GetTupleValue(m_simple_mode ? "new-thread-id" : "thread-id");
@@ -441,41 +475,68 @@ struct Notifications
                 {
                     long id;
 
-                    if (!thread_id_value->GetSimpleValue().ToLong(&id, 10))
+                    if (thread_id_value->GetSimpleValue().ToLong(&id, 10))
                     {
-                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                                __LINE__,
-                                                                wxString::Format(_("Debugger_GDB_MI::OnGDBNotification thread_id parsing failed (%s)"), result_value.MakeDebugString()),
-                                                                dbg_mi::LogPaneLogger::LineType::UserDisplay);
+                        m_plugin->GetCurrentFrame().SetThreadId(id);
                     }
                     else
                     {
-                        m_plugin->GetCurrentFrame().SetThreadId(id);
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("Thread_id parsing failed (%s)"), result_value.MakeDebugString()),
+                                                                dbg_mi::LogPaneLogger::LineType::Error);
                     }
                 }
 
                 if (frame.HasValidSource())
                 {
+                    dbg_mi::StoppedReason reason = dbg_mi::StoppedReason::Parse(result_value);
+
+                    if (reason.GetType() == dbg_mi::StoppedReason::BreakpointHit)
+                    {
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("Breakpoint hit on line#: %d in file: %s"), frame.GetLine(), frame.GetFilename()),
+                                                                dbg_mi::LogPaneLogger::LineType::UserDisplay);
+                    }
+                    else
+                    {
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("File line#: %d in %s ==>%s<=="), frame.GetLine(), frame.GetFilename(), result_value.MakeDebugString()),
+                                                                dbg_mi::LogPaneLogger::LineType::Debug);
+                    }
                     m_plugin->GetCurrentFrame().SetPosition(frame.GetFilename(), frame.GetLine());
                     m_plugin->SyncEditor(frame.GetFilename(), frame.GetLine(), true);
                 }
                 else
                 {
-                    m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("ParseStateInfo does not have valid source"), dbg_mi::LogPaneLogger::LineType::Error);
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("ParseStateInfo frame does not have valid source (%s)"), result_value.MakeDebugString()),
+                                                                dbg_mi::LogPaneLogger::LineType::Error);
                 }
+            }
+            else
+            {
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Can't find/parse frame value: ==>%s<=="), result_value.MakeDebugString()),
+                                                        dbg_mi::LogPaneLogger::LineType::Error);
             }
         }
 
         void ParseNotifyAsyncOutput(dbg_mi::ResultParser const & parser)
         {
-            if (parser.GetAsyncNotifyType() == "thread-group-started")
+            wxString notifyType = parser.GetAsyncNotifyType();
+            if (notifyType.IsSameAs("thread-group-started"))
             {
                 int pid;
                 dbg_mi::Lookup(parser.GetResultValue(), "pid", pid);
                 m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
                                                         __LINE__,
                                                         wxString::Format(_("Found child pid: %d"), pid),
-                                                        dbg_mi::LogPaneLogger::LineType::UserDisplay);
+                                                        dbg_mi::LogPaneLogger::LineType::Receive_NoLine);
                 dbg_mi::GDBExecutor & exec = m_plugin->GetGDBExecutor();
 
                 if (!exec.HasChildPID())
@@ -485,10 +546,32 @@ struct Notifications
             }
             else
             {
-                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                        __LINE__,
-                                                        wxString::Format(_("Notification: %s"), parser.GetAsyncNotifyType()),
-                                                        dbg_mi::LogPaneLogger::LineType::UserDisplay);
+                if (notifyType.IsSameAs("library-loaded"))
+                {
+                    wxString  targetName;
+                    dbg_mi::Lookup(parser.GetResultValue(), "target-name", targetName);
+                    m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                            __LINE__,
+                                                            wxString::Format(_("Notification: %s for %s"), parser.GetAsyncNotifyType(), targetName),
+                                                            dbg_mi::LogPaneLogger::LineType::Receive_Info);
+                }
+                else
+                {
+                    if (notifyType.IsSameAs("breakpoint-modified"))
+                    {
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("Notification for breakpoint-modified: %s"), parser.MakeDebugString()),
+                                                                dbg_mi::LogPaneLogger::LineType::Receive_Info);
+                    }
+                    else
+                    {
+                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                                __LINE__,
+                                                                wxString::Format(_("Notification: %s"), parser.MakeDebugString()),
+                                                                dbg_mi::LogPaneLogger::LineType::Receive);
+                    }
+                }
             }
         }
 
@@ -560,7 +643,6 @@ void Debugger_GDB_MI::ParseOutput(wxString const & str)
         bool bProcessedOutput= false;
 
         // See CodeLite file Debugger\debuggergdb.cpp function DbgGdb::OnDataRead(..)
-        //wxArrayString const lines = wxStringTokenize(str, "\n", wxTOKEN_STRTOK);
         wxArrayString const & lines = GetArrayFromString(str, '\n');
 
         if (lines.IsEmpty())
