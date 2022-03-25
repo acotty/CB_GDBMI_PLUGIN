@@ -7,22 +7,42 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 2. Quicker
 3. Supports GDB Python pretty printing if GDB supports it.
 4. Should be easier easier to add new features compared to the old code.
-5. The GDB/MI interface is support.
+5. GDB/MI interface is supported.
 
-**The debugger is not production quality at this point in time.** 
-**It can be tested NOW, so give it a go in order to help with finding missing functionality and/or bugs.** 
+**The debugger is not production quality at this point in time.**
 
-#OUTSTANDING ITEMS
+**It can be tested NOW, so give it a go in order to help with finding missing functionality and/or bugs.**
+
+# OUTSTANDING ITEMS
 
 ## High Priority
-1. Test the items in the check list.
+1. Debug "simple" source code sample with the following "data" types:
+
+```cpp
+    char cTest[300];
+    ....
+    struct TestStruct
+    {
+        int iValue;
+        bool bReadOnly;
+        char cName[10];
+    };
+    ....
+    TestStruct stTest;
+    ....
+    TestStruct aTest[3];
+    ....
+```
+2. Test the items in the check list.
 
 ## Medium Priority
-1. Add control to vary the amount/type of logging 
+
+1. Add control to vary the amount/type of logging
 2. Create plugin
 3. Publish plign to github
 
 ## Low Priority
+
 1. Create Linux project file
 2. Create MacOS project file
 3. Update Linux makefile build process
@@ -35,7 +55,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
   * Start/Continue  (F8)
   * Break debugger
   * Stop debugger   (Shift-F8)
-  * Run to cursor   (F4)    
+  * Run to cursor   (F4)
   * Next line       (F7)
   * Step Into       (Shift-F7)
   * Step out        (Ctrl-F7)
@@ -65,7 +85,8 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * Show tty for console projects
 
 
-#COMPLETED ITEMS
+# COMPLETED ITEMS
+
 * 24MAR2022 Done - Update logging - merge new logging code
 * 24MAR2022 Done - Fix warnings
 * 24MAR2022 Done - Update file header - C::B GPL text
