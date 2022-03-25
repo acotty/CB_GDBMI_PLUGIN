@@ -882,10 +882,14 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
     }
 
     ResultValue const * list = result.GetResultValue().GetTupleValue("changelist");
+    wxString resultDebug = result.MakeDebugString();
 
     if (list)
     {
+
         int count = list->GetTupleSize();
+
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("List count: %d   , result: ==>%s<=="), count, resultDebug), LogPaneLogger::LineType::Debug);
 
         for (int ii = 0; ii < count; ++ii)
         {
@@ -896,7 +900,7 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
             {
                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                         __LINE__,
-                                        wxString::Format(_("WatchesUpdateAction::Output - no name in ==>%s<=="),value->MakeDebugString()),
+                                        wxString::Format(_("no name in ==>%s<=="), value->MakeDebugString()),
                                         LogPaneLogger::LineType::Debug);
                 continue;
             }
@@ -907,7 +911,7 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
             {
                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                         __LINE__,
-                                        wxString::Format(_("WatchesUpdateAction::Output - can't find watch ==>%s<<=="), expression),
+                                        wxString::Format(_("can't find watch ==>%s<<=="), expression),
                                         LogPaneLogger::LineType::Debug);
                 continue;
             }
@@ -958,7 +962,7 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
                                     {
                                         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                                                 __LINE__,
-                                                                wxString::Format(_("WatchesUpdateAction::Output - unhandled dynamic variable ==>%s<=="),updated_var.MakeDebugString()),
+                                                                wxString::Format(_("unhandled dynamic variable ==>%s<=="),updated_var.MakeDebugString()),
                                                                 LogPaneLogger::LineType::Debug);
                                     }
                         }
@@ -980,7 +984,7 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
                                 watch->MarkAsChanged(true);
                                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                                         __LINE__,
-                                                        wxString::Format(_("WatchesUpdateAction::Output - ==>%s<<== = ==>%s<<=="),  expression, updated_var.GetValue()),
+                                                        wxString::Format(_("Update ==>%s<<== = ==>%s<<=="),  expression, updated_var.GetValue()),
                                                         LogPaneLogger::LineType::Debug
                                                         );
                             }
@@ -994,6 +998,10 @@ bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
                 }
             }
         }
+    }
+    else
+    {
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("No list. result: ==>%s<=="), resultDebug), LogPaneLogger::LineType::Debug);
     }
 
     return true;

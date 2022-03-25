@@ -54,11 +54,12 @@ bool Breakpoint::IsTemporary() const
 
 cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & watches)
 {
+    size_t expLength = expression.length();
     for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
     {
         if (expression.StartsWith(it->get()->GetID()))
         {
-            if (expression.length() == it->get()->GetID().length())
+            if (expLength == it->get()->GetID().length())
             {
                 return *it;
             }
@@ -74,25 +75,24 @@ cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & 
                     for (int child = 0; child < temp->GetChildCount(); ++child)
                     {
                         cb::shared_ptr<Watch> p = cb::static_pointer_cast<Watch>(temp->GetChild(child));
+                        wxString id = p->GetID();
 
-                        if (expression.StartsWith(p->GetID()))
+                        if (expression.StartsWith(id))
                         {
-                            if (expression.length() == p->GetID().length())
+                            if (expLength == id.length())
                             {
                                 return p;
                             }
                             else
                             {
-                                curr = p;
-                                break;
+                                if (id[expLength+1] == '.')
+                                {
+                                    curr = p;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-
-                if (curr)
-                {
-                    return curr;
                 }
             }
         }
