@@ -16,24 +16,8 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Debug "simple" source code sample with the following "data" types:
-
-```cpp
-    char cTest[300];
-    ....
-    struct TestStruct
-    {
-        int iValue;
-        bool bReadOnly;
-        char cName[10];
-    };
-    ....
-    TestStruct stTest;
-    ....
-    TestStruct aTest[3];
-    ....
-```
-2. Test the items in the check list.
+1. Test the items in the check list.
+2. Fix broken items in the list.
 
 ## Medium Priority
 
@@ -51,44 +35,41 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## Check List
 
-* Stepping
-  * [OK] Start/Continue  (F8)
-  * Break debugger                                                         [ *25MAR2022 - To be tested*]
-  * Stop debugger          (Shift-F8)                                  [ *25MAR2022 - To be tested*]
-  * Run to cursor            (F4)                                          [ *25MAR2022 - To be tested*]
-  * [OK] Next line           (F7)                                          [ *25MAR2022 - To be tested*]
-  * Step Into                   (Shift-F7)                                 [ *25MAR2022 - To be tested*]
-  * Step out                    (Ctrl-F7)                                   [ *25MAR2022 - To be tested*]
-  * Next instruction        (Alt-F7)                                     [ *25MAR2022 - To be tested*]
-  * Step into instruction  (ALT-Shift-F7)                          [ *25MAR2022 - To be tested*]
-  * Set next statement                                                    [ *25MAR2022 - To be tested*]
-  * Interrupting the debugger while running the program      [ *25MAR2022 - To be tested*]
-  * Notification that the debugging has ended                [ *25MAR2022 - To be tested*]
-* Watches 
-  * Simple data types                                                      [ *25MAR2022 - Looks okay*]
-  * Simple structure                                                         [ **25MAR2022 - Broken**]   
-  * Array of structures                                                      [ **25MAR2022 - Broken**] 
-  * Complex structures                                                    [ *25MAR2022 - To be tested*]
-
-* Breakpoints
-  * [OK] adding breakpoint after the start of the debugger
-  * condition                                                                     [ *25MAR2022 - To be tested*]
-  * Debug menu option to Toggle breakpoint (F5)           [ *25MAR2022 - To be tested*]
-  * Debug menu option to Remove all breakpoints         [ *25MAR2022 - To be tested*]
-  * Disable breakpoint                                                     [ *25MAR2022 - To be tested*]
-  * Remove breakpoint                                                    [ *25MAR2022 - To be tested*]
-  * Edit breakpoint                                                           [ *25MAR2022 - To be tested*]
-    * ignore count before break                                   [ *25MAR2022 - To be tested*]
-    * break when expression is true                            [ *25MAR2022 - To be tested*]
-* Running Threads                                                              [ *25MAR2022 - To be tested*]
-* CPU Registers                                                                  [ *25MAR2022 - To be tested*]
-* Call Stack                                                                         [ *25MAR2022 - To be tested*]
-* Disassembly                                                                     [ *25MAR2022 - To be tested*]
-* Memory dump                                                                  [ **25MAR2022 - Broken**] 
-* Memory view                                                                    [ **25MAR2022 - Broken**] 
-* System view                                                                     [ *25MAR2022 - To be tested*]
-* Show tty for console projects                                           [ *25MAR2022 - To be tested*]
-
+|                  Item                                      |   Date    |   Result     |
+|------------------------------------------------------------|-----------|--------------|
+|* Stepping                                                  |           |              |
+|  * Start/Continue       (F8)                               | 26MAR2022 |    Pass      |
+|  * Break debugger                                          | 26MAR2022 |    Pass      |
+|  * Stop debugger        (Shift-F8)                         | 26MAR2022 |    Pass      |
+|  * Run to cursor        (F4)                               | 26MAR2022 |    Pass      |
+|  * Next line            (F7)                               | 26MAR2022 |    Pass      |
+|  * Step Into            (Shift-F7)                         | 26MAR2022 |    Pass      |
+|  * Step out             (Ctrl-F7)                          | 26MAR2022 |    Pass      |
+|  * Next instruction     (Alt-F7)                           | 25MAR2022 | To be tested |
+|  * Step into instruction(ALT-Shift-F7)                     | 25MAR2022 | To be tested |
+|  * Set next statement                                      | 25MAR2022 | To be tested |
+|  * Notification that the debugging has ended               | 26MAR2022 |    Pass      |
+|* Watches                                                   |           |              |
+|  * Simple data types                                       | 26MAR2022 |    Pass      |
+|  * Simple structure                                        | 26MAR2022 |    Pass      |   
+|  * Array of simple structures                              | 26MAR2022 |    Pass      |   
+|  * Complex structures                                      | 26MAR2022 |    Pass      |
+|* Breakpoints                                               |           |              |
+|  * adding breakpoint after the start of the debugger       | 26MAR2022 |    Pass      |
+|  * Debug menu option to Toggle breakpoint (F5)             | 26MAR2022 |    Pass      |
+|  * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass      |
+|  * Disable breakpoint                                      | 26MAR2022 |   *Broken*   |
+|  * Remove breakpoint                                       | 26MAR2022 |    Pass      |
+|  * Edit breakpoint                                         | 26MAR2022 |   *Broken*   |
+|    * ignore count before break                             | 26MAR2022 |   *Broken*   |
+|    * break when expression is true                         | 26MAR2022 |   *Broken*   |
+|* Debug show Running Threads                                | 26MAR2022 |    Pass      |
+|* Debug show CPU Registers                                  | 26MAR2022 |   *Broken*   |
+|* Debug show Call Stack                                     | 26MAR2022 |    Pass      |
+|* Debug show Disassembly                                    | 26MAR2022 |   *Broken*   |
+|* Debug show Memory dump                                    | 26MAR2022 |   *Broken*   | 
+|* Debug show Memory view                                    | 26MAR2022 |   *Broken*   | 
+|* Show tty for console projects                             | 26MAR2022 |   *Broken*   |
 
 # COMPLETED ITEMS
 
@@ -100,3 +81,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 25MAR2022 Fixed - removed array watch limit of 100
 * 25MAR2022 Fixed - updates of array items > 9
 * 26MAR2022 Fixed - display of structures with multiple depths now working
+* 25MAR2022 Done - Debug "simple" source code sample with the following "data" types:

@@ -139,14 +139,14 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
 
         if (!stack)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateBacktrace::OnCommandOutput: no stack tuple in the output"), LogPaneLogger::LineType::Debug);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("no stack tuple in the output"), LogPaneLogger::LineType::Error);
         }
         else
         {
             int size = stack->GetTupleSize();
             m_logger->LogGDBMsgType(    __PRETTY_FUNCTION__,
                                         __LINE__,
-                                        wxString::Format(_("GenerateBacktrace::OnCommandOutput: tuple size %d %s"), size, stack->MakeDebugString()),
+                                        wxString::Format(_("tuple size %d %s"), size, stack->MakeDebugString()),
                                         LogPaneLogger::LineType::Debug
                                     );
             m_backtrace.clear();
@@ -194,15 +194,15 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
     else
         if (id == m_args_id)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("GenerateBacktrace::OnCommandOutput arguments"), LogPaneLogger::LineType::Debug);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("arguments"), LogPaneLogger::LineType::Debug);
             FrameArguments arguments;
 
             if (!arguments.Attach(result.GetResultValue()))
             {
                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                         __LINE__,
-                                        wxString::Format(_("GenerateBacktrace::OnCommandOutput: can't attach to output of command:==>%s<=="), id.ToString()),
-                                        LogPaneLogger::LineType::Debug
+                                        wxString::Format(_("can't attach to output of command:==>%s<=="), id.ToString()),
+                                        LogPaneLogger::LineType::Error
                                         );
             }
             else
@@ -210,8 +210,8 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
                 {
                     m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                             __LINE__,
-                                            _("GenerateBacktrace::OnCommandOutput: stack arg count differ from the number of frames"),
-                                            LogPaneLogger::LineType::Debug
+                                            _("stack arg count differ from the number of frames"),
+                                            LogPaneLogger::LineType::Warning
                                            );
                 }
                 else
@@ -230,8 +230,8 @@ void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const
                         {
                             m_logger->LogGDBMsgType(    __PRETTY_FUNCTION__,
                                                         __LINE__,
-                                                        wxString::Format(_("GenerateBacktrace::OnCommandOutput: can't get args for frame %d"),ii),
-                                                        LogPaneLogger::LineType::Debug
+                                                        wxString::Format(_("can't get args for frame %d"),ii),
+                                                        LogPaneLogger::LineType::Error
                                                     );
                         }
                     }
@@ -304,7 +304,7 @@ GenerateThreadsList::GenerateThreadsList(ThreadsContainer & threads, int current
 {
 }
 
-void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser const & result)
+void GenerateThreadsList::OnCommandOutput(CommandID const & id, ResultParser const & result)
 {
     Finish();
     m_threads.clear();
@@ -312,7 +312,7 @@ void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser
 
     if (!Lookup(result.GetResultValue(), "current-thread-id", current_thread_id))
     {
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateThreadsList::OnCommandOutput - no current thread id"), LogPaneLogger::LineType::Debug);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("no current thread id"), LogPaneLogger::LineType::Error);
         return;
     }
 
@@ -320,7 +320,7 @@ void GenerateThreadsList::OnCommandOutput(CommandID const & /*id*/, ResultParser
 
     if (!threads || (threads->GetType() != ResultValue::Tuple && threads->GetType() != ResultValue::Array))
     {
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateThreadsList::OnCommandOutput - no threads"), LogPaneLogger::LineType::Debug);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("no threads"), LogPaneLogger::LineType::Error);
         return;
     }
 

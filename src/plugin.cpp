@@ -1702,8 +1702,13 @@ void Debugger_GDB_MI::AttachToProcess(const wxString & pid)
         return;
     }
 
-    LaunchDebugger(GetActiveConfigEx().GetDebuggerExecutable(), wxEmptyString, wxEmptyString,
-                   wxEmptyString, number, false, StartTypeRun);
+    LaunchDebugger(GetActiveConfigEx().GetDebuggerExecutable(),
+                   wxEmptyString,
+                   wxEmptyString,
+                   wxEmptyString,
+                   number,
+                   false,
+                   StartTypeRun);
     m_executor.SetAttachedPID(number);
 }
 
@@ -1732,10 +1737,12 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
             {
                 Switcher(Debugger_GDB_MI * plugin, dbg_mi::ActionsMap & actions) :
                     m_plugin(plugin),
-                    m_actions(actions) {
+                    m_actions(actions)
+                {
                 }
 
-                virtual void Invoke(int frame_number) {
+                virtual void Invoke(int frame_number)
+                {
                     typedef dbg_mi::SwitchToFrame<SwitchToFrameNotification> SwitchType;
                     m_actions.Add(new SwitchType(frame_number, SwitchToFrameNotification(m_plugin), false));
                 }
