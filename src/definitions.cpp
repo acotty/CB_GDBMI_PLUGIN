@@ -85,8 +85,9 @@ cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & 
                             }
                             else
                             {
-                                if (id[expLength+1] == '.')
-                                {
+                                if ((expLength > id.length()) && (expression[id.length()] == '.'))
+                                 {
+                                    // Go into sub child
                                     curr = p;
                                     break;
                                 }

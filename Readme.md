@@ -52,37 +52,42 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 ## Check List
 
 * Stepping
-  * Start/Continue  (F8)
-  * Break debugger
-  * Stop debugger   (Shift-F8)
-  * Run to cursor   (F4)
-  * Next line       (F7)
-  * Step Into       (Shift-F7)
-  * Step out        (Ctrl-F7)
-  * Next instruction        (Alt-F7)
-  * Step into instruction   (ALT-Shift-F7)
-  * Set next statement
-  * Interupting the debugger while running the program
-  * Notification that the debugging has ended
-* Watches
+  * [OK] Start/Continue  (F8)
+  * Break debugger                                                         [ *25MAR2022 - To be tested*]
+  * Stop debugger          (Shift-F8)                                  [ *25MAR2022 - To be tested*]
+  * Run to cursor            (F4)                                          [ *25MAR2022 - To be tested*]
+  * [OK] Next line           (F7)                                          [ *25MAR2022 - To be tested*]
+  * Step Into                   (Shift-F7)                                 [ *25MAR2022 - To be tested*]
+  * Step out                    (Ctrl-F7)                                   [ *25MAR2022 - To be tested*]
+  * Next instruction        (Alt-F7)                                     [ *25MAR2022 - To be tested*]
+  * Step into instruction  (ALT-Shift-F7)                          [ *25MAR2022 - To be tested*]
+  * Set next statement                                                    [ *25MAR2022 - To be tested*]
+  * Interrupting the debugger while running the program      [ *25MAR2022 - To be tested*]
+  * Notification that the debugging has ended                [ *25MAR2022 - To be tested*]
+* Watches 
+  * Simple data types                                                      [ *25MAR2022 - Looks okay*]
+  * Simple structure                                                         [ **25MAR2022 - Broken**]   
+  * Array of structures                                                      [ **25MAR2022 - Broken**] 
+  * Complex structures                                                    [ *25MAR2022 - To be tested*]
+
 * Breakpoints
-  * adding breakpoint after the start of the debugger
-  * condition
-  * Debug menu option to Toggle breakpoint (F5)
-  * Debug menu option to Remove all breakpoints
-  * Disable breakpoint
-  * Remove breakpoint
-  * Edit breakpoint
-    * ignore count before break
-    * break when expression is true
-* Running Threads
-* CPU Registers
-* Call Stack
-* Disassembly
-* Memory dump
-* Memory view
-* System view
-* Show tty for console projects
+  * [OK] adding breakpoint after the start of the debugger
+  * condition                                                                     [ *25MAR2022 - To be tested*]
+  * Debug menu option to Toggle breakpoint (F5)           [ *25MAR2022 - To be tested*]
+  * Debug menu option to Remove all breakpoints         [ *25MAR2022 - To be tested*]
+  * Disable breakpoint                                                     [ *25MAR2022 - To be tested*]
+  * Remove breakpoint                                                    [ *25MAR2022 - To be tested*]
+  * Edit breakpoint                                                           [ *25MAR2022 - To be tested*]
+    * ignore count before break                                   [ *25MAR2022 - To be tested*]
+    * break when expression is true                            [ *25MAR2022 - To be tested*]
+* Running Threads                                                              [ *25MAR2022 - To be tested*]
+* CPU Registers                                                                  [ *25MAR2022 - To be tested*]
+* Call Stack                                                                         [ *25MAR2022 - To be tested*]
+* Disassembly                                                                     [ *25MAR2022 - To be tested*]
+* Memory dump                                                                  [ **25MAR2022 - Broken**] 
+* Memory view                                                                    [ **25MAR2022 - Broken**] 
+* System view                                                                     [ *25MAR2022 - To be tested*]
+* Show tty for console projects                                           [ *25MAR2022 - To be tested*]
 
 
 # COMPLETED ITEMS
@@ -94,3 +99,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 25MAR2022 Done - Update logged data to be more readable/understanding
 * 25MAR2022 Fixed - removed array watch limit of 100
 * 25MAR2022 Fixed - updates of array items > 9
+* 26MAR2022 Fixed - display of structures with multiple depths now working

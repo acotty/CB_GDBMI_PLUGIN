@@ -773,6 +773,7 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
                 if (dynamic && has_more)
                 {
                     m_step = StepSetRange;
+#warning need to test this code!!!
                     Execute("-var-set-update-range \"" + m_watch->GetID() + "\" 0 100");
                     AppendNullChild(m_watch);
                 }
@@ -780,7 +781,10 @@ void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const
                 {
                     if (children > 0)
                     {
-                        m_watch->SetRange(0, children);
+                        if (children > 1)
+                        {
+                            m_watch->SetRange(0, children);
+                        }
                         m_step = StepListChildren;
                         AppendNullChild(m_watch);
                     }
