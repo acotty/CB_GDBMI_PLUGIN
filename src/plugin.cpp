@@ -1760,8 +1760,14 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
             break;
 
         case CPURegisters:
-#warning "not implemented"
-            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for CPURegisters window!"), dbg_mi::LogPaneLogger::LineType::Error);
+            {
+
+#warning "WORK IN PROGRESS!!!!"
+m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s WORK IN PROGRESS FOR CPURegisters window!", __FILE__), dbg_mi::LogPaneLogger::LineType::Error);
+                wxString disassemblyFlavor = GetActiveConfigEx().GetDisassemblyFlavorCommand();
+
+                m_actions.Add(new dbg_mi::GenerateCPUInfoRegisters(disassemblyFlavor, m_pLogger));
+            }
             break;
         case Disassembly:
 #warning "not implemented"
@@ -1769,7 +1775,9 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
             break;
         case ExamineMemory:
 #warning "not implemented"
-            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("Missing code for ExamineMemory window!"), dbg_mi::LogPaneLogger::LineType::Error);
+m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s WORK IN PROGRESS FOR ExamineMemory window!", __FILE__), dbg_mi::LogPaneLogger::LineType::Error);
+
+                m_actions.Add(new dbg_mi::GenerateExamineMemory(m_pLogger));
             break;
         case MemoryRange:
 #warning "not implemented"

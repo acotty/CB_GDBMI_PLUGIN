@@ -16,14 +16,12 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Test the items in the check list.
-2. Fix broken items in the list.
+1. Fix broken items in the list.
 
 ## Medium Priority
 
 1. Add control to vary the amount/type of logging
-2. Create plugin
-3. Publish plign to github
+2. Publish plign to github
 
 ## Low Priority
 
@@ -81,4 +79,6 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 25MAR2022 Fixed - removed array watch limit of 100
 * 25MAR2022 Fixed - updates of array items > 9
 * 26MAR2022 Fixed - display of structures with multiple depths now working
-* 25MAR2022 Done - Debug "simple" source code sample with the following "data" types:
+* 26MAR2022 Done - Debug "simple" source code sample with the following "data" types:
+* 26MAR2022 Done - First pass of the check list completed
+* 26MAR2022 Done - Project file now creates the debugger_gdbmi.cbplugin file with the non striped DLL (still includes debugging)

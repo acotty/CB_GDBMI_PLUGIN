@@ -2,11 +2,11 @@
 <CodeBlocks_plugin_manifest_file>
     <SdkVersion major="2" minor="16"  release="0" />
     <Plugin name="debugger_gdbmi">
-        <Value title="debugger_gdbmi" />
-        <Value version="0.1.1" />
-        <Value description="Testbed for gdb/mi implementation" />
+        <Value version="0.2.0" />
+        <Value title="Debugger GDB/MI" />
+        <Value description="GDB/MI debugger" />
         <Value author="Teodor Petrov a.k.a obfuscated" />
-        <Value authorEmail="fuscated@gmail.com" />
+        <Value authorEmail="" />
         <Value authorWebsite="" />
         <Value thanksTo="" />
         <Value license="GPL" />

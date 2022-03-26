@@ -166,6 +166,30 @@ class GenerateThreadsList : public Action
         int m_current_thread_id;
 };
 
+class GenerateCPUInfoRegisters : public Action
+{
+    public:
+        GenerateCPUInfoRegisters( wxString disassemblyFlavor, LogPaneLogger * logger);
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
+    private:
+        wxString m_disassemblyFlavor;
+        LogPaneLogger * m_logger;
+};
+
+class GenerateExamineMemory : public Action
+{
+    public:
+        GenerateExamineMemory(LogPaneLogger * logger);
+        virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+    protected:
+        virtual void OnStart();
+    private:
+        wxString m_address;
+        int m_length;
+        LogPaneLogger * m_logger;
+};
 
 template<typename Notification>
 class SwitchToThread : public Action

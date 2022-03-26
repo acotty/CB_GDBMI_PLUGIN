@@ -393,6 +393,127 @@ void GenerateThreadsList::OnStart()
     Execute("-thread-info");
 }
 
+GenerateCPUInfoRegisters::GenerateCPUInfoRegisters(wxString disassemblyFlavor, LogPaneLogger * logger) :
+    m_disassemblyFlavor(disassemblyFlavor),
+    m_logger(logger)
+{
+}
+
+void GenerateCPUInfoRegisters::OnCommandOutput(CommandID const & id, ResultParser const & result)
+{
+    Finish();
+
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("FUTURE TO BE CODED!!! result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+
+#if 0
+    if (!Lookup(result.GetResultValue(), "current-thread-id", current_thread_id))
+    {
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateCPUInfoRegisters::OnCommandOutput - no current thread id"), LogPaneLogger::LineType::Debug);
+        return;
+    }
+
+    ResultValue const * threads = result.GetResultValue().GetTupleValue("threads");
+
+    if (!threads || (threads->GetType() != ResultValue::Tuple && threads->GetType() != ResultValue::Array))
+    {
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GenerateCPUInfoRegisters::OnCommandOutput - no threads"), LogPaneLogger::LineType::Debug);
+        return;
+    }
+
+    int count = threads->GetTupleSize();
+
+    for (int ii = 0; ii < count; ++ii)
+    {
+        ResultValue const & thread_value = *threads->GetTupleValueByIndex(ii);
+        int thread_id;
+
+        if (!Lookup(thread_value, "id", thread_id))
+        {
+            continue;
+        }
+
+        wxString info;
+
+        if (!Lookup(thread_value, "target-id", info))
+        {
+            info = wxEmptyString;
+        }
+
+        ResultValue const * frame_value = thread_value.GetTupleValue("frame");
+
+        if (frame_value)
+        {
+            wxString str;
+
+            if (Lookup(*frame_value, "addr", str))
+            {
+                info += " " + str;
+            }
+
+            if (Lookup(*frame_value, "func", str))
+            {
+                info += " " + str;
+
+                if (FrameArguments::ParseFrame(*frame_value, str))
+                {
+                    info += "(" + str + ")";
+                }
+                else
+                {
+                    info += "()";
+                }
+            }
+
+            int line;
+
+            if (Lookup(*frame_value, "file", str) && Lookup(*frame_value, "line", line))
+            {
+                info += wxString::Format(" in %s:%d", str, line);
+            }
+            else
+                if (Lookup(*frame_value, "from", str))
+                {
+                    info += " in " + str;
+                }
+        }
+
+        m_threads.push_back(cb::shared_ptr<cbThread>(new cbThread(thread_id == current_thread_id, thread_id, info)));
+    }
+
+    Manager::Get()->GetDebuggerManager()->GetThreadsDialog()->Reload();
+#endif
+}
+
+void GenerateCPUInfoRegisters::OnStart()
+{
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "info registers", LogPaneLogger::LineType::Debug);
+    Execute("info registers");
+}
+
+GenerateExamineMemory::GenerateExamineMemory(LogPaneLogger * logger) :
+    m_logger(logger)
+{
+    cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
+    m_address = dialog->GetBaseAddress();
+    m_length = dialog->GetBytes();
+}
+
+void GenerateExamineMemory::OnCommandOutput(CommandID const & id, ResultParser const & result)
+{
+    Finish();
+
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+}
+
+void GenerateExamineMemory::OnStart()
+{
+    const wxString cmd = wxString::Format("x/%dxb %s", m_length, m_address);
+    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmd), LogPaneLogger::LineType::Debug);
+
+    Execute(cmd);
+}
+
+
 void ParseWatchInfo(ResultValue const & value, int & children_count, bool & dynamic, bool & has_more)
 {
     dynamic = has_more = false;
