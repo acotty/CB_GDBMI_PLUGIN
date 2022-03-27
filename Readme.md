@@ -17,19 +17,15 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## High Priority
 1. Fix broken items in the list. So far they are:
-    a) CPU Registers
-        - initial view on showing registers - done 27MAR2022
-        - initial view on running app with registers dialog showing
-        - update on step like existing GDB 
-    b) Memory dump
-    c) Memory view
-    d) Disable break point
-    e) Conditional break points:
+    a) Memory dump
+    b) Memory view
+    c) Disable break point
+    d) Conditional break points:
         - add
         - edit
         - update
         - remove
-    d) Disassembly
+    e) Disassembly
     
 
 ## Medium Priority
@@ -44,6 +40,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 3. Update Linux makefile build process
 4. Update MSYS2 makefile build process
 5. Update MacOS makefile build process
+6. CPU registry dialog modify to fix value column to say 50 characters.
 
 ## Check List
 
@@ -96,3 +93,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 26MAR2022 Done - Debug "simple" source code sample with the following "data" types:
 * 26MAR2022 Done - First pass of the check list completed
 * 26MAR2022 Done - Project file now creates the debugger_gdbmi.cbplugin file with the non striped DLL (still includes debugging)
+* 27MAR2022 Done - CPU Registers showing and updating

@@ -616,10 +616,17 @@ void Debugger_GDB_MI::UpdateWhenStopped()
     {
         RequestUpdate(Backtrace);
     }
-
     if (dbg_manager->UpdateThreads())
     {
         RequestUpdate(Threads);
+    }
+    if (dbg_manager->UpdateCPURegisters())
+    {
+        RequestUpdate(CPURegisters);
+    }
+    if (dbg_manager->UpdateDisassembly())
+    {
+        RequestUpdate(Disassembly);
     }
 
     UpdateOnFrameChanged(false);
