@@ -16,8 +16,11 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Fix broken items in the list .
+1. Fix broken items in the list. So far they are:
     a) CPU Registers
+        - initial view on showing registers - done 27MAR2022
+        - initial view on running app with registers dialog showing
+        - update on step like existing GDB 
     b) Memory dump
     c) Memory view
     d) Disable break point

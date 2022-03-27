@@ -12,36 +12,40 @@
 namespace dbg_mi
 {
 
-extern const wxEventType NotificationEventType;
+    extern const wxEventType NotificationEventType;
 
-class ResultParser;
-// TODO (obfusacted#): remove this class, not needed
-class NotificationEvent : public wxEvent
-{
-    public:
-        NotificationEvent(ResultParser * parser, wxEventType command_type = NotificationEventType) :
-            wxEvent(wxID_ANY, command_type),
-            m_result_parser(parser) {
-        }
+    class ResultParser;
+    // TODO (obfusacted#): remove this class, not needed
+    class NotificationEvent : public wxEvent
+    {
+        public:
+            NotificationEvent(ResultParser * parser, wxEventType command_type = NotificationEventType) :
+                wxEvent(wxID_ANY, command_type),
+                m_result_parser(parser)
+            {
+            }
 
-        // You *must* copy here the data to be transported
-        NotificationEvent(const NotificationEvent & event) :
-            wxEvent(event) {
-        }
+            // You *must* copy here the data to be transported
+            NotificationEvent(const NotificationEvent & event) :
+                wxEvent(event)
+            {
+            }
 
-        // Required for sending with wxPostEvent()
-        wxEvent * Clone() const {
-            return new NotificationEvent(*this);
-        }
-    public:
-        ResultParser * GetResultParser() {
-            return m_result_parser;
-        }
-    private:
-        ResultParser * m_result_parser;
-};
+            // Required for sending with wxPostEvent()
+            wxEvent * Clone() const
+            {
+                return new NotificationEvent(*this);
+            }
+        public:
+            ResultParser * GetResultParser()
+            {
+                return m_result_parser;
+            }
+        private:
+            ResultParser * m_result_parser;
+    };
 
-typedef void (wxEvtHandler::*NotificationEventFunction)(NotificationEvent &);
+    typedef void (wxEvtHandler::*NotificationEventFunction)(NotificationEvent &);
 
 
 } // namespace dbg_mi

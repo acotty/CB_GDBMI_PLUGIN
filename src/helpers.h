@@ -9,7 +9,7 @@
 
 namespace dbg_mi
 {
-int ParseParentPID(const char * line);
+    int ParseParentPID(const char * line);
 
 } // namespace dbg_mi
 

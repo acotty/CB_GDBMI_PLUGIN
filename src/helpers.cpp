@@ -11,43 +11,43 @@
 
 namespace dbg_mi
 {
-int ParseParentPID(const char * line)
-{
-    const char * p = strchr(line, '(');
-
-    if (!p)
+    int ParseParentPID(const char * line)
     {
-        return -1;
-    }
+        const char * p = strchr(line, '(');
 
-    ++p;
-    int open_paren_count = 1;
-
-    while (*p && open_paren_count > 0)
-    {
-        switch (*p)
+        if (!p)
         {
-            case '(':
-                open_paren_count++;
-                break;
-
-            case ')':
-                open_paren_count--;
-                break;
+            return -1;
         }
 
         ++p;
-    }
+        int open_paren_count = 1;
 
-    if (*p == ' ')
-    {
-        ++p;
-    }
+        while (*p && open_paren_count > 0)
+        {
+            switch (*p)
+            {
+                case '(':
+                    open_paren_count++;
+                    break;
 
-    int dummy;
-    int ppid;
-    int count = sscanf(p, "%c %d", (char *) &dummy, &ppid);
-    return count == 2 ? ppid : -1;
-}
+                case ')':
+                    open_paren_count--;
+                    break;
+            }
+
+            ++p;
+        }
+
+        if (*p == ' ')
+        {
+            ++p;
+        }
+
+        int dummy;
+        int ppid;
+        int count = sscanf(p, "%c %d", (char *) &dummy, &ppid);
+        return count == 2 ? ppid : -1;
+    }
 
 } // namespace dbg_mi

@@ -15,38 +15,38 @@ class Debugger_GDB_MI;
 namespace dbg_mi
 {
 
-class LogPaneLogger
-{
-    public:
-        enum LineType
-        {
-            UserDisplay = 0,
-            Info,
-            Debug,
-            Warning,
-            Error,
+    class LogPaneLogger
+    {
+        public:
+            enum LineType
+            {
+                UserDisplay = 0,
+                Info,
+                Debug,
+                Warning,
+                Error,
 
-            GDB_Stop_Start,
-            Queue,
-            Command,
-            CommandResult,
-            ProgramState,
-            Event,
-            Transmit,
-            Receive,
-            Receive_NoLine,
-            Receive_Info
-        };
+                GDB_Stop_Start,
+                Queue,
+                Command,
+                CommandResult,
+                ProgramState,
+                Event,
+                Transmit,
+                Receive,
+                Receive_NoLine,
+                Receive_Info
+            };
 
-    public:
-        LogPaneLogger(Debugger_GDB_MI * dbgGDB);
-        ~LogPaneLogger();
+        public:
+            LogPaneLogger(Debugger_GDB_MI * dbgGDB);
+            ~LogPaneLogger();
 
-        static void LogGDBMsgType(wxString const & functionName, int const iLineNumber, wxString const & msg, LineType type = LineType::Error);
+            static void LogGDBMsgType(wxString const & functionName, int const iLineNumber, wxString const & msg, LineType type = LineType::Error);
 
-    private:
-        static Debugger_GDB_MI * m_dbgGDB;
-};
+        private:
+            static Debugger_GDB_MI * m_dbgGDB;
+    };
 } //namespace dbg_mi
 
 #endif // _DEBUGGER_GDB_MI_GDB_LOGGER_H_

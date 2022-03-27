@@ -31,10 +31,9 @@ class Compiler;
 namespace dbg_mi
 {
 
-class DebuggerConfiguration;
+    class DebuggerConfiguration;
 
 } // namespace dbg_mi
-
 
 class Debugger_GDB_MI : public cbDebuggerPlugin
 {
@@ -46,16 +45,14 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
 
     public:
         virtual void SetupToolsMenu(wxMenu & menu);
-        virtual bool ToolMenuEnabled() const {
+        virtual bool ToolMenuEnabled() const
+        {
             return true;
         }
 
         virtual bool SupportsFeature(cbDebuggerFeature::Flags flag);
-
         virtual cbDebuggerConfiguration * LoadConfig(const ConfigManagerWrapper & config);
-
         dbg_mi::DebuggerConfiguration & GetActiveConfigEx();
-
         virtual bool Debug(bool breakOnEntry);
         virtual void Continue();
         virtual bool RunToCursor(const wxString & filename, int line, const wxString & line_text);
@@ -71,7 +68,8 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual bool IsStopped() const;
         virtual bool IsBusy() const;
         virtual int GetExitCode() const;
-        void SetExitCode(int code) {
+        void SetExitCode(int code)
+        {
             m_exit_code = code;
         }
 
@@ -109,16 +107,12 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual void ExpandWatch(cb::shared_ptr<cbWatch> watch);
         virtual void CollapseWatch(cb::shared_ptr<cbWatch> watch);
         virtual void UpdateWatch(cb::shared_ptr<cbWatch> watch);
-
         virtual void SendCommand(const wxString & cmd, bool debugLog);
-
         virtual void AttachToProcess(const wxString & pid);
         virtual void DetachFromProcess();
         virtual bool IsAttachedToProcess() const;
-
         virtual void GetCurrentPosition(wxString & filename, int & line);
         virtual void RequestUpdate(DebugWindows window);
-
         virtual void OnValueTooltip(const wxString & token, const wxRect & evalRect);
         virtual bool ShowValueTooltip(int style);
     protected:
@@ -147,10 +141,12 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
 
     protected:
         virtual void ConvertDirectory(wxString & /*str*/, wxString /*base*/, bool /*relative*/);
-        virtual cbProject * GetProject() {
+        virtual cbProject * GetProject()
+        {
             return m_project;
         }
-        virtual void ResetProject() {
+        virtual void ResetProject()
+        {
             m_project = NULL;
         }
         virtual void CleanupWhenProjectClosed(cbProject * project);
@@ -159,15 +155,18 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
     public:
         void UpdateWhenStopped();
         void UpdateOnFrameChanged(bool wait);
-        dbg_mi::CurrentFrame & GetCurrentFrame() {
+        dbg_mi::CurrentFrame & GetCurrentFrame()
+        {
             return m_current_frame;
         }
 
-        dbg_mi::GDBExecutor & GetGDBExecutor() {
+        dbg_mi::GDBExecutor & GetGDBExecutor()
+        {
             return m_executor;
         }
 
-        dbg_mi::LogPaneLogger * GetGDBLogger() {
+        dbg_mi::LogPaneLogger * GetGDBLogger()
+        {
             return m_pLogger;
         }
     private:
@@ -176,12 +175,9 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void OnGDBOutput(wxCommandEvent & event);
         void OnGDBError(wxCommandEvent & event);
         void OnGDBTerminated(wxCommandEvent & event);
-
         void OnTimer(wxTimerEvent & event);
         void OnIdle(wxIdleEvent & event);
-
         void OnMenuInfoCommandStream(wxCommandEvent & event);
-
         int LaunchDebugger(wxString const & debugger, wxString const & debuggee, wxString const & args,
                            wxString const & working_dir, int pid, bool console, StartType start_type);
 
@@ -190,14 +186,12 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void DoSendCommand(const wxString & cmd);
         void RunQueue();
         void ParseOutput(wxString const & str);
-
         bool SelectCompiler(cbProject & project, Compiler *& compiler,
                             ProjectBuildTarget *& target, long pid_to_attach);
         int StartDebugger(cbProject * project, StartType startType);
         void CommitBreakpoints(bool force);
         void CommitRunCommand(wxString const & command);
         void CommitWatches();
-
         void KillConsole();
 
     private:
@@ -207,17 +201,13 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
         dbg_mi::LogPaneLogger * m_pLogger;
-
         typedef std::vector<cb::shared_ptr<dbg_mi::Breakpoint> > Breakpoints;
-
         Breakpoints m_breakpoints;
         Breakpoints m_temporary_breakpoints;
         dbg_mi::BacktraceContainer m_backtrace;
         dbg_mi::ThreadsContainer m_threads;
         dbg_mi::WatchesContainer m_watches;
-
         dbg_mi::TextInfoWindow * m_command_stream_dialog;
-
         dbg_mi::CurrentFrame m_current_frame;
         int m_exit_code;
         int m_console_pid;

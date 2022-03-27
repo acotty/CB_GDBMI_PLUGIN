@@ -8,88 +8,90 @@
 
 namespace dbg_mi
 {
-void Breakpoint::SetEnabled(bool flag)
-{
-}
-
-wxString Breakpoint::GetLocation() const
-{
-    return m_filename;
-}
-
-int Breakpoint::GetLine() const
-{
-    return m_line;
-}
-
-wxString Breakpoint::GetLineString() const
-{
-    return wxString::Format("%d", m_line);
-}
-
-wxString Breakpoint::GetType() const
-{
-    return _("Code");
-}
-
-wxString Breakpoint::GetInfo() const
-{
-    return wxEmptyString;
-}
-
-bool Breakpoint::IsEnabled() const
-{
-    return m_enabled;
-}
-
-bool Breakpoint::IsVisibleInEditor() const
-{
-    return true;
-}
-
-bool Breakpoint::IsTemporary() const
-{
-    return m_temporary;
-}
-
-cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & watches)
-{
-    size_t expLength = expression.length();
-    for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
+    void Breakpoint::SetEnabled(bool flag)
     {
-        if (expression.StartsWith(it->get()->GetID()))
+    }
+
+    wxString Breakpoint::GetLocation() const
+    {
+        return m_filename;
+    }
+
+    int Breakpoint::GetLine() const
+    {
+        return m_line;
+    }
+
+    wxString Breakpoint::GetLineString() const
+    {
+        return wxString::Format("%d", m_line);
+    }
+
+    wxString Breakpoint::GetType() const
+    {
+        return _("Code");
+    }
+
+    wxString Breakpoint::GetInfo() const
+    {
+        return wxEmptyString;
+    }
+
+    bool Breakpoint::IsEnabled() const
+    {
+        return m_enabled;
+    }
+
+    bool Breakpoint::IsVisibleInEditor() const
+    {
+        return true;
+    }
+
+    bool Breakpoint::IsTemporary() const
+    {
+        return m_temporary;
+    }
+
+    cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & watches)
+    {
+        size_t expLength = expression.length();
+
+        for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
         {
-            if (expLength == it->get()->GetID().length())
+            if (expression.StartsWith(it->get()->GetID()))
             {
-                return *it;
-            }
-            else
-            {
-                cb::shared_ptr<Watch> curr = *it;
-
-                while (curr)
+                if (expLength == it->get()->GetID().length())
                 {
-                    cb::shared_ptr<Watch> temp = curr;
-                    curr = cb::shared_ptr<Watch>();
+                    return *it;
+                }
+                else
+                {
+                    cb::shared_ptr<Watch> curr = *it;
 
-                    for (int child = 0; child < temp->GetChildCount(); ++child)
+                    while (curr)
                     {
-                        cb::shared_ptr<Watch> p = cb::static_pointer_cast<Watch>(temp->GetChild(child));
-                        wxString id = p->GetID();
+                        cb::shared_ptr<Watch> temp = curr;
+                        curr = cb::shared_ptr<Watch>();
 
-                        if (expression.StartsWith(id))
+                        for (int child = 0; child < temp->GetChildCount(); ++child)
                         {
-                            if (expLength == id.length())
+                            cb::shared_ptr<Watch> p = cb::static_pointer_cast<Watch>(temp->GetChild(child));
+                            wxString id = p->GetID();
+
+                            if (expression.StartsWith(id))
                             {
-                                return p;
-                            }
-                            else
-                            {
-                                if ((expLength > id.length()) && (expression[id.length()] == '.'))
-                                 {
-                                    // Go into sub child
-                                    curr = p;
-                                    break;
+                                if (expLength == id.length())
+                                {
+                                    return p;
+                                }
+                                else
+                                {
+                                    if ((expLength > id.length()) && (expression[id.length()] == '.'))
+                                    {
+                                        // Go into sub child
+                                        curr = p;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -97,9 +99,8 @@ cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & 
                 }
             }
         }
-    }
 
-    return cb::shared_ptr<Watch>();
-}
+        return cb::shared_ptr<Watch>();
+    }
 
 } // namespace dbg_mi
