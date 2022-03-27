@@ -16,12 +16,23 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Fix broken items in the list.
+1. Fix broken items in the list .
+    a) CPU Registers
+    b) Memory dump
+    c) Memory view
+    d) Disable break point
+    e) Conditional break points:
+        - add
+        - edit
+        - update
+        - remove
+    d) Disassembly
+    
 
 ## Medium Priority
 
 1. Add control to vary the amount/type of logging
-2. Publish plign to github
+2. Publish pluign to github
 
 ## Low Priority
 
@@ -53,12 +64,12 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |  * Array of simple structures                              | 26MAR2022 |    Pass      |   
 |  * Complex structures                                      | 26MAR2022 |    Pass      |
 |* Breakpoints                                               |           |              |
-|  * adding breakpoint after the start of the debugger       | 26MAR2022 |    Pass      |
-|  * Debug menu option to Toggle breakpoint (F5)             | 26MAR2022 |    Pass      |
+|  * adding break point after the start of the debugger      | 26MAR2022 |    Pass      |
+|  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass      |
 |  * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass      |
-|  * Disable breakpoint                                      | 26MAR2022 |   *Broken*   |
-|  * Remove breakpoint                                       | 26MAR2022 |    Pass      |
-|  * Edit breakpoint                                         | 26MAR2022 |   *Broken*   |
+|  * Disable break point                                     | 26MAR2022 |   *Broken*   |
+|  * Remove break point                                      | 26MAR2022 |    Pass      |
+|  * Edit break point                                        | 26MAR2022 |   *Broken*   |
 |    * ignore count before break                             | 26MAR2022 |   *Broken*   |
 |    * break when expression is true                         | 26MAR2022 |   *Broken*   |
 |* Debug show Running Threads                                | 26MAR2022 |    Pass      |
