@@ -1302,6 +1302,7 @@ cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::GetBreakpoint(int index)
 {
     return cb::static_pointer_cast<cbBreakpoint>(m_breakpoints[index]);
 }
+
 cb::shared_ptr<const cbBreakpoint> Debugger_GDB_MI::GetBreakpoint(int index) const
 {
     return cb::static_pointer_cast<const cbBreakpoint>(m_breakpoints[index]);
@@ -1491,7 +1492,58 @@ void Debugger_GDB_MI::ShiftBreakpoint(int index, int lines_to_shift)
 
 void Debugger_GDB_MI::EnableBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint, bool enable)
 {
-#warning "not implemented"
+    Breakpoints::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
+
+    if (it != m_breakpoints.end())
+    {
+
+        int index = (*it)->GetIndex();
+
+        if ((*it)->IsEnabled() == enable)
+        {
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                     __LINE__,
+                                     wxString::Format(_("breakpoint found but no change needed: %s:%d"), breakpoint->GetLocation(), breakpoint->GetLine()),
+                                     dbg_mi::LogPaneLogger::LineType::Debug);
+            // N change required!
+            return;
+        }
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                 __LINE__,
+                                 wxString::Format(_("breakpoint found and change needed: %s:%d"), breakpoint->GetLocation(), breakpoint->GetLine()),
+                                 dbg_mi::LogPaneLogger::LineType::Debug);
+        if (index != -1)
+        {
+            wxString wxBreakCommand;
+            if (enable)
+            {
+                wxBreakCommand = wxString::Format("-break-enable %d", index);
+            }
+            else
+            {
+                wxBreakCommand = wxString::Format("-break-disable %d", index);
+            }
+            if (m_executor.IsStopped())
+            {
+                AddStringCommand(wxBreakCommand);
+            }
+            else
+            {
+                m_executor.Interupt();
+                AddStringCommand(wxBreakCommand);
+                Continue();
+            }
+        }
+        (*it)->SetEnabled(enable);
+    }
+    else
+    {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                 __LINE__,
+                                 wxString::Format(_("Breakpoint NOT FOUND: %s:%d"), breakpoint->GetLocation(), breakpoint->GetLine()),
+                                 dbg_mi::LogPaneLogger::LineType::Warning);
+
+    }
 }
 
 int Debugger_GDB_MI::GetThreadsCount() const
@@ -1771,7 +1823,6 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
 
         case CPURegisters:
         {
-#warning "WORK IN PROGRESS!!!!"
             m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s WORK IN PROGRESS FOR CPURegisters window!", __FILE__), dbg_mi::LogPaneLogger::LineType::Error);
             m_actions.Add(new dbg_mi::GenerateCPUInfoRegisters(m_pLogger));
         }

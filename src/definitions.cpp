@@ -10,6 +10,7 @@ namespace dbg_mi
 {
     void Breakpoint::SetEnabled(bool flag)
     {
+        m_enabled = flag;
     }
 
     wxString Breakpoint::GetLocation() const

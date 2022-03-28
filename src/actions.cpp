@@ -18,24 +18,15 @@
 
 namespace dbg_mi
 {
-
-    void BreakpointAddAction::OnStart()
+    BreakpointAddAction::BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, LogPaneLogger * logger) :
+        m_breakpoint(breakpoint),
+        m_logger(logger)
     {
-        wxString cmd("-break-insert -f ");
+    }
 
-        if (m_breakpoint->HasCondition())
-        {
-            cmd += "-c " + m_breakpoint->GetCondition() + " ";
-        }
-
-        if (m_breakpoint->HasIgnoreCount())
-        {
-            cmd += "-i " + wxString::Format("%d ", m_breakpoint->GetIgnoreCount());
-        }
-
-        cmd += wxString::Format("%s:%d", m_breakpoint->GetLocation(), m_breakpoint->GetLine());
-        m_initial_cmd = Execute(cmd);
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString()), LogPaneLogger::LineType::Debug);
+    BreakpointAddAction::~BreakpointAddAction()
+    {
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::destructor"), LogPaneLogger::LineType::Info);
     }
 
     void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
@@ -110,6 +101,25 @@ namespace dbg_mi
                 Finish();
             }
         }
+    }
+
+    void BreakpointAddAction::OnStart()
+    {
+        wxString cmd("-break-insert -f ");
+
+        if (m_breakpoint->HasCondition())
+        {
+            cmd += "-c " + m_breakpoint->GetCondition() + " ";
+        }
+
+        if (m_breakpoint->HasIgnoreCount())
+        {
+            cmd += "-i " + wxString::Format("%d ", m_breakpoint->GetIgnoreCount());
+        }
+
+        cmd += wxString::Format("%s:%d", m_breakpoint->GetLocation(), m_breakpoint->GetLine());
+        m_initial_cmd = Execute(cmd);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString()), LogPaneLogger::LineType::Debug);
     }
 
     GenerateBacktrace::GenerateBacktrace(SwitchToFrameInvoker * switch_to_frame, BacktraceContainer & backtrace,

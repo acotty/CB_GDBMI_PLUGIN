@@ -17,8 +17,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## High Priority
 1. Fix broken items in the list. So far they are:
-    a) Disable break point
-    b) Show tty for console projects 
+    a) Show tty for console projects 
    
 ## Medium Priority
 1. Conditional break points:
@@ -65,7 +64,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |  * adding break point after the start of the debugger      | 26MAR2022 |    Pass      |
 |  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass      |
 |  * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass      |
-|  * Disable break point                                     | 26MAR2022 |   *Broken*   |
+|  * Disable/Enable break point via pop up menu              | 28MAR2022 |    Pass      |
 |  * Remove break point                                      | 26MAR2022 |    Pass      |
 |  * Edit break point                                        | 26MAR2022 |   *Broken*   |
 |    * ignore count before break                             | 26MAR2022 |   *Broken*   |
@@ -94,3 +93,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 26MAR2022 Done - Project file now creates the debugger_gdbmi.cbplugin file with the non striped DLL (still includes debugging)
 * 27MAR2022 Done - CPU Registers showing and updating
 * 28MAR2022 Done - Examine Memory Dialog now working
+* 28MAR2022 Done - fixed Disable/enable break point via pop up menu

@@ -63,16 +63,8 @@ namespace dbg_mi
     class BreakpointAddAction : public Action
     {
         public:
-            BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, LogPaneLogger * logger) :
-                m_breakpoint(breakpoint),
-                m_logger(logger)
-            {
-            }
-
-            virtual ~BreakpointAddAction()
-            {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::destructor"), LogPaneLogger::LineType::Info);
-            }
+            BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, LogPaneLogger * logger);
+            virtual ~BreakpointAddAction();
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
