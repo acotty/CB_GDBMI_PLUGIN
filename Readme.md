@@ -16,19 +16,17 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Fix broken items in the list. So far they are:
-    a) Show tty for console projects 
+1. Debug Memory view dialog
    
 ## Medium Priority
-1. Conditional break points:
+1. Disassembly view
+2. Conditional break points:
         - add
         - edit
         - update
         - remove
-2. Debug Memory view dialog
-3. Disassembly view
-4. Add control to vary the amount/type of logging
-5. Publish plugin to github
+3. Add control to vary the amount/type of logging
+4. Publish plugin to github
 
 ## Low Priority
 
@@ -76,7 +74,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |* Debug show Disassembly                                    | 26MAR2022 |   *Broken*   |
 |* Debug show Examine Memory Dialog                          | 28MAR2022 |    Pass      | 
 |* Debug show Memory view                                    | 26MAR2022 |   *Broken*   | 
-|* Show tty for console projects                             | 26MAR2022 |   *Broken*   |
+|* Show tty for console projects                             | 28MAR2022 |    Pass      |
 
 # COMPLETED ITEMS
 
@@ -94,3 +92,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 27MAR2022 Done - CPU Registers showing and updating
 * 28MAR2022 Done - Examine Memory Dialog now working
 * 28MAR2022 Done - fixed Disable/enable break point via pop up menu
+* 28MAR2022 Done - Show tty for console projects 

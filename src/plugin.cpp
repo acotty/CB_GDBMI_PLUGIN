@@ -907,7 +907,7 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
 
     wxString cmd;
     cmd << debugger;
-    //    cmd << _T(" -nx");          // don't run .gdbinit
+    //    cmd << " -nx";          // don't run .gdbinit
     cmd << " -fullname ";   // report full-path filenames when breaking
     cmd << " -quiet";       // don't display version on startup
     cmd << " --interpreter=mi";
@@ -960,6 +960,13 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & 
     {
         m_actions.Add(new dbg_mi::SimpleAction("-enable-pretty-printing"));
     }
+
+#ifdef __WXMSW__
+    if (console)
+    {
+        DoSendCommand("set new-console on");
+    }
+#endif
 
     wxArrayString comandLines = GetArrayFromString(active_config.GetInitialCommands(), '\n');
     size_t CommandLineCount = comandLines.GetCount();
