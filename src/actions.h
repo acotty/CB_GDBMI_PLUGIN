@@ -202,6 +202,8 @@ namespace dbg_mi
         private:
             wxString m_address;
             int m_length;
+            CommandID m_examine_memory_request_id;
+
             LogPaneLogger * m_logger;
     };
 

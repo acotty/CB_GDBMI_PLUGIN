@@ -17,21 +17,21 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## High Priority
 1. Fix broken items in the list. So far they are:
-    a) Memory dump
-    b) Memory view
-    c) Disable break point
-    d) Conditional break points:
+    a) Call stack:
+        - Double click on entry should open and go to the line
+    b) Disable break point
+    c) Show tty for console projects 
+   
+## Medium Priority
+1. Conditional break points:
         - add
         - edit
         - update
         - remove
-    e) Disassembly
-    
-
-## Medium Priority
-
-1. Add control to vary the amount/type of logging
-2. Publish pluign to github
+2. Debug Memory view dialog
+3. Disassembly view
+4. Add control to vary the amount/type of logging
+5. Publish plugin to github
 
 ## Low Priority
 
@@ -73,10 +73,11 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |    * ignore count before break                             | 26MAR2022 |   *Broken*   |
 |    * break when expression is true                         | 26MAR2022 |   *Broken*   |
 |* Debug show Running Threads                                | 26MAR2022 |    Pass      |
-|* Debug show CPU Registers                                  | 26MAR2022 |   *Broken*   |
+|* Debug show CPU Registers                                  | 27MAR2022 |    Pass      |
 |* Debug show Call Stack                                     | 26MAR2022 |    Pass      |
+|  * Double click on entry should open and go to the line    | 28MAR2022 |   *Broken*   |
 |* Debug show Disassembly                                    | 26MAR2022 |   *Broken*   |
-|* Debug show Memory dump                                    | 26MAR2022 |   *Broken*   | 
+|* Debug show Examine Memory Dialog                          | 28MAR2022 |    Pass      | 
 |* Debug show Memory view                                    | 26MAR2022 |   *Broken*   | 
 |* Show tty for console projects                             | 26MAR2022 |   *Broken*   |
 
@@ -94,3 +95,4 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 * 26MAR2022 Done - First pass of the check list completed
 * 26MAR2022 Done - Project file now creates the debugger_gdbmi.cbplugin file with the non striped DLL (still includes debugging)
 * 27MAR2022 Done - CPU Registers showing and updating
+* 28MAR2022 Done - Examine Memory Dialog now working

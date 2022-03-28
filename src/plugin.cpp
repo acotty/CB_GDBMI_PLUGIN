@@ -624,6 +624,10 @@ void Debugger_GDB_MI::UpdateWhenStopped()
     {
         RequestUpdate(CPURegisters);
     }
+    if (dbg_manager->UpdateExamineMemory())
+    {
+        RequestUpdate(ExamineMemory);
+    }
     if (dbg_manager->UpdateDisassembly())
     {
         RequestUpdate(Disassembly);
