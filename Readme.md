@@ -17,10 +17,8 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## High Priority
 1. Fix broken items in the list. So far they are:
-    a) Call stack:
-        - Double click on entry should open and go to the line
-    b) Disable break point
-    c) Show tty for console projects 
+    a) Disable break point
+    b) Show tty for console projects 
    
 ## Medium Priority
 1. Conditional break points:
@@ -75,7 +73,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |* Debug show Running Threads                                | 26MAR2022 |    Pass      |
 |* Debug show CPU Registers                                  | 27MAR2022 |    Pass      |
 |* Debug show Call Stack                                     | 26MAR2022 |    Pass      |
-|  * Double click on entry should open and go to the line    | 28MAR2022 |   *Broken*   |
+|  * Double click on entry should open and go to the line    | 28MAR2022 |    Pass      |
 |* Debug show Disassembly                                    | 26MAR2022 |   *Broken*   |
 |* Debug show Examine Memory Dialog                          | 28MAR2022 |    Pass      | 
 |* Debug show Memory view                                    | 26MAR2022 |   *Broken*   | 
