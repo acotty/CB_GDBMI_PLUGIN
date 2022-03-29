@@ -53,6 +53,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual bool SupportsFeature(cbDebuggerFeature::Flags flag);
         virtual cbDebuggerConfiguration * LoadConfig(const ConfigManagerWrapper & config);
         dbg_mi::DebuggerConfiguration & GetActiveConfigEx();
+        cbConfigurationPanel* GetProjectConfigurationPanel(wxWindow* parent, cbProject* project);
         virtual bool Debug(bool breakOnEntry);
         virtual void Continue();
         virtual bool RunToCursor(const wxString & filename, int line, const wxString & line_text);

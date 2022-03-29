@@ -19,21 +19,31 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 1. Conditional break points:
     Done:
         - updated GDBBreakpoint class with additional variables used in existing GDB debugger
-        - wired up breakpoints.xrc
-        - Edit breakpoint displays the breakpoints.xrc dialog
+        - wired up breakpoints.xrc to display the dialog
+        - added hacked editbreakpointdlg.cpp/.h files into the project
     Outstanding:
         - add
         - edit
         - update
         - remove
+        - load variables/data
+        - save variables/data
 
 2. Edit watches:
+    Done:
+        - wire up EditWatchDlg to display the dialog
+        - added hacked editwatchdlg.cpp/.h files into the project
     Outstanding:
-        - wire up "new" EditWatchDlg instead of existing dialog
+        - load variables/data
+        - save variables/data
 
 3. Check out the missing resource files:
-    * debugger_project_options_dlg.xrc
-        - mising debuggeroptionsprjdlg.cpp/.h
+    Done:
+        - wire up debugger_project_options_dlg.xrc to display the dialog
+        - added hacked debuggeroptionsprjdlg.cpp/.h files into the project
+    Outstanding:
+        - load variables/data
+        - save variables/data
 
 ## Medium Priority
 1. Debug -> Memory view dialog
@@ -69,44 +79,44 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## Check List
 
-|                  Item                                      |   Date    |   Result     |
-|------------------------------------------------------------|-----------|--------------|
-|* Stepping                                                  |           |              |
-|  * Start/Continue       (F8)                               | 26MAR2022 |    Pass      |
-|  * Break debugger                                          | 26MAR2022 |    Pass      |
-|  * Stop debugger        (Shift-F8)                         | 26MAR2022 |    Pass      |
-|  * Run to cursor        (F4)                               | 26MAR2022 |    Pass      |
-|  * Next line            (F7)                               | 26MAR2022 |    Pass      |
-|  * Step Into            (Shift-F7)                         | 26MAR2022 |    Pass      |
-|  * Step out             (Ctrl-F7)                          | 26MAR2022 |    Pass      |
-|  * Next instruction     (Alt-F7)                           | 25MAR2022 | To be tested |
-|  * Step into instruction(ALT-Shift-F7)                     | 25MAR2022 | To be tested |
-|  * Set next statement                                      | 25MAR2022 | To be tested |
-|  * Notification that the debugging has ended               | 26MAR2022 |    Pass      |
-|* Watches                                                   |           |              |
-|  * Simple data types                                       | 26MAR2022 |    Pass      |
-|  * Simple structure                                        | 26MAR2022 |    Pass      |   
-|  * Array of simple structures                              | 26MAR2022 |    Pass      |   
-|  * Complex structures                                      | 26MAR2022 |    Pass      |
-|  * Edit watches                                            | 29MAR2022 |  *Broken*    |
-|* Breakpoints                                               |           |              |
-|  * adding break point after the start of the debugger      | 26MAR2022 |    Pass      |
-|  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass      |
-|  * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass      |
-|  * Disable/Enable break point via pop up menu              | 28MAR2022 |    Pass      |
-|  * Remove break point                                      | 26MAR2022 |    Pass      |
-|  * Edit break point                                        | 26MAR2022 |   *Broken*   |
-|    * ignore count before break                             | 26MAR2022 |   *Broken*   |
-|    * break when expression is true                         | 26MAR2022 |   *Broken*   |
-|* Debug show Running Threads                                | 26MAR2022 |    Pass      |
-|* Debug show CPU Registers                                  | 27MAR2022 |    Pass      |
-|* Debug show Call Stack                                     | 26MAR2022 |    Pass      |
-|  * Double click on entry should open and go to the line    | 28MAR2022 |    Pass      |
-|* Debug show Disassembly                                    | 26MAR2022 |   *Broken*   |
-|* Debug -> Memory Dump Dialog                               | 28MAR2022 |    Pass      | 
-|* Debug -> Memory view Dialog                               | 26MAR2022 |   *Broken*   | 
-|* Show tty for console projects                             | 28MAR2022 |    Pass      |
-|* Projects - edit see debuggeroptionsprjdlg                 | 29MAR2022 |  *Broken*    |
+|                  Item                                      |   Date    |   Result   |
+|------------------------------------------------------------|-----------|------------|
+|* Stepping                                                  |           |            |
+|  * Start/Continue       (F8)                               | 26MAR2022 |    Pass    |
+|  * Break debugger                                          | 26MAR2022 |    Pass    |
+|  * Stop debugger        (Shift-F8)                         | 26MAR2022 |    Pass    |
+|  * Run to cursor        (F4)                               | 26MAR2022 |    Pass    |
+|  * Next line            (F7)                               | 26MAR2022 |    Pass    |
+|  * Step Into            (Shift-F7)                         | 26MAR2022 |    Pass    |
+|  * Step out             (Ctrl-F7)                          | 26MAR2022 |    Pass    |
+|  * Next instruction     (Alt-F7)                           | 25MAR2022 |   To test  |
+|  * Step into instruction(ALT-Shift-F7)                     | 25MAR2022 |   To test  |
+|  * Set next statement                                      | 25MAR2022 |   To test  |
+|  * Notification that the debugging has ended               | 26MAR2022 |    Pass    |
+|* Watches                                                   |           |            |
+|  * Simple data types                                       | 26MAR2022 |    Pass    |
+|  * Simple structure                                        | 26MAR2022 |    Pass    |
+|  * Array of simple structures                              | 26MAR2022 |    Pass    |
+|  * Complex structures                                      | 26MAR2022 |    Pass    |
+|  * Edit watches                                            | 29MAR2022 |  *Broken*  |
+|* Breakpoints                                               |           |            |
+|  * adding break point after the start of the debugger      | 26MAR2022 |    Pass    |
+|  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass    |
+|  * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass    |
+|  * Disable/Enable break point via pop up menu              | 28MAR2022 |    Pass    |
+|  * Remove break point                                      | 26MAR2022 |    Pass    |
+|  * Edit break point                                        | 26MAR2022 |  *Broken*  |
+|    * ignore count before break                             | 26MAR2022 |  *Broken*  |
+|    * break when expression is true                         | 26MAR2022 |  *Broken*  |
+|* Debug show Running Threads                                | 26MAR2022 |    Pass    |
+|* Debug show CPU Registers                                  | 27MAR2022 |    Pass    |
+|* Debug show Call Stack                                     | 26MAR2022 |    Pass    |
+|  * Double click on entry should open and go to the line    | 28MAR2022 |    Pass    |
+|* Debug show Disassembly                                    | 26MAR2022 |  *Broken*  |
+|* Debug -> Memory Dump Dialog                               | 28MAR2022 |    Pass    | 
+|* Debug -> Memory view Dialog                               | 26MAR2022 |  *Broken*  | 
+|* Show tty for console projects                             | 28MAR2022 |    Pass    |
+|* Projects - edit see debuggeroptionsprjdlg                 | 29MAR2022 |  *Broken*  |
 
 # COMPLETED ITEMS
 

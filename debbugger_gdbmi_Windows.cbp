@@ -116,10 +116,7 @@
 		<Unit filename="src/definitions.h" />
 		<Unit filename="src/editbreakpointdlg.cpp" />
 		<Unit filename="src/editbreakpointdlg.h" />
-		<Unit filename="src/editwatchdlg.cpp">
-			<Option compile="0" />
-			<Option link="0" />
-		</Unit>
+		<Unit filename="src/editwatchdlg.cpp" />
 		<Unit filename="src/editwatchdlg.h" />
 		<Unit filename="src/escape.cpp" />
 		<Unit filename="src/escape.h" />

@@ -37,6 +37,8 @@
 #include "gdb_logger.h"
 #include "databreakpointdlg.h"
 #include "editbreakpointdlg.h"
+#include "editwatchdlg.h"
+#include "debuggeroptionsprjdlg.h"
 
 namespace
 {
@@ -173,6 +175,13 @@ dbg_mi::DebuggerConfiguration & Debugger_GDB_MI::GetActiveConfigEx()
 {
     return static_cast<dbg_mi::DebuggerConfiguration &>(GetActiveConfig());
 }
+
+cbConfigurationPanel* Debugger_GDB_MI::GetProjectConfigurationPanel(wxWindow* parent, cbProject* project)
+{
+    DebuggerOptionsProjectDlg* dlg = new DebuggerOptionsProjectDlg(parent, this, project);
+    return dlg;
+}
+
 
 bool Debugger_GDB_MI::SelectCompiler(cbProject & project, Compiler *& compiler,
                                      ProjectBuildTarget *& target, long pid_to_attach)
@@ -1677,10 +1686,29 @@ bool Debugger_GDB_MI::HasWatch(cb::shared_ptr<cbWatch> watch)
     return it != m_watches.end();
 }
 
-void Debugger_GDB_MI::ShowWatchProperties(cb::shared_ptr<cbWatch> /*watch*/)
+void Debugger_GDB_MI::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
 {
-#warning "not implemented"
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> NOT IMPLEMENTED< BUT CALLED <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
+#warning +-------------------------------------------------------+
+#warning |        ShowWatchProperties - WORK IN PROGRESS              |
+#warning +-------------------------------------------------------+
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> WORK IN PROGRESS <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
+
+    // not supported for child nodes or memory ranges!
+#warning "Following line from exisitng GDB code"
+    //if (watch->GetParent() || IsMemoryRangeWatch(watch))
+    if (watch->GetParent())
+    {
+        return;
+    }
+
+    cb::shared_ptr<dbg_mi::GDBWatch> real_watch = cb::static_pointer_cast<dbg_mi::GDBWatch>(watch);
+    EditWatchDlg dlg(real_watch, nullptr);
+    PlaceWindow(&dlg);
+    if (dlg.ShowModal() == wxID_OK)
+    {
+#warning "Following line from exisitng GDB code"
+//        DoWatches();
+    }
 }
 
 bool Debugger_GDB_MI::SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString & value)

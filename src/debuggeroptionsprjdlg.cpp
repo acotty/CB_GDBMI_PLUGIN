@@ -3,20 +3,20 @@
  * http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-#include <sdk.h>
-#include "debuggeroptionsprjdlg.h"
 #include <wx/intl.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/listbox.h>
 #include <wx/button.h>
 #include <wx/choice.h>
 #include <wx/checkbox.h>
-#include <cbproject.h>
-#include <editpathdlg.h>
-#include <manager.h>
-#include <globals.h>
 
-// #include "debuggergdb.h"
+#include "sdk.h"
+#include "cbproject.h"
+#include "editpathdlg.h"
+#include "manager.h"
+#include "globals.h"
+
+#include "debuggeroptionsprjdlg.h"
 
 BEGIN_EVENT_TABLE(DebuggerOptionsProjectDlg, wxPanel)
     EVT_UPDATE_UI(-1,                   DebuggerOptionsProjectDlg::OnUpdateUI)
@@ -26,7 +26,7 @@ BEGIN_EVENT_TABLE(DebuggerOptionsProjectDlg, wxPanel)
     EVT_LISTBOX(XRCID("lstTargets"),    DebuggerOptionsProjectDlg::OnTargetSel)
 END_EVENT_TABLE()
 
-DebuggerOptionsProjectDlg::DebuggerOptionsProjectDlg(wxWindow* parent, DebuggerGDB* debugger, cbProject* project)
+DebuggerOptionsProjectDlg::DebuggerOptionsProjectDlg(wxWindow* parent, Debugger_GDB_MI* debugger, cbProject* project)
     : m_pDBG(debugger),
     m_pProject(project),
     m_LastTargetSel(-1)
@@ -34,8 +34,9 @@ DebuggerOptionsProjectDlg::DebuggerOptionsProjectDlg(wxWindow* parent, DebuggerG
     if (!wxXmlResource::Get()->LoadPanel(this, parent, "pnlDebuggerProjectOptionsGDBMI"))
         return;
 
-    m_OldPaths = DebuggerGDB::ParseSearchDirs(*project);
-    m_OldRemoteDebugging = DebuggerGDB::ParseRemoteDebuggingMap(*project);
+#warning DebuggerOptionsProjectDlg missing functionality
+//    m_OldPaths = dbg_mi::DebuggerGDB::ParseSearchDirs(*project);
+//    m_OldRemoteDebugging = dbg_mi::DebuggerGDB::ParseRemoteDebuggingMap(*project);
     m_CurrentRemoteDebugging = m_OldRemoteDebugging;
 
     wxListBox* control = XRCCTRL(*this, "lstSearchDirs", wxListBox);
@@ -317,12 +318,14 @@ void DebuggerOptionsProjectDlg::OnApply()
 
     if (m_OldPaths != newPaths)
     {
-        DebuggerGDB::SetSearchDirs(*m_pProject, newPaths);
+#warning DebuggerOptionsProjectDlg missing functionality
+//        dbg_mi::DebuggerGDB::SetSearchDirs(*m_pProject, newPaths);
         m_pProject->SetModified(true);
     }
     if (m_OldRemoteDebugging != m_CurrentRemoteDebugging)
     {
-        DebuggerGDB::SetRemoteDebuggingMap(*m_pProject, m_CurrentRemoteDebugging);
+#warning DebuggerOptionsProjectDlg missing functionality
+//        dbg_mi::DebuggerGDB::SetRemoteDebuggingMap(*m_pProject, m_CurrentRemoteDebugging);
         m_pProject->SetModified(true);
     }
 }

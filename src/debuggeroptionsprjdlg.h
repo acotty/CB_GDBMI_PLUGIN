@@ -11,16 +11,17 @@
 #include <settings.h>
 
 #include "remotedebugging.h"
+#include "plugin.h"
 
 class cbProject;
 class wxListBox;
-class DebuggerGDB;
+//class Debugger_GDB_MI;
 class CodeBlocksEvent;
 
 class DebuggerOptionsProjectDlg : public cbConfigurationPanel
 {
     public:
-        DebuggerOptionsProjectDlg(wxWindow* parent, DebuggerGDB* debugger, cbProject* project);
+        DebuggerOptionsProjectDlg(wxWindow* parent, Debugger_GDB_MI* debugger, cbProject* project);
         ~DebuggerOptionsProjectDlg() override;
 
         wxString GetTitle() const override { return _("Debugger"); }
@@ -40,7 +41,7 @@ class DebuggerOptionsProjectDlg : public cbConfigurationPanel
         void LoadCurrentRemoteDebuggingRecord();
         void SaveCurrentRemoteDebuggingRecord();
 
-        DebuggerGDB* m_pDBG;
+        Debugger_GDB_MI* m_pDBG;
         cbProject* m_pProject;
         wxArrayString m_OldPaths;
         RemoteDebuggingMap m_OldRemoteDebugging;
