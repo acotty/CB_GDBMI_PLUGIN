@@ -155,7 +155,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
     public:
         void UpdateWhenStopped();
         void UpdateOnFrameChanged(bool wait);
-        dbg_mi::CurrentFrame & GetCurrentFrame()
+        dbg_mi::GDBCurrentFrame & GetGDBCurrentFrame()
         {
             return m_current_frame;
         }
@@ -201,14 +201,16 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
         dbg_mi::LogPaneLogger * m_pLogger;
-        typedef std::vector<cb::shared_ptr<dbg_mi::Breakpoint> > Breakpoints;
-        Breakpoints m_breakpoints;
-        Breakpoints m_temporary_breakpoints;
-        dbg_mi::BacktraceContainer m_backtrace;
-        dbg_mi::ThreadsContainer m_threads;
-        dbg_mi::WatchesContainer m_watches;
-        dbg_mi::TextInfoWindow * m_command_stream_dialog;
-        dbg_mi::CurrentFrame m_current_frame;
+        typedef std::vector<cb::shared_ptr<dbg_mi::GDBBreakpoint> > GDBBreakpoints;
+        GDBBreakpoints m_breakpoints;
+        GDBBreakpoints m_temporary_breakpoints;
+        dbg_mi::GDBBacktraceContainer m_backtrace;
+        dbg_mi::GDBThreadsContainer m_threads;
+        dbg_mi::GDBWatchesContainer m_watches;
+        dbg_mi::GDBMemoryRangeWatchesContainer m_memoryRanges;
+        dbg_mi::GDBMapWatchesToType m_mapWatchesToType;
+        dbg_mi::GDBTextInfoWindow * m_command_stream_dialog;
+        dbg_mi::GDBCurrentFrame m_current_frame;
         int m_exit_code;
         int m_console_pid;
         int m_pid_attached;

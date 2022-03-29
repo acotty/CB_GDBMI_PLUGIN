@@ -11,6 +11,7 @@
 #include <tr1/memory>
 
 #include <wx/sizer.h>
+#include <wx/string.h>
 
 #include <debuggermanager.h>
 #include <scrollingdialog.h>
@@ -18,28 +19,60 @@
 namespace dbg_mi
 {
 
-    class Breakpoint : public cbBreakpoint
+    class GDBBreakpoint : public cbBreakpoint
     {
         public:
-            Breakpoint() :
+            enum BreakpointType
+            {
+                bptCode = 0,    ///< Normal file/line breakpoint
+                bptFunction,    ///< Function signature breakpoint
+                bptData         ///< Data breakpoint
+            };
+
+            GDBBreakpoint() :
+                m_type(bptCode),
                 m_project(nullptr),
-                m_index(-1),
+                m_filename(wxEmptyString),
                 m_line(-1),
-                m_enabled(true),
-                m_temporary(false)
-            {
-            }
-
-            Breakpoint(const wxString & filename, int line, cbProject * project) :
-                m_filename(filename),
-                m_project(project),
                 m_index(-1),
-                m_line(line),
+                m_temporary(false),
                 m_enabled(true),
-                m_temporary(false)
+                m_active(true),
+                m_useIgnoreCount(false),
+                m_ignoreCount(0),
+                m_useCondition(false),
+                m_wantsCondition(false),
+                m_address(0),
+                m_alreadySet(false),
+                m_breakOnRead(false),
+                m_breakOnWrite(true),
+                m_userData(0)
+
             {
             }
 
+            GDBBreakpoint(const wxString & filename, int line, cbProject * project) :
+                m_type(bptCode),
+                m_project(project),
+                m_filename(filename),
+                m_line(line),
+                m_index(-1),
+                m_temporary(false),
+                m_enabled(true),
+                m_active(true),
+                m_useIgnoreCount(false),
+                m_ignoreCount(0),
+                m_useCondition(false),
+                m_wantsCondition(false),
+                m_address(0),
+                m_alreadySet(false),
+                m_breakOnRead(false),
+                m_breakOnWrite(true),
+                m_userData(0)
+            {
+            }
+
+            // from cbBreakpoint
             virtual void SetEnabled(bool flag);
             virtual wxString GetLocation() const;
             virtual int GetLine() const;
@@ -50,6 +83,7 @@ namespace dbg_mi
             virtual bool IsVisibleInEditor() const;
             virtual bool IsTemporary() const;
 
+            // GDB additional
             int GetIndex() const
             {
                 return m_index;
@@ -85,25 +119,222 @@ namespace dbg_mi
             {
                 return m_project;
             }
+            BreakpointType get_type()
+            {
+                return m_type;
+            }
+            void set_type(BreakpointType type)
+            {
+                m_type = type;
+            }
+
+            wxString get_filename()
+            {
+                return m_filename;
+            }
+            void set_filename(wxString filename)
+            {
+                m_filename = filename;
+            }
+
+            int get_line()
+            {
+                return m_line;
+            }
+            void set_line(int line)
+            {
+                m_line = line;
+            }
+
+            long get_index()
+            {
+                return m_index;
+            }
+            void set_index(long index)
+            {
+                m_index = index;
+            }
+
+            bool get_temporary()
+            {
+                return m_temporary;
+            }
+            void set_temporary(bool temporary)
+            {
+                m_temporary = temporary;
+            }
+
+            bool get_enabled()
+            {
+                return m_enabled;
+            }
+            void set_enabled(bool enabled)
+            {
+                m_enabled = enabled;
+            }
+
+            bool get_active()
+            {
+                return m_active;
+            }
+            void set_active(bool active)
+            {
+                m_active = active;
+            }
+
+            bool get_useIgnoreCount()
+            {
+                return m_useIgnoreCount;
+            }
+            void set_useIgnoreCount(bool useIgnoreCount)
+            {
+                m_useIgnoreCount = useIgnoreCount;
+            }
+
+            int get_ignoreCount()
+            {
+                return m_ignoreCount;
+            }
+            void set_ignoreCount(int ignoreCount)
+            {
+                m_ignoreCount = ignoreCount;
+            }
+
+            bool get_useCondition()
+            {
+                return m_useCondition;
+            }
+            void set_useCondition(bool useCondition)
+            {
+                m_useCondition = useCondition;
+            }
+
+            bool get_wantsCondition()
+            {
+                return m_wantsCondition;
+            }
+            void set_wantsCondition(bool wantsCondition)
+            {
+                m_wantsCondition = wantsCondition;
+            }
+
+            wxString get_condition()
+            {
+                return m_condition;
+            }
+            void set_condition(wxString condition)
+            {
+                m_condition = condition;
+            }
+
+            wxString get_func()
+            {
+                return m_func;
+            }
+            void set_func(wxString func)
+            {
+                m_func = func;
+            }
+
+            unsigned get_address()
+            {
+                return m_address;
+            }
+            void set_address(unsigned long int address)
+            {
+                m_address = address;
+            }
+
+            bool get_alreadySet()
+            {
+                return m_alreadySet;
+            }
+            void set_alreadySet(bool alreadySet)
+            {
+                m_alreadySet = alreadySet;
+            }
+
+            wxString get_lineText()
+            {
+                return m_lineText;
+            }
+            void set_lineText(wxString lineText)
+            {
+                m_lineText = lineText;
+            }
+
+            wxString get_breakAddress()
+            {
+                return m_breakAddress;
+            }
+            void set_breakAddress(wxString breakAddress)
+            {
+                m_breakAddress = breakAddress;
+            }
+
+            bool get_breakOnRead()
+            {
+                return m_breakOnRead;
+            }
+            void set_breakOnRead(bool breakOnRead)
+            {
+                m_breakOnRead = breakOnRead;
+            }
+
+            bool get_breakOnWrite()
+            {
+                return m_breakOnWrite;
+            }
+            void set_breakOnWrite(bool breakOnWrite)
+            {
+                m_breakOnWrite = breakOnWrite;
+            }
+
+            void * get_userData()
+            {
+                return m_userData;
+            }
+            void set_userData(void * userData)
+            {
+                m_userData = userData;
+            }
 
         private:
-            wxString m_filename;
-            wxString m_condition;
-            cbProject * m_project;
-            int m_index;
-            int m_line;
-            bool m_enabled;
-            bool m_temporary;
+            BreakpointType m_type;          ///< The type of this breakpoint.
+
+            cbProject * m_project;          ///< The Project the file belongs to.
+            wxString m_filename;            ///< The filename for the breakpoint.
+            int m_line;                     ///< The line for the breakpoint.
+            //wxString filenameAsPassed;    ///< The filename for the breakpoint as passed to the debugger (i.e. full filename).
+
+            long m_index;                   ///< The breakpoint number. Set automatically. *Don't* write to it.
+            bool m_temporary;               ///< Is this a temporary (one-shot) breakpoint?
+            bool m_enabled;                 ///< Is the breakpoint enabled?
+            bool m_active;                  ///< Is the breakpoint active? (currently unused)
+            bool m_useIgnoreCount;          ///< Should this breakpoint be ignored for the first X passes? (@c x == @c ignoreCount)
+            int m_ignoreCount;              ///< The number of passes before this breakpoint should hit. @c useIgnoreCount must be true.
+            bool m_useCondition;            ///< Should this breakpoint hit only if a specific condition is met?
+            bool m_wantsCondition;          ///< Evaluate condition for pending breakpoints at first stop !
+            wxString m_condition;           ///< The condition that must be met for the breakpoint to hit. @c useCondition must be true.
+            wxString m_func;                ///< The function to set the breakpoint. If this is set, it is preferred over the filename/line combination.
+            unsigned long int m_address;    ///< The actual breakpoint address. This is read back from the debugger. *Don't* write to it.
+            bool m_alreadySet;              ///< Is this already set? Used to mark temporary breakpoints for removal.
+            wxString m_lineText;            ///< Optionally, the breakpoint line's text (used by GDB for setting breapoints on ctors/dtors).
+            wxString m_breakAddress;        ///< Valid only for type==bptData: address to break when read/written.
+            bool m_breakOnRead;             ///< Valid only for type==bptData: break when memory is read from.
+            bool m_breakOnWrite;            ///< Valid only for type==bptData: break when memory is written to.
+            void* m_userData;               ///< Custom user data.
+
     };
 
 
-    typedef std::deque<cb::shared_ptr<cbStackFrame> > BacktraceContainer;
-    typedef std::deque<cb::shared_ptr<cbThread> > ThreadsContainer;
+    typedef std::deque<cb::shared_ptr<cbStackFrame> > GDBBacktraceContainer;
+    typedef std::deque<cb::shared_ptr<cbThread> > GDBThreadsContainer;
 
-    class Watch : public cbWatch
+    class GDBWatch : public cbWatch
     {
         public:
-            Watch(wxString const & symbol, bool for_tooltip, bool delete_on_collapse = true) :
+            GDBWatch(wxString const & symbol, bool for_tooltip, bool delete_on_collapse = true) :
                 m_symbol(symbol),
                 m_has_been_expanded(false),
                 m_for_tooltip(for_tooltip),
@@ -231,15 +462,86 @@ namespace dbg_mi
             int m_start, m_end;
     };
 
-    typedef std::vector<cb::shared_ptr<Watch> > WatchesContainer;
+    typedef std::vector<cb::shared_ptr<GDBWatch> > GDBWatchesContainer;
 
-    cb::shared_ptr<Watch> FindWatch(wxString const & expression, WatchesContainer & watches);
+    cb::shared_ptr<GDBWatch> FindWatch(wxString const & expression, GDBWatchesContainer & watches);
 
-    // Custom window to display output of DebuggerInfoCmd
-    class TextInfoWindow : public wxScrollingDialog
+    class GDBMemoryRangeWatch  : public cbWatch
     {
         public:
-            TextInfoWindow(wxWindow * parent, const wxChar * title, const wxString & content) :
+            GDBMemoryRangeWatch(uint64_t address, uint64_t size, const wxString& symbol);
+
+        public:
+            void GetSymbol(wxString &symbol) const override
+            {
+                symbol = m_symbol;
+            }
+
+            void GetValue(wxString &value) const override
+            {
+                value = m_value;
+            }
+
+            bool SetValue(const wxString &value) override;
+            void GetFullWatchString(wxString &full_watch) const override
+            {
+                full_watch = wxEmptyString;
+            }
+
+            void GetType(wxString &type) const override
+            {
+                type = wxT("Memory range");
+            }
+
+            void SetType(cb_unused const wxString &type) override
+            {
+            }
+
+            wxString GetDebugString() const override
+            {
+                return wxString();
+            }
+
+            wxString MakeSymbolToAddress() const override;
+            bool IsPointerType() const override
+            {
+                return false;
+            }
+
+            uint64_t GetAddress() const
+            {
+                return m_address;
+            }
+
+            uint64_t GetSize() const
+            {
+                return m_size;
+            }
+
+        private:
+            uint64_t m_address;
+            uint64_t m_size;
+            wxString m_symbol;
+            wxString m_value;
+    };
+
+    typedef std::vector<cb::shared_ptr<GDBWatch>> GDBWatchesContainer;
+    typedef std::vector<cb::shared_ptr<GDBMemoryRangeWatch>> GDBMemoryRangeWatchesContainer;
+
+    enum class GDBWatchType
+    {
+        Normal,
+        MemoryRange
+    };
+
+    typedef std::unordered_map<cb::shared_ptr<cbWatch>, GDBWatchType> GDBMapWatchesToType;
+
+
+    // Custom window to display output of DebuggerInfoCmd
+    class GDBTextInfoWindow : public wxScrollingDialog
+    {
+        public:
+            GDBTextInfoWindow(wxWindow * parent, const wxChar * title, const wxString & content) :
                 wxScrollingDialog(parent, -1, title, wxDefaultPosition, wxDefaultSize,
                                   wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX | wxMINIMIZE_BOX),
                 m_font(8, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL)
@@ -262,10 +564,10 @@ namespace dbg_mi
             wxFont m_font;
     };
 
-    class CurrentFrame
+    class GDBCurrentFrame
     {
         public:
-            CurrentFrame() :
+            GDBCurrentFrame() :
                 m_line(-1),
                 m_stack_frame(-1),
                 m_user_selected_stack_frame(-1),
@@ -279,7 +581,7 @@ namespace dbg_mi
                 m_user_selected_stack_frame = -1;
             }
 
-            void SwitchToFrame(int frame_number)
+            void GDBSwitchToFrame(int frame_number)
             {
                 m_user_selected_stack_frame = m_stack_frame = frame_number;
             }
@@ -330,6 +632,10 @@ namespace dbg_mi
             int m_user_selected_stack_frame;
             int m_thread;
     };
+
+    // Use this function to sanitize user input which might end as the last part of GDB commands.
+    // If the last character is '\', GDB will treat it as line continuation and it will stall.
+    wxString CleanStringValue(wxString value);
 
 } // namespace dbg_mi
 

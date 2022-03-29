@@ -16,17 +16,11 @@
 				<Option host_application="$(#CB_BUILD)/devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)/codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
 				<ExtraCommands>
-					<!-- Create output directory -->
 					<Add before="cmd /c if not exist $(TARGET_OUTPUT_DIR) mkdir $(TARGET_OUTPUT_DIR)" />
-
-					<!-- Cleanup left over previous files / -->
 					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).cbplugin del $(TARGET_OUTPUT_BASENAME).cbplugin" />
 					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).dll      del $(TARGET_OUTPUT_BASENAME).dll" />
-
-					<!-- the following are common between the two targets -->
 					<Add after="cmd /c if exist $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip del $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip" />
 					<Add after="zip -jq9 $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip resources\manifest.xml resources/*.xrc" />
-
 					<Mode after="always" />
 				</ExtraCommands>
 			</Target>
@@ -40,33 +34,21 @@
 				<Option host_application="$(#CB_BUILD)/devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)/codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
 				<ExtraCommands>
-					<!-- Create output directory -->
 					<Add before="cmd /c if not exist $(TARGET_OUTPUT_DIR) mkdir $(TARGET_OUTPUT_DIR)" />
-
-					<!-- the following are common between the two targets -->
 					<Add after="cmd /c if exist $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip del $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip" />
 					<Add after="zip -jq9 $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip resources\manifest.xml resources/*.xrc" />
-
-					<!-- the rest of the lines specific to build the cbplugin -->
-					<!-- Cleanup left over previous files / -->
 					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).cbplugin del $(TARGET_OUTPUT_BASENAME).cbplugin" />
 					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).dll      del $(TARGET_OUTPUT_BASENAME).dll" />
-
-					<!-- Copy the dll file / -->
 					<Add after="cmd /c copy $(TARGET_OUTPUT_FILE) ." />
-					<!-- Add after="strip $(TARGET_OUTPUT_BASENAME).dll" / -->
 					<Add after="zip -jq9 $(TARGET_OUTPUT_BASENAME).cbplugin $(TARGET_OUTPUT_BASENAME).dll  $(#CB_BUILD)\devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip" />
-					
-					<!-- Cleanup intermediate files that are now not needed/ -->
 					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).dll      del $(TARGET_OUTPUT_BASENAME).dll" />
-
 					<Mode after="always" />
 				</ExtraCommands>
 			</Target>
 		</Build>
 		<VirtualTargets>
-			<Add alias="Nocbplugin" targets="debbugger_gdb_mi" />
-			<Add alias="All" targets="debbugger_gdb_mi_cbplugin" />
+			<Add alias="All" targets="debbugger_gdb_mi_cbplugin;" />
+			<Add alias="Nocbplugin" targets="debbugger_gdb_mi;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
@@ -107,8 +89,11 @@
 		<Unit filename="Makefile.am" />
 		<Unit filename="Readme.md" />
 		<Unit filename="configure.ac" />
+		<Unit filename="resources/breakpoints.xrc" />
 		<Unit filename="resources/debugger_gdbmi_menu.xrc" />
 		<Unit filename="resources/debugger_options_dlg.xrc" />
+		<Unit filename="resources/debugger_project_options_dlg.xrc" />
+		<Unit filename="resources/edit_watches_dlg.xrc" />
 		<Unit filename="resources/manifest.xml" />
 		<Unit filename="src/actions.cpp" />
 		<Unit filename="src/actions.h" />
@@ -118,10 +103,24 @@
 		<Unit filename="src/cmd_result_parser.h" />
 		<Unit filename="src/cmd_result_tokens.cpp" />
 		<Unit filename="src/cmd_result_tokens.h" />
+		<Unit filename="src/databreakpointdlg.cpp" />
+		<Unit filename="src/databreakpointdlg.h" />
 		<Unit filename="src/debuggeroptionsdlg.cpp" />
 		<Unit filename="src/debuggeroptionsdlg.h" />
+		<Unit filename="src/debuggeroptionsprjdlg.cpp">
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="src/debuggeroptionsprjdlg.h" />
 		<Unit filename="src/definitions.cpp" />
 		<Unit filename="src/definitions.h" />
+		<Unit filename="src/editbreakpointdlg.cpp" />
+		<Unit filename="src/editbreakpointdlg.h" />
+		<Unit filename="src/editwatchdlg.cpp">
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="src/editwatchdlg.h" />
 		<Unit filename="src/escape.cpp" />
 		<Unit filename="src/escape.h" />
 		<Unit filename="src/events.cpp" />
@@ -136,6 +135,7 @@
 		<Unit filename="src/helpers.h" />
 		<Unit filename="src/plugin.cpp" />
 		<Unit filename="src/plugin.h" />
+		<Unit filename="src/remotedebugging.h" />
 		<Unit filename="src/updated_variable.cpp" />
 		<Unit filename="src/updated_variable.h" />
 		<Extensions>

@@ -18,18 +18,18 @@
 
 namespace dbg_mi
 {
-    BreakpointAddAction::BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, LogPaneLogger * logger) :
+    GDBBreakpointAddAction::GDBBreakpointAddAction(cb::shared_ptr<GDBBreakpoint> const & breakpoint, LogPaneLogger * logger) :
         m_breakpoint(breakpoint),
         m_logger(logger)
     {
     }
 
-    BreakpointAddAction::~BreakpointAddAction()
+    GDBBreakpointAddAction::~GDBBreakpointAddAction()
     {
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::destructor"), LogPaneLogger::LineType::Info);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBBreakpointAddAction::destructor"), LogPaneLogger::LineType::Info);
     }
 
-    void BreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBBreakpointAddAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         if (m_initial_cmd == id)
         {
@@ -103,7 +103,7 @@ namespace dbg_mi
         }
     }
 
-    void BreakpointAddAction::OnStart()
+    void GDBBreakpointAddAction::OnStart()
     {
         wxString cmd("-break-insert -f ");
 
@@ -119,11 +119,11 @@ namespace dbg_mi
 
         cmd += wxString::Format("%s:%d", m_breakpoint->GetLocation(), m_breakpoint->GetLine());
         m_initial_cmd = Execute(cmd);
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("BreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString()), LogPaneLogger::LineType::Debug);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBBreakpointAddAction::m_initial_cmd = " + m_initial_cmd.ToString()), LogPaneLogger::LineType::Debug);
     }
 
-    GenerateBacktrace::GenerateBacktrace(SwitchToFrameInvoker * switch_to_frame, BacktraceContainer & backtrace,
-                                         CurrentFrame & current_frame, LogPaneLogger * logger) :
+    GDBGenerateBacktrace::GDBGenerateBacktrace( GDBSwitchToFrameInvoker * switch_to_frame, GDBBacktraceContainer & backtrace,
+                                                GDBCurrentFrame & current_frame, LogPaneLogger * logger) :
         m_switch_to_frame(switch_to_frame),
         m_backtrace(backtrace),
         m_logger(logger),
@@ -136,12 +136,12 @@ namespace dbg_mi
     {
     }
 
-    GenerateBacktrace::~GenerateBacktrace()
+    GDBGenerateBacktrace::~GDBGenerateBacktrace()
     {
         delete m_switch_to_frame;
     }
 
-    void GenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBGenerateBacktrace::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         if (id == m_backtrace_id)
         {
@@ -299,7 +299,7 @@ namespace dbg_mi
             Finish();
         }
     }
-    void GenerateBacktrace::OnStart()
+    void GDBGenerateBacktrace::OnStart()
     {
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "", LogPaneLogger::LineType::Debug);
         m_frame_info_id = Execute("-stack-info-frame");
@@ -307,14 +307,14 @@ namespace dbg_mi
         m_args_id = Execute("-stack-list-arguments 1 0 30");
     }
 
-    GenerateThreadsList::GenerateThreadsList(ThreadsContainer & threads, int current_thread_id, LogPaneLogger * logger) :
+    GDBGenerateThreadsList::GDBGenerateThreadsList(GDBThreadsContainer & threads, int current_thread_id, LogPaneLogger * logger) :
         m_threads(threads),
         m_logger(logger),
         m_current_thread_id(current_thread_id)
     {
     }
 
-    void GenerateThreadsList::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBGenerateThreadsList::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         Finish();
         m_threads.clear();
@@ -397,13 +397,13 @@ namespace dbg_mi
         Manager::Get()->GetDebuggerManager()->GetThreadsDialog()->Reload();
     }
 
-    void GenerateThreadsList::OnStart()
+    void GDBGenerateThreadsList::OnStart()
     {
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "-thread-info", LogPaneLogger::LineType::Debug);
         Execute("-thread-info");
     }
 
-    GenerateCPUInfoRegisters::GenerateCPUInfoRegisters(LogPaneLogger * logger) :
+    GDBGenerateCPUInfoRegisters::GDBGenerateCPUInfoRegisters(LogPaneLogger * logger) :
         m_bParsedRegisteryNamesReceived(false),
         m_bParsedRegisteryValuesReceived(false),
         m_logger(logger)
@@ -411,7 +411,7 @@ namespace dbg_mi
         m_ParsedRegisteryDataReceived.clear();
     }
 
-    void GenerateCPUInfoRegisters::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBGenerateCPUInfoRegisters::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("FUTURE TO BE CODED!!! id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Debug);
 
@@ -577,7 +577,7 @@ namespace dbg_mi
         }
     }
 
-    void GenerateCPUInfoRegisters::OnStart()
+    void GDBGenerateCPUInfoRegisters::OnStart()
     {
         // Do not use "info registers" with GDB/MI, but
         // On GDB/MI use "-data-list-register-names" and "-data-list-register-values x" - taken from CodeLite src
@@ -589,7 +589,7 @@ namespace dbg_mi
         m_reg_value_data_list_request_id = Execute("-data-list-register-values x");
     }
 
-    GenerateExamineMemory::GenerateExamineMemory(LogPaneLogger * logger) :
+    GDBGenerateExamineMemory::GDBGenerateExamineMemory(LogPaneLogger * logger) :
         m_logger(logger)
     {
         cbExamineMemoryDlg * dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
@@ -597,7 +597,7 @@ namespace dbg_mi
         m_length = dialog->GetBytes();
     }
 
-    void GenerateExamineMemory::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBGenerateExamineMemory::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         // example of GDB 11.2 request and response:
         //
@@ -662,7 +662,11 @@ namespace dbg_mi
                                     const ResultValue * pdata_value = pMemoryData->GetTupleValueByIndex(iAddressIndex);
                                     if (pdata_value)
                                     {
+#if wxCHECK_VERSION(3, 1, 5)
+                                        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+#else
                                         if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+#endif
                                         {
                                             sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
                                         }
@@ -722,7 +726,7 @@ namespace dbg_mi
         }
     }
 
-    void GenerateExamineMemory::OnStart()
+    void GDBGenerateExamineMemory::OnStart()
     {
         // Concept from Codelite, search for "data-read-memory" and the GDB manual
         // GDB 11.2 manual synopsis:
@@ -761,7 +765,7 @@ namespace dbg_mi
         }
     }
 
-    void ParseWatchValueID(Watch & watch, ResultValue const & value)
+    void ParseWatchValueID(GDBWatch & watch, ResultValue const & value)
     {
         wxString s;
 
@@ -787,22 +791,22 @@ namespace dbg_mi
         return Lookup(value, "type", s);
     }
 
-    void AppendNullChild(cb::shared_ptr<Watch> watch)
+    void AppendNullChild(cb::shared_ptr<GDBWatch> watch)
     {
-        cbWatch::AddChild(watch, cb::shared_ptr<cbWatch>(new Watch("updating...", watch->ForTooltip())));
+        cbWatch::AddChild(watch, cb::shared_ptr<cbWatch>(new GDBWatch("updating...", watch->ForTooltip())));
     }
 
-    cb::shared_ptr<Watch> AddChild(cb::shared_ptr<Watch> parent, ResultValue const & child_value, wxString const & symbol,
-                                   WatchesContainer & watches)
+    cb::shared_ptr<GDBWatch> AddChild(cb::shared_ptr<GDBWatch> parent, ResultValue const & child_value, wxString const & symbol,
+                                   GDBWatchesContainer & watches)
     {
         wxString id;
 
         if (!Lookup(child_value, "name", id))
         {
-            return cb::shared_ptr<Watch>();
+            return cb::shared_ptr<GDBWatch>();
         }
 
-        cb::shared_ptr<Watch> child = FindWatch(id, watches);
+        cb::shared_ptr<GDBWatch> child = FindWatch(id, watches);
 
         if (child)
         {
@@ -820,7 +824,7 @@ namespace dbg_mi
         }
         else
         {
-            child = cb::shared_ptr<Watch>(new dbg_mi::Watch(symbol, parent->ForTooltip()));
+            child = cb::shared_ptr<GDBWatch>(new dbg_mi::GDBWatch(symbol, parent->ForTooltip()));
             ParseWatchValueID(*child, child_value);
             cbWatch::AddChild(parent, child);
         }
@@ -841,7 +845,7 @@ namespace dbg_mi
 #endif
     }
 
-    void UpdateWatchesTooltipOrAll(const cb::shared_ptr<Watch> & watch, LogPaneLogger * logger)
+    void UpdateWatchesTooltipOrAll(const cb::shared_ptr<GDBWatch> & watch, LogPaneLogger * logger)
     {
 #ifndef TEST_PROJECT
 
@@ -858,24 +862,24 @@ namespace dbg_mi
 #endif
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    WatchBaseAction::WatchBaseAction(WatchesContainer & watches, LogPaneLogger * logger) :
+    GDBWatchBaseAction::GDBWatchBaseAction(GDBWatchesContainer & watches, LogPaneLogger * logger) :
         m_watches(watches),
         m_logger(logger),
         m_sub_commands_left(0)
     {
     }
 
-    WatchBaseAction::~WatchBaseAction()
+    GDBWatchBaseAction::~GDBWatchBaseAction()
     {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    bool WatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const & value)
+    bool GDBWatchBaseAction::ParseListCommand(CommandID const & id, ResultValue const & value)
     {
         bool error = false;
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                 __LINE__,
-                                wxString::Format(_("WatchBaseAction::ParseListCommand - steplistchildren for id: %s ==>%s>=="), id.ToString(), value.MakeDebugString()),
+                                wxString::Format(_("GDBWatchBaseAction::ParseListCommand - steplistchildren for id: %s ==>%s>=="), id.ToString(), value.MakeDebugString()),
                                 LogPaneLogger::LineType::Debug);
         ListCommandParentMap::iterator it = m_parent_map.find(id);
 
@@ -883,7 +887,7 @@ namespace dbg_mi
         {
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                     __LINE__,
-                                    wxString::Format(_("WatchBaseAction::ParseListCommand - no parent for id: ==>%s<=="), id.ToString()),
+                                    wxString::Format(_("GDBWatchBaseAction::ParseListCommand - no parent for id: ==>%s<=="), id.ToString()),
                                     LogPaneLogger::LineType::Debug);
             return false;
         }
@@ -919,9 +923,9 @@ namespace dbg_mi
             int count = children->GetTupleSize();
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                     __LINE__,
-                                    wxString::Format(_("WatchBaseAction::ParseListCommand - children %d"), count),
+                                    wxString::Format(_("GDBWatchBaseAction::ParseListCommand - children %d"), count),
                                     LogPaneLogger::LineType::Debug);
-            cb::shared_ptr<Watch> parent_watch = it->second;
+            cb::shared_ptr<GDBWatch> parent_watch = it->second;
             wxString strMapKey;
 
             for (int ii = 0; ii < count; ++ii)
@@ -938,7 +942,7 @@ namespace dbg_mi
                         symbol = "--unknown--";
                     }
 
-                    cb::shared_ptr<Watch> child;
+                    cb::shared_ptr<GDBWatch> child;
                     bool dynamic, has_more;
                     int children_count;
                     ParseWatchInfo(*child_value, children_count, dynamic, has_more);
@@ -963,7 +967,7 @@ namespace dbg_mi
 
                     if (dynamic && has_more)
                     {
-                        child = cb::shared_ptr<Watch>(new Watch(symbol, parent_watch->ForTooltip(), false));
+                        child = cb::shared_ptr<GDBWatch>(new GDBWatch(symbol, parent_watch->ForTooltip(), false));
                         ParseWatchValueID(*child, *child_value);
                         ExecuteListCommand(child, parent_watch);
                     }
@@ -995,7 +999,7 @@ namespace dbg_mi
                                     }
                                 }
 
-                                child = cb::shared_ptr<Watch>();
+                                child = cb::shared_ptr<GDBWatch>();
                                 break;
 
                             default:
@@ -1011,10 +1015,10 @@ namespace dbg_mi
                                     AppendNullChild(child);
                                     m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                                             __LINE__,
-                                                            wxString::Format(_("WatchBaseAction::ParseListCommand - adding child ==>%s<== to ==>%s<=="), child->GetDebugString(),  parent_watch->GetDebugString()),
+                                                            wxString::Format(_("GDBWatchBaseAction::ParseListCommand - adding child ==>%s<== to ==>%s<=="), child->GetDebugString(),  parent_watch->GetDebugString()),
                                                             LogPaneLogger::LineType::Debug
                                                            );
-                                    child = cb::shared_ptr<Watch>();
+                                    child = cb::shared_ptr<GDBWatch>();
                                 }
                                 else
                                 {
@@ -1032,7 +1036,7 @@ namespace dbg_mi
                 {
                     m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                             __LINE__,
-                                            wxString::Format(_("WatchBaseAction::ParseListCommand - can't find child in ==>%s<=="), children->GetTupleValueByIndex(ii)->MakeDebugString()),
+                                            wxString::Format(_("GDBWatchBaseAction::ParseListCommand - can't find child in ==>%s<=="), children->GetTupleValueByIndex(ii)->MakeDebugString()),
                                             LogPaneLogger::LineType::Debug);
                 }
             }
@@ -1043,7 +1047,7 @@ namespace dbg_mi
         return !error;
     }
 
-    void WatchBaseAction::ExecuteListCommand(cb::shared_ptr<Watch> watch, cb::shared_ptr<Watch> parent)
+    void GDBWatchBaseAction::ExecuteListCommand(cb::shared_ptr<GDBWatch> watch, cb::shared_ptr<GDBWatch> parent)
     {
         CommandID id;
         int iStart = watch->GetRangeStart();
@@ -1062,7 +1066,7 @@ namespace dbg_mi
         ++m_sub_commands_left;
     }
 
-    void WatchBaseAction::ExecuteListCommand(wxString const & watch_id, cb::shared_ptr<Watch> parent)
+    void GDBWatchBaseAction::ExecuteListCommand(wxString const & watch_id, cb::shared_ptr<GDBWatch> parent)
     {
         if (!parent)
         {
@@ -1088,14 +1092,14 @@ namespace dbg_mi
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    WatchCreateAction::WatchCreateAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches, LogPaneLogger * logger) :
-        WatchBaseAction(watches, logger),
+    GDBWatchCreateAction::GDBWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger) :
+        GDBWatchBaseAction(watches, logger),
         m_watch(watch),
         m_step(StepCreate)
     {
     }
 
-    void WatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBWatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         --m_sub_commands_left;
         bool error = false;
@@ -1192,7 +1196,7 @@ namespace dbg_mi
         }
     }
 
-    void WatchCreateAction::OnStart()
+    void GDBWatchCreateAction::OnStart()
     {
         wxString symbol;
         m_watch->GetSymbol(symbol);
@@ -1203,7 +1207,7 @@ namespace dbg_mi
         m_sub_commands_left = 1;
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    WatchCreateTooltipAction::~WatchCreateTooltipAction()
+    GDBWatchCreateTooltipAction::~GDBWatchCreateTooltipAction()
     {
         if (m_watch->ForTooltip())
         {
@@ -1212,19 +1216,142 @@ namespace dbg_mi
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    WatchesUpdateAction::WatchesUpdateAction(WatchesContainer & watches, LogPaneLogger * logger) :
-        WatchBaseAction(watches, logger)
+    GDBMemoryRangeWatchCreateAction::GDBMemoryRangeWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger) :
+        GDBWatchBaseAction(watches, logger),
+        m_watch(watch)
     {
     }
 
-    void WatchesUpdateAction::OnStart()
+    void GDBMemoryRangeWatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    {
+#if 0
+        --m_sub_commands_left;
+        bool error = false;
+        wxString resultDebug = result.MakeDebugString();
+
+        if (result.GetResultClass() == ResultParser::ClassDone)
+        {
+            ResultValue const & value = result.GetResultValue();
+
+            switch (m_step)
+            {
+                case StepCreate:
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepCreate for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
+                    bool dynamic, has_more;
+                    int children;
+                    ParseWatchInfo(value, children, dynamic, has_more);
+                    ParseWatchValueID(*m_watch, value);
+
+                    if (dynamic && has_more)
+                    {
+                        m_step = StepSetRange;
+#warning need to test this code!!!
+                        Execute("-var-set-update-range \"" + m_watch->GetID() + "\" 0 100");
+                        AppendNullChild(m_watch);
+                    }
+                    else
+                    {
+                        if (children > 0)
+                        {
+                            if (children > 1)
+                            {
+                                m_watch->SetRange(0, children);
+                            }
+
+                            m_step = StepListChildren;
+                            AppendNullChild(m_watch);
+                        }
+                        else
+                        {
+                            Finish();
+                        }
+                    }
+                }
+                break;
+
+                case StepListChildren:
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepListChildren for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
+                    error = !ParseListCommand(id, value);
+                    break;
+
+                case StepSetRange:
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepSetRange for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
+#warning code to be added for this case
+                    break;
+
+                default:
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("m_step unknown for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
+                    break;
+            }
+        }
+        else
+        {
+            if (result.GetResultClass() == ResultParser::ClassError)
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("The expression can't be evaluated! ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
+                m_watch->SetValue("The expression can't be evaluated");
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("processing command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
+            }
+
+            error = true;
+        }
+
+        if (error)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
+            UpdateWatches(m_logger);
+            Finish();
+        }
+        else
+        {
+            if (m_sub_commands_left == 0)
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("Finished sub commands ID: %s"),  id.ToString()),
+                                        LogPaneLogger::LineType::Debug);
+                UpdateWatches(m_logger);
+                Finish();
+            }
+        }
+#endif
+    }
+
+    void GDBMemoryRangeWatchCreateAction::OnStart()
+    {
+        // Concept from Codelite, search for "data-read-memory" and the GDB manual
+        // GDB 11.2 manual synopsis:
+        //      -data-read-memory
+        //                        [ -o byte-offset ]    N/A
+        //                        address               === m_address
+        //                        word-format           === x
+        //                        word-size             === 1
+        //                        nr-rows               === 1
+        //                        nr-cols               === m_length
+        //                        [ aschar ]            N/A
+        wxString cmd = wxString::Format("-data-read-memory \"%s\" x 1 1 %d", m_address, m_length);
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmd), LogPaneLogger::LineType::Debug);
+        m_memory_range_watch_request_id = Execute(cmd);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    GDBWatchesUpdateAction::GDBWatchesUpdateAction(GDBWatchesContainer & watches, LogPaneLogger * logger) :
+        GDBWatchBaseAction(watches, logger)
+    {
+    }
+
+    void GDBWatchesUpdateAction::OnStart()
     {
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, "-var-update 1 *", LogPaneLogger::LineType::Debug);
         m_update_command = Execute("-var-update 1 *");
         m_sub_commands_left = 1;
     }
 
-    bool WatchesUpdateAction::ParseUpdate(ResultParser const & result)
+    bool GDBWatchesUpdateAction::ParseUpdate(ResultParser const & result)
     {
         if (result.GetResultClass() == ResultParser::ClassError)
         {
@@ -1254,7 +1381,7 @@ namespace dbg_mi
                     continue;
                 }
 
-                cb::shared_ptr<Watch> watch = FindWatch(expression, m_watches);
+                cb::shared_ptr<GDBWatch> watch = FindWatch(expression, m_watches);
 
                 if (!watch)
                 {
@@ -1356,13 +1483,13 @@ namespace dbg_mi
         return true;
     }
 
-    void WatchesUpdateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBWatchesUpdateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         --m_sub_commands_left;
 
         if (id == m_update_command)
         {
-            for (WatchesContainer::iterator it = m_watches.begin();  it != m_watches.end(); ++it)
+            for (GDBWatchesContainer::iterator it = m_watches.begin();  it != m_watches.end(); ++it)
             {
                 (*it)->MarkAsChangedRecursive(false);
             }
@@ -1400,14 +1527,14 @@ namespace dbg_mi
         }
     }
 
-    void WatchExpandedAction::OnStart()
+    void GDBWatchExpandedAction::OnStart()
     {
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-var-update %s", m_watch->GetID()), LogPaneLogger::LineType::Debug);
         m_update_id = Execute(wxString::Format("-var-update %s", m_watch->GetID()));
-        ExecuteListCommand(m_expanded_watch, cb::shared_ptr<Watch>());
+        ExecuteListCommand(m_expanded_watch, cb::shared_ptr<GDBWatch>());
     }
 
-    void WatchExpandedAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBWatchExpandedAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         if (id == m_update_id)
         {
@@ -1417,14 +1544,14 @@ namespace dbg_mi
         --m_sub_commands_left;
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                 __LINE__,
-                                wxString::Format(_("WatchExpandedAction::Output - ==>%s<<=="), result.GetResultValue().MakeDebugString()),
+                                wxString::Format(_("GDBWatchExpandedAction::Output - ==>%s<<=="), result.GetResultValue().MakeDebugString()),
                                 LogPaneLogger::LineType::Debug);
 
         if (!ParseListCommand(id, result.GetResultValue()))
         {
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                     __LINE__,
-                                    wxString::Format(_("WatchExpandedAction::Output - error in command ==>%s<<=="), id.ToString()),
+                                    wxString::Format(_("GDBWatchExpandedAction::Output - error in command ==>%s<<=="), id.ToString()),
                                     LogPaneLogger::LineType::Debug);
             // Update the watches even if there is an error, so some partial information can be displayed.
             UpdateWatchesTooltipOrAll(m_expanded_watch, m_logger);
@@ -1435,7 +1562,7 @@ namespace dbg_mi
             {
                 m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                         __LINE__,
-                                        _("WatchExpandedAction::Output - done"),
+                                        _("GDBWatchExpandedAction::Output - done"),
                                         LogPaneLogger::LineType::Debug);
                 UpdateWatchesTooltipOrAll(m_expanded_watch, m_logger);
                 Finish();
@@ -1443,13 +1570,13 @@ namespace dbg_mi
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void WatchCollapseAction::OnStart()
+    void GDBWatchCollapseAction::OnStart()
     {
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("-var-delete -c  ", m_collapsed_watch->GetID()), LogPaneLogger::LineType::Debug);
         Execute(wxString::Format("-var-delete -c  ", m_collapsed_watch->GetID()));
     }
 
-    void WatchCollapseAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    void GDBWatchCollapseAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
         if (result.GetResultClass() == ResultParser::ClassDone)
         {

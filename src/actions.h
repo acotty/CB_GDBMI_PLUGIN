@@ -22,10 +22,10 @@ class cbDebuggerPlugin;
 namespace dbg_mi
 {
 
-    class SimpleAction : public Action
+    class GDBSimpleAction : public Action
     {
         public:
-            SimpleAction(wxString const & cmd) :
+            GDBSimpleAction(wxString const & cmd) :
                 m_command(cmd)
             {
             }
@@ -43,10 +43,10 @@ namespace dbg_mi
             wxString m_command;
     };
 
-    class BarrierAction : public Action
+    class GDBBarrierAction : public Action
     {
         public:
-            BarrierAction()
+            GDBBarrierAction()
             {
                 SetWaitPrevious(true);
             }
@@ -60,27 +60,27 @@ namespace dbg_mi
 
     class Breakpoint;
 
-    class BreakpointAddAction : public Action
+    class GDBBreakpointAddAction : public Action
     {
         public:
-            BreakpointAddAction(cb::shared_ptr<Breakpoint> const & breakpoint, LogPaneLogger * logger);
-            virtual ~BreakpointAddAction();
+            GDBBreakpointAddAction(cb::shared_ptr<GDBBreakpoint> const & breakpoint, LogPaneLogger * logger);
+            virtual ~GDBBreakpointAddAction();
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
 
         private:
-            cb::shared_ptr<Breakpoint> m_breakpoint;
+            cb::shared_ptr<GDBBreakpoint> m_breakpoint;
             CommandID m_initial_cmd, m_disable_cmd;
 
             LogPaneLogger * m_logger;
     };
 
     template<typename StopNotification>
-    class RunAction : public Action
+    class GDBRunAction : public Action
     {
         public:
-            RunAction(cbDebuggerPlugin * plugin, const wxString & command,
+            GDBRunAction(cbDebuggerPlugin * plugin, const wxString & command,
                       StopNotification notification, LogPaneLogger * logger) :
                 m_plugin(plugin),
                 m_command(command),
@@ -89,17 +89,17 @@ namespace dbg_mi
             {
                 SetWaitPrevious(true);
             }
-            virtual ~RunAction()
+            virtual ~GDBRunAction()
             {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction::destructor"), LogPaneLogger::LineType::Debug);
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBRunAction::destructor"), LogPaneLogger::LineType::Debug);
             }
 
             virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result)
             {
                 if (result.GetResultClass() == ResultParser::ClassRunning)
                 {
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction success, the debugger is !stopped!"), LogPaneLogger::LineType::Debug);
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction::Output - " + result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBRunAction success, the debugger is !stopped!"), LogPaneLogger::LineType::Debug);
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBRunAction::Output - " + result.MakeDebugString()), LogPaneLogger::LineType::Debug);
                     m_notification(false);
                 }
 
@@ -109,7 +109,7 @@ namespace dbg_mi
             virtual void OnStart()
             {
                 Execute(m_command);
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("RunAction::OnStart -> " + m_command), LogPaneLogger::LineType::Debug);
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBRunAction::OnStart -> " + m_command), LogPaneLogger::LineType::Debug);
             }
 
         private:
@@ -119,48 +119,50 @@ namespace dbg_mi
             LogPaneLogger * m_logger;
     };
 
-    struct SwitchToFrameInvoker
+    struct GDBSwitchToFrameInvoker
     {
-        virtual ~SwitchToFrameInvoker() {}
+        virtual ~GDBSwitchToFrameInvoker() {}
         virtual void Invoke(int frame_number) = 0;
     };
 
-    class GenerateBacktrace : public Action
+    class GDBGenerateBacktrace : public Action
     {
-            GenerateBacktrace(GenerateBacktrace &);
-            GenerateBacktrace & operator =(GenerateBacktrace &);
+            GDBGenerateBacktrace(GDBGenerateBacktrace &);
+            GDBGenerateBacktrace & operator =(GDBGenerateBacktrace &);
         public:
-            GenerateBacktrace(SwitchToFrameInvoker * switch_to_frame, BacktraceContainer & backtrace,
-                              CurrentFrame & current_frame, LogPaneLogger * logger);
-            virtual ~GenerateBacktrace();
+            GDBGenerateBacktrace(   GDBSwitchToFrameInvoker * switch_to_frame,
+                                    GDBBacktraceContainer & backtrace,
+                                    GDBCurrentFrame & current_frame,
+                                    LogPaneLogger * logger);
+            virtual ~GDBGenerateBacktrace();
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
         private:
-            SwitchToFrameInvoker * m_switch_to_frame;
+            GDBSwitchToFrameInvoker * m_switch_to_frame;
             CommandID m_backtrace_id, m_args_id, m_frame_info_id;
-            BacktraceContainer & m_backtrace;
+            GDBBacktraceContainer & m_backtrace;
             LogPaneLogger * m_logger;
-            CurrentFrame & m_current_frame;
+            GDBCurrentFrame & m_current_frame;
             int m_first_valid, m_old_active_frame;
             bool m_parsed_backtrace, m_parsed_args, m_parsed_frame_info;
     };
 
-    class GenerateThreadsList : public Action
+    class GDBGenerateThreadsList : public Action
     {
         public:
-            GenerateThreadsList(ThreadsContainer & threads, int current_thread_id, LogPaneLogger * logger);
+            GDBGenerateThreadsList(GDBThreadsContainer & threads, int current_thread_id, LogPaneLogger * logger);
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
         private:
-            ThreadsContainer & m_threads;
+            GDBThreadsContainer & m_threads;
             LogPaneLogger * m_logger;
             int m_current_thread_id;
     };
 
 
-    class GenerateCPUInfoRegisters : public Action
+    class GDBGenerateCPUInfoRegisters : public Action
     {
         private:
             struct RegistryData
@@ -170,7 +172,7 @@ namespace dbg_mi
             };
 
         public:
-            GenerateCPUInfoRegisters(LogPaneLogger * logger);
+            GDBGenerateCPUInfoRegisters(LogPaneLogger * logger);
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
@@ -184,10 +186,10 @@ namespace dbg_mi
             LogPaneLogger * m_logger;
     };
 
-    class GenerateExamineMemory : public Action
+    class GDBGenerateExamineMemory : public Action
     {
         public:
-            GenerateExamineMemory(LogPaneLogger * logger);
+            GDBGenerateExamineMemory(LogPaneLogger * logger);
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
@@ -200,10 +202,10 @@ namespace dbg_mi
     };
 
     template<typename Notification>
-    class SwitchToThread : public Action
+    class GDBSwitchToThread : public Action
     {
         public:
-            SwitchToThread(int thread_id, LogPaneLogger * logger, Notification const & notification) :
+            GDBSwitchToThread(int thread_id, LogPaneLogger * logger, Notification const & notification) :
                 m_thread_id(thread_id),
                 m_logger(logger),
                 m_notification(notification)
@@ -228,10 +230,10 @@ namespace dbg_mi
     };
 
     template<typename Notification>
-    class SwitchToFrame : public Action
+    class GDBSwitchToFrame : public Action
     {
         public:
-            SwitchToFrame(int frame_id, Notification const & notification, bool user_action) :
+            GDBSwitchToFrame(int frame_id, Notification const & notification, bool user_action) :
                 m_frame_id(frame_id),
                 m_notification(notification),
                 m_user_action(user_action)
@@ -254,27 +256,27 @@ namespace dbg_mi
             bool m_user_action;
     };
 
-    class WatchBaseAction : public Action
+    class GDBWatchBaseAction : public Action
     {
         public:
-            WatchBaseAction(WatchesContainer & watches, LogPaneLogger * logger);
-            virtual ~WatchBaseAction();
+            GDBWatchBaseAction(GDBWatchesContainer & watches, LogPaneLogger * logger);
+            virtual ~GDBWatchBaseAction();
 
         protected:
-            void ExecuteListCommand(cb::shared_ptr<Watch> watch, cb::shared_ptr<Watch> parent = cb::shared_ptr<Watch>());
-            void ExecuteListCommand(wxString const & watch_id, cb::shared_ptr<Watch> parent);
+            void ExecuteListCommand(cb::shared_ptr<GDBWatch> watch, cb::shared_ptr<GDBWatch> parent = cb::shared_ptr<GDBWatch>());
+            void ExecuteListCommand(wxString const & watch_id, cb::shared_ptr<GDBWatch> parent);
             bool ParseListCommand(CommandID const & id, ResultValue const & value);
 
         protected:
-            typedef std::tr1::unordered_map<CommandID, cb::shared_ptr<Watch> > ListCommandParentMap;
+            typedef std::tr1::unordered_map<CommandID, cb::shared_ptr<GDBWatch> > ListCommandParentMap;
         protected:
             ListCommandParentMap m_parent_map;
-            WatchesContainer & m_watches;
+            GDBWatchesContainer & m_watches;
             LogPaneLogger * m_logger;
             int m_sub_commands_left;
     };
 
-    class WatchCreateAction : public WatchBaseAction
+    class GDBWatchCreateAction : public GDBWatchBaseAction
     {
             enum Step
             {
@@ -283,35 +285,55 @@ namespace dbg_mi
                 StepSetRange
             };
         public:
-            WatchCreateAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches, LogPaneLogger * logger);
+            GDBWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger);
 
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
             virtual void OnStart();
 
         protected:
-            cb::shared_ptr<Watch> m_watch;
+            cb::shared_ptr<GDBWatch> m_watch;
             Step m_step;
     };
 
-    class WatchCreateTooltipAction : public WatchCreateAction
+    class GDBMemoryRangeWatchCreateAction : public GDBWatchBaseAction
     {
         public:
-            WatchCreateTooltipAction(cb::shared_ptr<Watch> const & watch, WatchesContainer & watches,
+            GDBMemoryRangeWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger);
+            virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+
+        protected:
+            virtual void OnStart();
+
+        private:
+            uint64_t m_address;
+            uint64_t m_length;
+            CommandID m_memory_range_watch_request_id;
+
+            cb::shared_ptr<GDBWatch> m_watch;
+
+            LogPaneLogger * m_logger;
+    };
+
+
+    class GDBWatchCreateTooltipAction : public GDBWatchCreateAction
+    {
+        public:
+            GDBWatchCreateTooltipAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches,
                                      LogPaneLogger * logger, wxRect const & rect) :
-                WatchCreateAction(watch, watches, logger),
+                GDBWatchCreateAction(watch, watches, logger),
                 m_rect(rect)
             {
             }
-            virtual ~WatchCreateTooltipAction();
+            virtual ~GDBWatchCreateTooltipAction();
         private:
             wxRect m_rect;
     };
 
-    class WatchesUpdateAction : public WatchBaseAction
+    class GDBWatchesUpdateAction : public GDBWatchBaseAction
     {
         public:
-            WatchesUpdateAction(WatchesContainer & watches, LogPaneLogger * logger);
+            GDBWatchesUpdateAction(GDBWatchesContainer & watches, LogPaneLogger * logger);
 
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
@@ -323,12 +345,12 @@ namespace dbg_mi
             CommandID   m_update_command;
     };
 
-    class WatchExpandedAction : public WatchBaseAction
+    class GDBWatchExpandedAction : public GDBWatchBaseAction
     {
         public:
-            WatchExpandedAction(cb::shared_ptr<Watch> parent_watch, cb::shared_ptr<Watch> expanded_watch,
-                                WatchesContainer & watches, LogPaneLogger * logger) :
-                WatchBaseAction(watches, logger),
+            GDBWatchExpandedAction(cb::shared_ptr<GDBWatch> parent_watch, cb::shared_ptr<GDBWatch> expanded_watch,
+                                GDBWatchesContainer & watches, LogPaneLogger * logger) :
+                GDBWatchBaseAction(watches, logger),
                 m_watch(parent_watch),
                 m_expanded_watch(expanded_watch)
             {
@@ -340,16 +362,16 @@ namespace dbg_mi
 
         private:
             CommandID m_update_id;
-            cb::shared_ptr<Watch> m_watch;
-            cb::shared_ptr<Watch> m_expanded_watch;
+            cb::shared_ptr<GDBWatch> m_watch;
+            cb::shared_ptr<GDBWatch> m_expanded_watch;
     };
 
-    class WatchCollapseAction : public WatchBaseAction
+    class GDBWatchCollapseAction : public GDBWatchBaseAction
     {
         public:
-            WatchCollapseAction(cb::shared_ptr<Watch> parent_watch, cb::shared_ptr<Watch> collapsed_watch,
-                                WatchesContainer & watches, LogPaneLogger * logger) :
-                WatchBaseAction(watches, logger),
+            GDBWatchCollapseAction(cb::shared_ptr<GDBWatch> parent_watch, cb::shared_ptr<GDBWatch> collapsed_watch,
+                                GDBWatchesContainer & watches, LogPaneLogger * logger) :
+                GDBWatchBaseAction(watches, logger),
                 m_watch(parent_watch),
                 m_collapsed_watch(collapsed_watch)
             {
@@ -360,8 +382,8 @@ namespace dbg_mi
             virtual void OnStart();
 
         private:
-            cb::shared_ptr<Watch> m_watch;
-            cb::shared_ptr<Watch> m_collapsed_watch;
+            cb::shared_ptr<GDBWatch> m_watch;
+            cb::shared_ptr<GDBWatch> m_collapsed_watch;
     };
 
 } // namespace dbg_mi

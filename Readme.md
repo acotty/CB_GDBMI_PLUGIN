@@ -16,26 +16,56 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Debug Memory view dialog
-   
-## Medium Priority
-1. Disassembly view
-2. Conditional break points:
+1. Conditional break points:
+    Done:
+        - updated GDBBreakpoint class with additional variables used in existing GDB debugger
+        - wired up breakpoints.xrc
+        - Edit breakpoint displays the breakpoints.xrc dialog
+    Outstanding:
         - add
         - edit
         - update
         - remove
+
+2. Edit watches:
+    Outstanding:
+        - wire up "new" EditWatchDlg instead of existing dialog
+
+3. Check out the missing resource files:
+    * debugger_project_options_dlg.xrc
+        - mising debuggeroptionsprjdlg.cpp/.h
+
+## Medium Priority
+1. Debug -> Memory view dialog
+    a) Plugin calls Debugger_GDB_MI::AddMemoryRange
+    b) Need to spend time analysing existing code
+2. Disassembly view
 3. Add control to vary the amount/type of logging
 4. Publish plugin to github
+5. Check addresses are 64 or 32 bit compatable
+    An example of this is:
+#if wxCHECK_VERSION(3, 1, 5)
+        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+#else
+        if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+#endif
+        {
+            sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
+        }
+        else
+        {
+            sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
+        }
+
 
 ## Low Priority
-
-1. Create Linux project file
-2. Create MacOS project file
-3. Update Linux makefile build process
-4. Update MSYS2 makefile build process
-5. Update MacOS makefile build process
-6. CPU registry dialog modify to fix value column to say 50 characters.
+1. Remote debugging 
+2. Create Linux project file
+3. Create MacOS project file
+4. Update Linux makefile build process
+5. Update MSYS2 makefile build process
+6. Update MacOS makefile build process
+7. CPU registry dialog modify to fix value column to say 50 characters.
 
 ## Check List
 
@@ -58,6 +88,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |  * Simple structure                                        | 26MAR2022 |    Pass      |   
 |  * Array of simple structures                              | 26MAR2022 |    Pass      |   
 |  * Complex structures                                      | 26MAR2022 |    Pass      |
+|  * Edit watches                                            | 29MAR2022 |  *Broken*    |
 |* Breakpoints                                               |           |              |
 |  * adding break point after the start of the debugger      | 26MAR2022 |    Pass      |
 |  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass      |
@@ -72,9 +103,10 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |* Debug show Call Stack                                     | 26MAR2022 |    Pass      |
 |  * Double click on entry should open and go to the line    | 28MAR2022 |    Pass      |
 |* Debug show Disassembly                                    | 26MAR2022 |   *Broken*   |
-|* Debug show Examine Memory Dialog                          | 28MAR2022 |    Pass      | 
-|* Debug show Memory view                                    | 26MAR2022 |   *Broken*   | 
+|* Debug -> Memory Dump Dialog                               | 28MAR2022 |    Pass      | 
+|* Debug -> Memory view Dialog                               | 26MAR2022 |   *Broken*   | 
 |* Show tty for console projects                             | 28MAR2022 |    Pass      |
+|* Projects - edit see debuggeroptionsprjdlg                 | 29MAR2022 |  *Broken*    |
 
 # COMPLETED ITEMS
 
