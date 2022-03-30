@@ -9,20 +9,24 @@
 #include "scrollingdialog.h"
 #include "definitions.h"
 
-class EditBreakpointDlg : public wxScrollingDialog
+namespace dbg_mi
 {
-    public:
-        EditBreakpointDlg(const dbg_mi::GDBBreakpoint &breakpoint, wxWindow* parent = 0);
-        ~EditBreakpointDlg() override;
 
-        const dbg_mi::GDBBreakpoint& GetBreakpoint() const { return m_breakpoint; }
-    protected:
-        void OnUpdateUI(wxUpdateUIEvent& event);
-        void EndModal(int retCode) override;
+    class EditBreakpointDlg : public wxScrollingDialog
+    {
+        public:
+            EditBreakpointDlg(const dbg_mi::GDBBreakpoint &breakpoint, wxWindow* parent = 0);
+            ~EditBreakpointDlg() override;
 
-        dbg_mi::GDBBreakpoint m_breakpoint;
-    private:
-        DECLARE_EVENT_TABLE()
-};
+            const dbg_mi::GDBBreakpoint& GetBreakpoint() const { return m_breakpoint; }
+        protected:
+            void OnUpdateUI(wxUpdateUIEvent& event);
+            void EndModal(int retCode) override;
+
+            dbg_mi::GDBBreakpoint m_breakpoint;
+        private:
+            DECLARE_EVENT_TABLE()
+    };
+}; // namespace dbg_mi
 
 #endif // EDITBREAKPOINT_H

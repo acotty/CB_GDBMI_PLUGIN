@@ -20,7 +20,6 @@
 
 namespace dbg_mi
 {
-
     class DebuggerConfigurationPanel : public wxPanel
     {
         public:

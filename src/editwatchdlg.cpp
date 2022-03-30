@@ -20,41 +20,46 @@
 
 #include "definitions.h"
 
-EditWatchDlg::EditWatchDlg(cb::shared_ptr<dbg_mi::GDBWatch> w, wxWindow* parent)
-    : m_watch(w)
+namespace dbg_mi
 {
-    wxXmlResource::Get()->LoadObject(this, parent, "dlgEditWatchGDBMI", "wxScrollingDialog");
 
-    if (m_watch)
+    EditWatchDlg::EditWatchDlg(cb::shared_ptr<dbg_mi::GDBWatch> w, wxWindow* parent)
+        : m_watch(w)
     {
-        wxString symbol;
-        m_watch->GetSymbol(symbol);
+        wxXmlResource::Get()->LoadObject(this, parent, "dlgEditWatchGDBMI", "wxScrollingDialog");
 
-        XRCCTRL(*this, "txtKeyword", wxTextCtrl)->SetValue(symbol);
-#warning "Following line from existing GDB code"
-//        XRCCTRL(*this, "rbFormat", wxRadioBox)->SetSelection((int)m_watch->GetFormat());
-//        XRCCTRL(*this, "chkArray", wxCheckBox)->SetValue(m_watch->IsArray());
-//        XRCCTRL(*this, "spnArrStart", wxSpinCtrl)->SetValue(m_watch->GetArrayStart());
-//        XRCCTRL(*this, "spnArrCount", wxSpinCtrl)->SetValue(m_watch->GetArrayCount());
+        if (m_watch)
+        {
+            wxString symbol;
+            m_watch->GetSymbol(symbol);
+
+            XRCCTRL(*this, "txtKeyword", wxTextCtrl)->SetValue(symbol);
+    #warning "Following line from existing GDB code"
+    //        XRCCTRL(*this, "rbFormat", wxRadioBox)->SetSelection((int)m_watch->GetFormat());
+    //        XRCCTRL(*this, "chkArray", wxCheckBox)->SetValue(m_watch->IsArray());
+    //        XRCCTRL(*this, "spnArrStart", wxSpinCtrl)->SetValue(m_watch->GetArrayStart());
+    //        XRCCTRL(*this, "spnArrCount", wxSpinCtrl)->SetValue(m_watch->GetArrayCount());
+        }
+        XRCCTRL(*this, "txtKeyword", wxTextCtrl)->SetFocus();
+        XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
     }
-    XRCCTRL(*this, "txtKeyword", wxTextCtrl)->SetFocus();
-    XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
-}
 
-EditWatchDlg::~EditWatchDlg()
-{
-}
-
-void EditWatchDlg::EndModal(int retCode)
-{
-    if (retCode == wxID_OK && m_watch)
+    EditWatchDlg::~EditWatchDlg()
     {
-#warning "Following line from existing GDB code"
-//        m_watch->SetSymbol(CleanStringValue(XRCCTRL(*this, "txtKeyword", wxTextCtrl)->GetValue()));
-//        m_watch->SetFormat((WatchFormat)XRCCTRL(*this, "rbFormat", wxRadioBox)->GetSelection());
-//        m_watch->SetArray(XRCCTRL(*this, "chkArray", wxCheckBox)->GetValue());
-//        m_watch->SetArrayParams(XRCCTRL(*this, "spnArrStart", wxSpinCtrl)->GetValue(),
-//                                XRCCTRL(*this, "spnArrCount", wxSpinCtrl)->GetValue());
     }
-    wxScrollingDialog::EndModal(retCode);
-}
+
+    void EditWatchDlg::EndModal(int retCode)
+    {
+        if (retCode == wxID_OK && m_watch)
+        {
+    #warning "Following line from existing GDB code"
+    //        m_watch->SetSymbol(CleanStringValue(XRCCTRL(*this, "txtKeyword", wxTextCtrl)->GetValue()));
+    //        m_watch->SetFormat((WatchFormat)XRCCTRL(*this, "rbFormat", wxRadioBox)->GetSelection());
+    //        m_watch->SetArray(XRCCTRL(*this, "chkArray", wxCheckBox)->GetValue());
+    //        m_watch->SetArrayParams(XRCCTRL(*this, "spnArrStart", wxSpinCtrl)->GetValue(),
+    //                                XRCCTRL(*this, "spnArrCount", wxSpinCtrl)->GetValue());
+        }
+        wxScrollingDialog::EndModal(retCode);
+    }
+
+} // namespace dbg_mi

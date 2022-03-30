@@ -10,16 +10,19 @@
 
 #include "definitions.h"
 
-class EditWatchDlg : public wxScrollingDialog
+namespace dbg_mi
 {
-    public:
-        EditWatchDlg(cb::shared_ptr<dbg_mi::GDBWatch> w, wxWindow* parent);
-        ~EditWatchDlg() override;
+    class EditWatchDlg : public wxScrollingDialog
+    {
+        public:
+            EditWatchDlg(cb::shared_ptr<dbg_mi::GDBWatch> w, wxWindow* parent);
+            ~EditWatchDlg() override;
 
-    protected:
-        void EndModal(int retCode) override;
+        protected:
+            void EndModal(int retCode) override;
 
-        cb::shared_ptr<dbg_mi::GDBWatch> m_watch;
-};
+            cb::shared_ptr<dbg_mi::GDBWatch> m_watch;
+    };
+}; // namespace dbg_mi
 
 #endif // __EDITWATCHDLG_H__

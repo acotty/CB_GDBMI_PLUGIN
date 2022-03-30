@@ -12,46 +12,41 @@
     #pragma hdrstop
 #endif
 
-//(*Headers(DataBreakpointDlg)
 #include <wx/checkbox.h>
 #include <wx/sizer.h>
 #include "scrollingdialog.h"
 #include <wx/textctrl.h>
 #include <wx/radiobox.h>
-//*)
 
-class DataBreakpointDlg: public wxScrollingDialog
+namespace dbg_mi
 {
-    public:
 
-        DataBreakpointDlg(wxWindow *parent, const wxString& dataExpression, bool enabled, int selection);
-        virtual ~DataBreakpointDlg();
+    class DataBreakpointDlg: public wxScrollingDialog
+    {
+        public:
 
-        //(*Identifiers(DataBreakpointDlg)
-        static const long ID_CHK_ENABLED;
-        static const long ID_TXT_DATA_EXPRESION;
-        static const long ID_RDO_CONDITION;
-        //*)
+            DataBreakpointDlg(wxWindow *parent, const wxString& dataExpression, bool enabled, int selection);
+            virtual ~DataBreakpointDlg();
 
-        bool IsBreakpointEnabled();
-        int GetSelection();
-        wxString GetDataExpression() const;
+            static const long ID_CHK_ENABLED;
+            static const long ID_TXT_DATA_EXPRESION;
+            static const long ID_RDO_CONDITION;
 
-    protected:
+            bool IsBreakpointEnabled();
+            int GetSelection();
+            wxString GetDataExpression() const;
 
-        //(*Handlers(DataBreakpointDlg)
-        //*)
+        protected:
 
-        //(*Declarations(DataBreakpointDlg)
-        wxRadioBox* m_condition;
-        wxCheckBox* m_enabled;
-        wxTextCtrl* m_dataExpression;
-        wxStdDialogButtonSizer* StdDialogButtonSizer1;
-        //*)
+            wxRadioBox* m_condition;
+            wxCheckBox* m_enabled;
+            wxTextCtrl* m_dataExpression;
+            wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
-    private:
+        private:
 
-        DECLARE_EVENT_TABLE()
-};
+            DECLARE_EVENT_TABLE()
+    };
+}; // namespace dbg_mi
 
 #endif

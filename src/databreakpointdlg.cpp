@@ -6,77 +6,71 @@
 #include "databreakpointdlg.h"
 #include "definitions.h"
 
-//(*InternalHeaders(DataBreakpointDlg)
 #include <wx/button.h>
 #include <wx/string.h>
 #include <wx/intl.h>
-//*)
 
-//(*IdInit(DataBreakpointDlg)
-const long DataBreakpointDlg::ID_CHK_ENABLED = wxNewId();
-const long DataBreakpointDlg::ID_TXT_DATA_EXPRESION = wxNewId();
-const long DataBreakpointDlg::ID_RDO_CONDITION = wxNewId();
-//*)
-
-BEGIN_EVENT_TABLE(DataBreakpointDlg,wxScrollingDialog)
-    //(*EventTable(DataBreakpointDlg)
-    //*)
-END_EVENT_TABLE()
-
-DataBreakpointDlg::DataBreakpointDlg(wxWindow *parent, const wxString& dataExpression, bool enabled, int selection)
+namespace dbg_mi
 {
-    //(*Initialize(DataBreakpointDlg)
-    wxBoxSizer* bszMain;
 
-    Create(parent, wxID_ANY, _("Data breakpoint"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, "wxID_ANY");
-    bszMain = new wxBoxSizer(wxVERTICAL);
-    m_enabled = new wxCheckBox(this, ID_CHK_ENABLED, _("Enabled"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, "ID_CHK_ENABLED");
-    m_enabled->SetValue(false);
-    bszMain->Add(m_enabled, 0, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 8);
-    m_dataExpression = new wxTextCtrl(this, ID_TXT_DATA_EXPRESION, wxEmptyString, wxDefaultPosition, wxSize(265,23), wxTE_PROCESS_ENTER, wxDefaultValidator, "ID_TXT_DATA_EXPRESION");
-    m_dataExpression->SetFocus();
-    bszMain->Add(m_dataExpression, 1, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 8);
-    wxString __wxRadioBoxChoices_1[3] =
+    const long DataBreakpointDlg::ID_CHK_ENABLED = wxNewId();
+    const long DataBreakpointDlg::ID_TXT_DATA_EXPRESION = wxNewId();
+    const long DataBreakpointDlg::ID_RDO_CONDITION = wxNewId();
+
+    BEGIN_EVENT_TABLE(DataBreakpointDlg,wxScrollingDialog)
+    END_EVENT_TABLE()
+
+    DataBreakpointDlg::DataBreakpointDlg(wxWindow *parent, const wxString& dataExpression, bool enabled, int selection)
     {
-    	_("Break on read"),
-    	_("Break on write"),
-    	_("Break on read or write")
-    };
-    m_condition = new wxRadioBox(this, ID_RDO_CONDITION, _("Condition"), wxDefaultPosition, wxDefaultSize, 3, __wxRadioBoxChoices_1, 1, 0, wxDefaultValidator, "ID_RDO_CONDITION");
-    bszMain->Add(m_condition, 0, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 8);
-    StdDialogButtonSizer1 = new wxStdDialogButtonSizer();
-    StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_OK, wxEmptyString));
-    StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_CANCEL, wxEmptyString));
-    StdDialogButtonSizer1->Realize();
-    bszMain->Add(StdDialogButtonSizer1, 0, wxALL|wxEXPAND, 8);
-    SetSizer(bszMain);
-    bszMain->Fit(this);
-    bszMain->SetSizeHints(this);
-    Center();
-    //*)
+        wxBoxSizer* bszMain;
 
-    m_enabled->SetValue(enabled);
-    m_condition->SetSelection(selection);
-    m_dataExpression->SetValue(dataExpression);
-}
+        Create(parent, wxID_ANY, _("Data breakpoint"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, "wxID_ANY");
+        bszMain = new wxBoxSizer(wxVERTICAL);
+        m_enabled = new wxCheckBox(this, ID_CHK_ENABLED, _("Enabled"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, "ID_CHK_ENABLED");
+        m_enabled->SetValue(false);
+        bszMain->Add(m_enabled, 0, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 8);
+        m_dataExpression = new wxTextCtrl(this, ID_TXT_DATA_EXPRESION, wxEmptyString, wxDefaultPosition, wxSize(265,23), wxTE_PROCESS_ENTER, wxDefaultValidator, "ID_TXT_DATA_EXPRESION");
+        m_dataExpression->SetFocus();
+        bszMain->Add(m_dataExpression, 1, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 8);
+        wxString __wxRadioBoxChoices_1[3] =
+        {
+            _("Break on read"),
+            _("Break on write"),
+            _("Break on read or write")
+        };
+        m_condition = new wxRadioBox(this, ID_RDO_CONDITION, _("Condition"), wxDefaultPosition, wxDefaultSize, 3, __wxRadioBoxChoices_1, 1, 0, wxDefaultValidator, "ID_RDO_CONDITION");
+        bszMain->Add(m_condition, 0, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 8);
+        StdDialogButtonSizer1 = new wxStdDialogButtonSizer();
+        StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_OK, wxEmptyString));
+        StdDialogButtonSizer1->AddButton(new wxButton(this, wxID_CANCEL, wxEmptyString));
+        StdDialogButtonSizer1->Realize();
+        bszMain->Add(StdDialogButtonSizer1, 0, wxALL|wxEXPAND, 8);
+        SetSizer(bszMain);
+        bszMain->Fit(this);
+        bszMain->SetSizeHints(this);
+        Center();
 
-DataBreakpointDlg::~DataBreakpointDlg()
-{
-    //(*Destroy(DataBreakpointDlg)
-    //*)
-}
+        m_enabled->SetValue(enabled);
+        m_condition->SetSelection(selection);
+        m_dataExpression->SetValue(dataExpression);
+    }
 
-bool DataBreakpointDlg::IsBreakpointEnabled()
-{
-    return m_enabled->IsChecked();
-}
+    DataBreakpointDlg::~DataBreakpointDlg()
+    {
+    }
 
-int DataBreakpointDlg::GetSelection()
-{
-    return m_condition->GetSelection();
-}
+    bool DataBreakpointDlg::IsBreakpointEnabled()
+    {
+        return m_enabled->IsChecked();
+    }
 
-wxString DataBreakpointDlg::GetDataExpression() const
-{
-    return dbg_mi::CleanStringValue(m_dataExpression->GetValue());
-}
+    int DataBreakpointDlg::GetSelection()
+    {
+        return m_condition->GetSelection();
+    }
+
+    wxString DataBreakpointDlg::GetDataExpression() const
+    {
+        return dbg_mi::CleanStringValue(m_dataExpression->GetValue());
+    }
+} // namespace dbg_mi

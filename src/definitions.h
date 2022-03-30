@@ -24,9 +24,9 @@ namespace dbg_mi
         public:
             enum BreakpointType
             {
-                bptCode = 0,    ///< Normal file/line breakpoint
-                bptFunction,    ///< Function signature breakpoint
-                bptData         ///< Data breakpoint
+                bptCode = 0,    // Normal file/line breakpoint
+                bptFunction,    // Function signature breakpoint
+                bptData         // Data breakpoint
             };
 
             GDBBreakpoint() :
@@ -300,30 +300,30 @@ namespace dbg_mi
             }
 
         private:
-            BreakpointType m_type;          ///< The type of this breakpoint.
+            BreakpointType m_type;          // The type of this breakpoint.
 
-            cbProject * m_project;          ///< The Project the file belongs to.
-            wxString m_filename;            ///< The filename for the breakpoint.
-            int m_line;                     ///< The line for the breakpoint.
-            //wxString filenameAsPassed;    ///< The filename for the breakpoint as passed to the debugger (i.e. full filename).
+            cbProject * m_project;          // The Project the file belongs to.
+            wxString m_filename;            // The filename for the breakpoint.
+            int m_line;                     // The line for the breakpoint.
+            //wxString filenameAsPassed;    // The filename for the breakpoint as passed to the debugger (i.e. full filename).
 
-            long m_index;                   ///< The breakpoint number. Set automatically. *Don't* write to it.
-            bool m_temporary;               ///< Is this a temporary (one-shot) breakpoint?
-            bool m_enabled;                 ///< Is the breakpoint enabled?
-            bool m_active;                  ///< Is the breakpoint active? (currently unused)
-            bool m_useIgnoreCount;          ///< Should this breakpoint be ignored for the first X passes? (@c x == @c ignoreCount)
-            int m_ignoreCount;              ///< The number of passes before this breakpoint should hit. @c useIgnoreCount must be true.
-            bool m_useCondition;            ///< Should this breakpoint hit only if a specific condition is met?
-            bool m_wantsCondition;          ///< Evaluate condition for pending breakpoints at first stop !
-            wxString m_condition;           ///< The condition that must be met for the breakpoint to hit. @c useCondition must be true.
-            wxString m_func;                ///< The function to set the breakpoint. If this is set, it is preferred over the filename/line combination.
-            unsigned long int m_address;    ///< The actual breakpoint address. This is read back from the debugger. *Don't* write to it.
-            bool m_alreadySet;              ///< Is this already set? Used to mark temporary breakpoints for removal.
-            wxString m_lineText;            ///< Optionally, the breakpoint line's text (used by GDB for setting breapoints on ctors/dtors).
-            wxString m_breakAddress;        ///< Valid only for type==bptData: address to break when read/written.
-            bool m_breakOnRead;             ///< Valid only for type==bptData: break when memory is read from.
-            bool m_breakOnWrite;            ///< Valid only for type==bptData: break when memory is written to.
-            void* m_userData;               ///< Custom user data.
+            long m_index;                   // The breakpoint number. Set automatically. *Don't* write to it.
+            bool m_temporary;               // Is this a temporary (one-shot) breakpoint?
+            bool m_enabled;                 // Is the breakpoint enabled?
+            bool m_active;                  // Is the breakpoint active? (currently unused)
+            bool m_useIgnoreCount;          // Should this breakpoint be ignored for the first X passes? (@c x == @c ignoreCount)
+            int m_ignoreCount;              // The number of passes before this breakpoint should hit. @c useIgnoreCount must be true.
+            bool m_useCondition;            // Should this breakpoint hit only if a specific condition is met?
+            bool m_wantsCondition;          // Evaluate condition for pending breakpoints at first stop !
+            wxString m_condition;           // The condition that must be met for the breakpoint to hit. @c useCondition must be true.
+            wxString m_func;                // The function to set the breakpoint. If this is set, it is preferred over the filename/line combination.
+            unsigned long int m_address;    // The actual breakpoint address. This is read back from the debugger. *Don't* write to it.
+            bool m_alreadySet;              // Is this already set? Used to mark temporary breakpoints for removal.
+            wxString m_lineText;            // Optionally, the breakpoint line's text (used by GDB for setting breapoints on ctors/dtors).
+            wxString m_breakAddress;        // Valid only for type==bptData: address to break when read/written.
+            bool m_breakOnRead;             // Valid only for type==bptData: break when memory is read from.
+            bool m_breakOnWrite;            // Valid only for type==bptData: break when memory is written to.
+            void* m_userData;               // Custom user data.
 
     };
 

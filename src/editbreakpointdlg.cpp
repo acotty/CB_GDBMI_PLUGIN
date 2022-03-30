@@ -18,53 +18,57 @@
 
 #include "editbreakpointdlg.h"
 
-BEGIN_EVENT_TABLE(EditBreakpointDlg, wxScrollingDialog)
-    EVT_UPDATE_UI(-1, EditBreakpointDlg::OnUpdateUI)
-END_EVENT_TABLE()
-
-EditBreakpointDlg::EditBreakpointDlg(const dbg_mi::GDBBreakpoint &breakpoint, wxWindow* parent)
-    : m_breakpoint(breakpoint)
+namespace dbg_mi
 {
-    //ctor
-    wxXmlResource::Get()->LoadObject(this, parent, "dlgEditBreakpointGDBMI", "wxScrollingDialog");
-    XRCCTRL(*this, "chkEnabled", wxCheckBox)->SetValue(m_breakpoint.IsEnabled());
+    BEGIN_EVENT_TABLE(EditBreakpointDlg, wxScrollingDialog)
+        EVT_UPDATE_UI(-1, EditBreakpointDlg::OnUpdateUI)
+    END_EVENT_TABLE()
 
-#warning EditBreakpointDlg missing functionality
-    //XRCCTRL(*this, "chkIgnore", wxCheckBox)->SetValue(m_breakpoint.useIgnoreCount);
-    //XRCCTRL(*this, "spnIgnoreCount", wxSpinCtrl)->SetValue(m_breakpoint.ignoreCount);
-    //XRCCTRL(*this, "chkExpr", wxCheckBox)->SetValue(m_breakpoint.useCondition);
-    //XRCCTRL(*this, "txtExpr", wxTextCtrl)->SetValue(m_breakpoint.condition);
-    XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
-
-    // Limit vertical resizing.
-    SetMaxSize(wxSize(-1, GetMinHeight()));
-}
-
-EditBreakpointDlg::~EditBreakpointDlg()
-{
-    //dtor
-}
-
-void EditBreakpointDlg::EndModal(int retCode)
-{
-    if (retCode == wxID_OK)
+    EditBreakpointDlg::EditBreakpointDlg(const dbg_mi::GDBBreakpoint &breakpoint, wxWindow* parent)
+        : m_breakpoint(breakpoint)
     {
-        m_breakpoint.SetEnabled(XRCCTRL(*this, "chkEnabled", wxCheckBox)->GetValue());
-#warning EditBreakpointDlg missing functionality
-//        m_breakpoint.useIgnoreCount = XRCCTRL(*this, "chkIgnore", wxCheckBox)->IsChecked();
-//        m_breakpoint.ignoreCount = XRCCTRL(*this, "spnIgnoreCount", wxSpinCtrl)->GetValue();
-//        m_breakpoint.useCondition = XRCCTRL(*this, "chkExpr", wxCheckBox)->IsChecked();
-//        m_breakpoint.condition = CleanStringValue(XRCCTRL(*this, "txtExpr", wxTextCtrl)->GetValue());
-    }
-    wxScrollingDialog::EndModal(retCode);
-}
+        //ctor
+        wxXmlResource::Get()->LoadObject(this, parent, "dlgEditBreakpointGDBMI", "wxScrollingDialog");
+        XRCCTRL(*this, "chkEnabled", wxCheckBox)->SetValue(m_breakpoint.IsEnabled());
 
-void EditBreakpointDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
-{
-    bool en = XRCCTRL(*this, "chkEnabled", wxCheckBox)->IsChecked();
-#warning EditBreakpointDlg missing functionality
-//    XRCCTRL(*this, "chkIgnore", wxCheckBox)->Enable(en && !XRCCTRL(*this, "chkExpr", wxCheckBox)->IsChecked());
-//    XRCCTRL(*this, "spnIgnoreCount", wxSpinCtrl)->Enable(en && XRCCTRL(*this, "chkIgnore", wxCheckBox)->IsChecked());
-//    XRCCTRL(*this, "chkExpr", wxCheckBox)->Enable(en && !XRCCTRL(*this, "chkIgnore", wxCheckBox)->IsChecked());
-//    XRCCTRL(*this, "txtExpr", wxTextCtrl)->Enable(en && XRCCTRL(*this, "chkExpr", wxCheckBox)->IsChecked());
-}
+    #warning EditBreakpointDlg missing functionality
+        //XRCCTRL(*this, "chkIgnore", wxCheckBox)->SetValue(m_breakpoint.useIgnoreCount);
+        //XRCCTRL(*this, "spnIgnoreCount", wxSpinCtrl)->SetValue(m_breakpoint.ignoreCount);
+        //XRCCTRL(*this, "chkExpr", wxCheckBox)->SetValue(m_breakpoint.useCondition);
+        //XRCCTRL(*this, "txtExpr", wxTextCtrl)->SetValue(m_breakpoint.condition);
+        XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
+
+        // Limit vertical resizing.
+        SetMaxSize(wxSize(-1, GetMinHeight()));
+    }
+
+    EditBreakpointDlg::~EditBreakpointDlg()
+    {
+        //dtor
+    }
+
+    void EditBreakpointDlg::EndModal(int retCode)
+    {
+        if (retCode == wxID_OK)
+        {
+            m_breakpoint.SetEnabled(XRCCTRL(*this, "chkEnabled", wxCheckBox)->GetValue());
+    #warning EditBreakpointDlg missing functionality
+    //        m_breakpoint.useIgnoreCount = XRCCTRL(*this, "chkIgnore", wxCheckBox)->IsChecked();
+    //        m_breakpoint.ignoreCount = XRCCTRL(*this, "spnIgnoreCount", wxSpinCtrl)->GetValue();
+    //        m_breakpoint.useCondition = XRCCTRL(*this, "chkExpr", wxCheckBox)->IsChecked();
+    //        m_breakpoint.condition = CleanStringValue(XRCCTRL(*this, "txtExpr", wxTextCtrl)->GetValue());
+        }
+        wxScrollingDialog::EndModal(retCode);
+    }
+
+    void EditBreakpointDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
+    {
+        bool en = XRCCTRL(*this, "chkEnabled", wxCheckBox)->IsChecked();
+    #warning EditBreakpointDlg missing functionality
+    //    XRCCTRL(*this, "chkIgnore", wxCheckBox)->Enable(en && !XRCCTRL(*this, "chkExpr", wxCheckBox)->IsChecked());
+    //    XRCCTRL(*this, "spnIgnoreCount", wxSpinCtrl)->Enable(en && XRCCTRL(*this, "chkIgnore", wxCheckBox)->IsChecked());
+    //    XRCCTRL(*this, "chkExpr", wxCheckBox)->Enable(en && !XRCCTRL(*this, "chkIgnore", wxCheckBox)->IsChecked());
+    //    XRCCTRL(*this, "txtExpr", wxTextCtrl)->Enable(en && XRCCTRL(*this, "chkExpr", wxCheckBox)->IsChecked());
+    }
+
+} // namespace dbg_mi

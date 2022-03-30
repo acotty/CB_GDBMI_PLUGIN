@@ -178,7 +178,7 @@ dbg_mi::DebuggerConfiguration & Debugger_GDB_MI::GetActiveConfigEx()
 
 cbConfigurationPanel* Debugger_GDB_MI::GetProjectConfigurationPanel(wxWindow* parent, cbProject* project)
 {
-    DebuggerOptionsProjectDlg* dlg = new DebuggerOptionsProjectDlg(parent, this, project);
+    dbg_mi::DebuggerOptionsProjectDlg* dlg = new dbg_mi::DebuggerOptionsProjectDlg(parent, this, project);
     return dlg;
 }
 
@@ -1346,7 +1346,7 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
     {
         case dbg_mi::GDBBreakpoint::bptCode:
         {
-            EditBreakpointDlg dlg(*bp, Manager::Get()->GetAppWindow());
+            dbg_mi::EditBreakpointDlg dlg(*bp, Manager::Get()->GetAppWindow());
             PlaceWindow(&dlg);
             if (dlg.ShowModal() == wxID_OK)
             {
@@ -1367,7 +1367,7 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
                 old_sel = 1;
             }
 
-            DataBreakpointDlg dlg(Manager::Get()->GetAppWindow(), bp->get_breakAddress(), bp->get_enabled(), old_sel);
+            dbg_mi::DataBreakpointDlg dlg(Manager::Get()->GetAppWindow(), bp->get_breakAddress(), bp->get_enabled(), old_sel);
             PlaceWindow(&dlg);
             if (dlg.ShowModal() == wxID_OK)
             {
@@ -1702,7 +1702,7 @@ void Debugger_GDB_MI::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
     }
 
     cb::shared_ptr<dbg_mi::GDBWatch> real_watch = cb::static_pointer_cast<dbg_mi::GDBWatch>(watch);
-    EditWatchDlg dlg(real_watch, nullptr);
+    dbg_mi::EditWatchDlg dlg(real_watch, nullptr);
     PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
     {
