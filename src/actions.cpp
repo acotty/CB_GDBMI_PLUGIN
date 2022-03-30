@@ -1050,8 +1050,8 @@ namespace dbg_mi
     void GDBWatchBaseAction::ExecuteListCommand(cb::shared_ptr<GDBWatch> watch, cb::shared_ptr<GDBWatch> parent)
     {
         CommandID id;
-        int iStart = watch->GetRangeStart();
-        int iEnd = watch->GetRangeEnd();
+        int iStart = watch->GetRangeArrayStart();
+        int iEnd = watch->GetRangeArrayEnd();
 
         if ((iStart > -1) && (iEnd > -1))
         {
@@ -1075,8 +1075,8 @@ namespace dbg_mi
         }
 
         CommandID id;
-        int iStart = parent->GetRangeStart();
-        int iEnd = parent->GetRangeEnd();
+        int iStart = parent->GetRangeArrayStart();
+        int iEnd = parent->GetRangeArrayEnd();
 
         if ((iStart > -1) && (iEnd > -1))
         {
@@ -1132,7 +1132,7 @@ namespace dbg_mi
                         {
                             if (children > 1)
                             {
-                                m_watch->SetRange(0, children);
+                                m_watch->SetRangeArray(0, children);
                             }
 
                             m_step = StepListChildren;

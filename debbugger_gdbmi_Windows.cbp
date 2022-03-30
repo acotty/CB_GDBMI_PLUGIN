@@ -90,7 +90,6 @@
 		<Unit filename="Readme.md" />
 		<Unit filename="configure.ac" />
 		<Unit filename="resources/breakpoints.xrc" />
-		<Unit filename="resources/debugger_gdbmi_menu.xrc" />
 		<Unit filename="resources/debugger_options_dlg.xrc" />
 		<Unit filename="resources/debugger_project_options_dlg.xrc" />
 		<Unit filename="resources/edit_watches_dlg.xrc" />
@@ -107,10 +106,7 @@
 		<Unit filename="src/databreakpointdlg.h" />
 		<Unit filename="src/debuggeroptionsdlg.cpp" />
 		<Unit filename="src/debuggeroptionsdlg.h" />
-		<Unit filename="src/debuggeroptionsprjdlg.cpp">
-			<Option compile="0" />
-			<Option link="0" />
-		</Unit>
+		<Unit filename="src/debuggeroptionsprjdlg.cpp" />
 		<Unit filename="src/debuggeroptionsprjdlg.h" />
 		<Unit filename="src/definitions.cpp" />
 		<Unit filename="src/definitions.h" />

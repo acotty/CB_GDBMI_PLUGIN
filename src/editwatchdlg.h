@@ -15,7 +15,7 @@ namespace dbg_mi
     class EditWatchDlg : public wxScrollingDialog
     {
         public:
-            EditWatchDlg(cb::shared_ptr<dbg_mi::GDBWatch> w, wxWindow* parent);
+            EditWatchDlg(cb::shared_ptr<dbg_mi::GDBWatch> watch, wxWindow* parent);
             ~EditWatchDlg() override;
 
         protected:

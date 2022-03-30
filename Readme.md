@@ -29,15 +29,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
         - load variables/data
         - save variables/data
 
-2. Edit watches:
-    Done:
-        - wire up EditWatchDlg to display the dialog
-        - added hacked editwatchdlg.cpp/.h files into the project
-    Outstanding:
-        - load variables/data
-        - save variables/data
-
-3. Check out the missing resource files:
+2. Check out the missing resource files:
     Done:
         - wire up debugger_project_options_dlg.xrc to display the dialog
         - added hacked debuggeroptionsprjdlg.cpp/.h files into the project
@@ -98,7 +90,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |  * Simple structure                                        | 26MAR2022 |    Pass    |
 |  * Array of simple structures                              | 26MAR2022 |    Pass    |
 |  * Complex structures                                      | 26MAR2022 |    Pass    |
-|  * Edit watches                                            | 29MAR2022 |  *Broken*  |
+|  * Edit watches                                            | 30MAR2022 |    Pass    |
 |* Breakpoints                                               |           |            |
 |  * adding break point after the start of the debugger      | 26MAR2022 |    Pass    |
 |  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass    |
@@ -120,18 +112,20 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 # COMPLETED ITEMS
 
-* 24MAR2022 Done - Update logging - merge new logging code
-* 24MAR2022 Done - Fix warnings
-* 24MAR2022 Done - Update file header - C::B GPL text
-* 24MAR2022 Done - Add more logging to help find issues
-* 25MAR2022 Done - Update logged data to be more readable/understanding
-* 25MAR2022 Fixed - removed array watch limit of 100
-* 25MAR2022 Fixed - updates of array items > 9
+* 30MAR2022 Done - Edit watches now working
+* 28MAR2022 Done - Examine Memory Dialog now working
+* 28MAR2022 Done - fixed Disable/enable break point via pop up menu
+* 28MAR2022 Done - Show tty for console projects 
+* 27MAR2022 Done - CPU Registers showing and updating
 * 26MAR2022 Fixed - display of structures with multiple depths now working
 * 26MAR2022 Done - Debug "simple" source code sample with the following "data" types:
 * 26MAR2022 Done - First pass of the check list completed
 * 26MAR2022 Done - Project file now creates the debugger_gdbmi.cbplugin file with the non striped DLL (still includes debugging)
-* 27MAR2022 Done - CPU Registers showing and updating
-* 28MAR2022 Done - Examine Memory Dialog now working
-* 28MAR2022 Done - fixed Disable/enable break point via pop up menu
-* 28MAR2022 Done - Show tty for console projects 
+* 25MAR2022 Done - Update logged data to be more readable/understanding
+* 25MAR2022 Fixed - removed array watch limit of 100
+* 25MAR2022 Fixed - updates of array items > 9
+* 24MAR2022 Done - Update logging - merge new logging code
+* 24MAR2022 Done - Fix warnings
+* 24MAR2022 Done - Update file header - C::B GPL text
+* 24MAR2022 Done - Add more logging to help find issues
+

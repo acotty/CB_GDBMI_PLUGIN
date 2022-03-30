@@ -334,13 +334,32 @@ namespace dbg_mi
     class GDBWatch : public cbWatch
     {
         public:
+            /** Watch variable format.
+              *
+              * @note not all formats are implemented for all debugger drivers.
+              */
+            enum WatchFormat
+            {
+                Undefined = 0, ///< Format is undefined (whatever the debugger uses by default).
+                Decimal, ///< Variable should be displayed as decimal.
+                Unsigned, ///< Variable should be displayed as unsigned.
+                Hex, ///< Variable should be displayed as hexadecimal (e.g. 0xFFFFFFFF).
+                Binary, ///< Variable should be displayed as binary (e.g. 00011001).
+                Char, ///< Variable should be displayed as a single character (e.g. 'x').
+                Float, ///< Variable should be displayed as floating point number (e.g. 14.35)
+
+                // do not remove these
+                Last, ///< used for iterations
+                Any ///< used for watches searches
+            };
+        public:
             GDBWatch(wxString const & symbol, bool for_tooltip, bool delete_on_collapse = true) :
                 m_symbol(symbol),
                 m_has_been_expanded(false),
                 m_for_tooltip(for_tooltip),
                 m_delete_on_collapse(delete_on_collapse),
-                m_start(-1),
-                m_end(-1)
+                m_array_start(-1),
+                m_array_end(-1)
             {
             }
 
@@ -349,26 +368,47 @@ namespace dbg_mi
                 m_id = m_type = m_value = wxEmptyString;
                 m_has_been_expanded = false;
                 RemoveChildren();
-                m_start = -1;
-                m_end = -1;
+                m_array_start = -1;
+                m_array_end = -1;
                 Expand(false);
             }
 
-            void SetRange(int iStart, int iEnd)
+            void SetRangeArray(long iStart, long iEnd)
             {
-                m_start = iStart;
-                m_end = iEnd;
+                m_array_start = iStart;
+                m_array_end = iEnd;
             }
 
-            int GetRangeStart()
+            long GetRangeArrayStart()
             {
-                return m_start;
+                return m_array_start;
             }
 
-            int GetRangeEnd()
+            long GetRangeArrayEnd()
             {
-                return m_end;
+                return m_array_end;
             }
+
+            void SetIsArray(bool isArray)
+            {
+                 m_is_array = isArray;
+            }
+
+            bool GetIsArray()
+            {
+                return m_is_array;
+            }
+
+            void SetForTooltip(bool bForTooltip)
+            {
+                 m_forTooltip = bForTooltip;
+            }
+
+            bool GetForTooltip()
+            {
+                return m_forTooltip;
+            }
+
 
             wxString const & GetID() const
             {
@@ -404,48 +444,64 @@ namespace dbg_mi
             {
                 return m_delete_on_collapse;
             }
-        public:
-            virtual void GetSymbol(wxString & symbol) const
+
+            void GetSymbol(wxString & symbol) const
             {
                 symbol = m_symbol;
             }
 
-            virtual wxString GetSymbol() const
+            wxString GetSymbol() const
             {
                 return m_symbol;
             }
 
-            virtual void GetValue(wxString & value) const
+            void SetSymbol(const wxString& symbol)
+            {
+                m_symbol = symbol;
+            }
+
+            void GetValue(wxString & value) const
             {
                 value = m_value;
             }
 
-            virtual bool SetValue(const wxString & value)
+            bool SetValue(const wxString & value)
             {
                 m_value = value;
                 return true;
             }
 
-            virtual void GetFullWatchString(wxString & full_watch) const
+            void GetFullWatchString(wxString & full_watch) const
             {
                 full_watch = m_value;
             }
 
-            virtual void GetType(wxString & type) const
+            void GetType(wxString & type) const
             {
                 type = m_type;
             }
 
-            virtual void SetType(const wxString & type)
+            void SetType(const wxString & type)
             {
                 m_type = type;
             }
 
-            virtual wxString GetDebugString() const
+            void SetFormat(WatchFormat format)
+            {
+                m_format = format;
+            }
+
+            WatchFormat GetFormat() const
+            {
+                return m_format;
+            }
+
+            wxString GetDebugString() const
             {
                 m_debug_string = m_id + "->" + m_symbol + " = " + m_value;
                 return m_debug_string;
             }
+
         protected:
             virtual void DoDestroy() {}
         private:
@@ -453,13 +509,17 @@ namespace dbg_mi
             wxString m_symbol;
             wxString m_value;
             wxString m_type;
+            WatchFormat m_format;
 
             mutable wxString m_debug_string;
             bool m_has_been_expanded;
             bool m_for_tooltip;
             bool m_delete_on_collapse;
 
-            int m_start, m_end;
+            long m_array_start;
+            long m_array_end;
+            bool m_is_array;
+            bool m_forTooltip;
     };
 
     typedef std::vector<cb::shared_ptr<GDBWatch> > GDBWatchesContainer;
