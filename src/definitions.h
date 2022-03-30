@@ -88,10 +88,12 @@ namespace dbg_mi
             {
                 return m_index;
             }
+
             const wxString & GetCondition() const
             {
                 return m_condition;
             }
+
             int GetIgnoreCount() const
             {
                 return 0;
@@ -101,6 +103,7 @@ namespace dbg_mi
             {
                 return false;
             }
+
             bool HasIgnoreCount() const
             {
                 return false;
@@ -110,7 +113,8 @@ namespace dbg_mi
             {
                 m_index = index;
             }
-            void ShiftLine(int linesToShift)
+
+            void SetShiftLines(int linesToShift)
             {
                 m_line += linesToShift;
             }
@@ -119,182 +123,198 @@ namespace dbg_mi
             {
                 return m_project;
             }
-            BreakpointType get_type()
+
+            BreakpointType GetType()
             {
                 return m_type;
             }
-            void set_type(BreakpointType type)
+
+            void SeTtype(BreakpointType type)
             {
                 m_type = type;
             }
 
-            wxString get_filename()
+
+            wxString GetFilename()
             {
                 return m_filename;
             }
-            void set_filename(wxString filename)
+
+            void SetFilename(wxString filename)
             {
                 m_filename = filename;
             }
 
-            int get_line()
+            int GetLine()
             {
                 return m_line;
             }
-            void set_line(int line)
+            void SetLine(int line)
             {
                 m_line = line;
             }
 
-            long get_index()
+            long GetIndex()
             {
                 return m_index;
             }
-            void set_index(long index)
+
+            void SetIndex(long index)
             {
                 m_index = index;
             }
 
-            bool get_temporary()
+            bool GetIsTemporary()
             {
                 return m_temporary;
             }
-            void set_temporary(bool temporary)
+
+            void SetIsTemporary(bool temporary)
             {
                 m_temporary = temporary;
             }
 
-            bool get_enabled()
+            bool GetIsEnabled()
             {
                 return m_enabled;
             }
-            void set_enabled(bool enabled)
+
+            void SetIsEnabled(bool enabled)
             {
                 m_enabled = enabled;
             }
 
-            bool get_active()
+            bool GetIsActive()
             {
                 return m_active;
             }
-            void set_active(bool active)
+
+            void SetIsActive(bool active)
             {
                 m_active = active;
             }
 
-            bool get_useIgnoreCount()
+
+            bool GetIsUseIgnoreCount()
             {
                 return m_useIgnoreCount;
             }
-            void set_useIgnoreCount(bool useIgnoreCount)
+
+            void SetIsUseIgnoreCount(bool useIgnoreCount)
             {
                 m_useIgnoreCount = useIgnoreCount;
             }
 
-            int get_ignoreCount()
+            int GetIgnoreCount()
             {
                 return m_ignoreCount;
             }
-            void set_ignoreCount(int ignoreCount)
+
+            void SetIgnoreCount(int ignoreCount)
             {
                 m_ignoreCount = ignoreCount;
             }
 
-            bool get_useCondition()
+            bool GetIsUseCondition()
             {
                 return m_useCondition;
             }
-            void set_useCondition(bool useCondition)
+
+            void SetIsUseCondition(bool useCondition)
             {
                 m_useCondition = useCondition;
             }
 
-            bool get_wantsCondition()
+            bool GetIsWantsCondition()
             {
                 return m_wantsCondition;
             }
-            void set_wantsCondition(bool wantsCondition)
+            void SetIsWantsCondition(bool wantsCondition)
             {
                 m_wantsCondition = wantsCondition;
             }
 
-            wxString get_condition()
+            wxString GetCondition()
             {
                 return m_condition;
             }
-            void set_condition(wxString condition)
+
+            void SetCondition(wxString condition)
             {
                 m_condition = condition;
             }
 
-            wxString get_func()
+            wxString GetFunction()
             {
-                return m_func;
+                return m_function;
             }
-            void set_func(wxString func)
+            void SetFunction(wxString function)
             {
-                m_func = func;
+                m_function = function;
             }
 
-            unsigned get_address()
+            uint64_t GetAddress()
             {
                 return m_address;
             }
-            void set_address(unsigned long int address)
+            void SetAddress(uint64_t address)
             {
                 m_address = address;
             }
 
-            bool get_alreadySet()
+            bool GetisAlreadySet()
             {
                 return m_alreadySet;
             }
-            void set_alreadySet(bool alreadySet)
+            void SetIsAlreadySet(bool alreadySet)
             {
                 m_alreadySet = alreadySet;
             }
 
-            wxString get_lineText()
+            wxString GetLineText()
             {
                 return m_lineText;
             }
-            void set_lineText(wxString lineText)
+            void SetLineText(wxString lineText)
             {
                 m_lineText = lineText;
             }
 
-            wxString get_breakAddress()
+            wxString GetBreakAddress()
             {
                 return m_breakAddress;
             }
-            void set_breakAddress(wxString breakAddress)
+
+            void SetBreakAddress(wxString breakAddress)
             {
                 m_breakAddress = breakAddress;
             }
 
-            bool get_breakOnRead()
+            bool GetIsBreakOnRead()
             {
                 return m_breakOnRead;
             }
-            void set_breakOnRead(bool breakOnRead)
+
+            void SetIsBreakOnRead(bool breakOnRead)
             {
                 m_breakOnRead = breakOnRead;
             }
 
-            bool get_breakOnWrite()
+            bool GetIsBreakOnWrite()
             {
                 return m_breakOnWrite;
             }
-            void set_breakOnWrite(bool breakOnWrite)
+            void SetIsBreakOnWrite(bool breakOnWrite)
             {
                 m_breakOnWrite = breakOnWrite;
             }
 
-            void * get_userData()
+            void * GetUserData()
             {
                 return m_userData;
             }
-            void set_userData(void * userData)
+
+            void SetUserData(void * userData)
             {
                 m_userData = userData;
             }
@@ -316,8 +336,8 @@ namespace dbg_mi
             bool m_useCondition;            // Should this breakpoint hit only if a specific condition is met?
             bool m_wantsCondition;          // Evaluate condition for pending breakpoints at first stop !
             wxString m_condition;           // The condition that must be met for the breakpoint to hit. @c useCondition must be true.
-            wxString m_func;                // The function to set the breakpoint. If this is set, it is preferred over the filename/line combination.
-            unsigned long int m_address;    // The actual breakpoint address. This is read back from the debugger. *Don't* write to it.
+            wxString m_function;            // The function to set the breakpoint. If this is set, it is preferred over the filename/line combination.
+            uint64_t m_address;             // The actual breakpoint address. This is read back from the debugger. *Don't* write to it.
             bool m_alreadySet;              // Is this already set? Used to mark temporary breakpoints for removal.
             wxString m_lineText;            // Optionally, the breakpoint line's text (used by GDB for setting breapoints on ctors/dtors).
             wxString m_breakAddress;        // Valid only for type==bptData: address to break when read/written.

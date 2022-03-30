@@ -16,20 +16,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Conditional break points:
-    Done:
-        - updated GDBBreakpoint class with additional variables used in existing GDB debugger
-        - wired up breakpoints.xrc to display the dialog
-        - added hacked editbreakpointdlg.cpp/.h files into the project
-    Outstanding:
-        - add
-        - edit
-        - update
-        - remove
-        - load variables/data
-        - save variables/data
-
-2. Check out the missing resource files:
+1. Project->Properties->Debugger tab:
     Done:
         - wire up debugger_project_options_dlg.xrc to display the dialog
         - added hacked debuggeroptionsprjdlg.cpp/.h files into the project
@@ -97,9 +84,9 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |  * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass    |
 |  * Disable/Enable break point via pop up menu              | 28MAR2022 |    Pass    |
 |  * Remove break point                                      | 26MAR2022 |    Pass    |
-|  * Edit break point                                        | 26MAR2022 |  *Broken*  |
-|    * ignore count before break                             | 26MAR2022 |  *Broken*  |
-|    * break when expression is true                         | 26MAR2022 |  *Broken*  |
+|  * Edit break point                                        | 26MAR2022 |    Pass    |
+|    * ignore count before break                             | 26MAR2022 |    Pass    |
+|    * break when expression is true                         | 26MAR2022 |    Pass    |
 |* Debug show Running Threads                                | 26MAR2022 |    Pass    |
 |* Debug show CPU Registers                                  | 27MAR2022 |    Pass    |
 |* Debug show Call Stack                                     | 26MAR2022 |    Pass    |
@@ -112,6 +99,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 # COMPLETED ITEMS
 
+* 30MAR2022 Done - Conditional break points
 * 30MAR2022 Done - Edit watches now working
 * 28MAR2022 Done - Examine Memory Dialog now working
 * 28MAR2022 Done - fixed Disable/enable break point via pop up menu

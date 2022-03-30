@@ -1342,7 +1342,7 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 
     cb::shared_ptr<dbg_mi::GDBBreakpoint> bp = cb::static_pointer_cast<dbg_mi::GDBBreakpoint>(breakpoint);
     bool reset = false;
-    switch (bp->get_type())
+    switch (bp->GetType())
     {
         case dbg_mi::GDBBreakpoint::bptCode:
         {
@@ -1358,23 +1358,23 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
         case dbg_mi::GDBBreakpoint::bptData:
         {
             int old_sel = 0;
-            if (bp->get_breakOnRead() && bp->get_breakOnWrite())
+            if (bp->GetIsBreakOnRead() && bp->GetIsBreakOnWrite())
             {
                 old_sel = 2;
             }
-            else if (!bp->get_breakOnRead() && bp->get_breakOnWrite())
+            else if (!bp->GetIsBreakOnRead() && bp->GetIsBreakOnWrite())
             {
                 old_sel = 1;
             }
 
-            dbg_mi::DataBreakpointDlg dlg(Manager::Get()->GetAppWindow(), bp->get_breakAddress(), bp->get_enabled(), old_sel);
+            dbg_mi::DataBreakpointDlg dlg(Manager::Get()->GetAppWindow(), bp->GetBreakAddress(), bp->GetIsEnabled(), old_sel);
             PlaceWindow(&dlg);
             if (dlg.ShowModal() == wxID_OK)
             {
-                bp->set_enabled(dlg.IsEnabled());
-                bp->set_breakOnRead(dlg.GetSelection() != 1);
-                bp->set_breakOnWrite(dlg.GetSelection() != 0);
-                bp->set_breakAddress(dlg.GetDataExpression());
+                bp->SetIsEnabled(dlg.IsEnabled());
+                bp->SetIsBreakOnRead(dlg.GetSelection() != 1);
+                bp->SetIsBreakOnWrite(dlg.GetSelection() != 0);
+                bp->SetBreakAddress(dlg.GetDataExpression());
                 reset = true;
             }
             break;
@@ -1499,7 +1499,7 @@ void Debugger_GDB_MI::ShiftBreakpoint(int index, int lines_to_shift)
     }
 
     cb::shared_ptr<dbg_mi::GDBBreakpoint> bp = m_breakpoints[index];
-    bp->ShiftLine(lines_to_shift);
+    bp->SetShiftLines(lines_to_shift);
 
     if (IsRunning())
     {
