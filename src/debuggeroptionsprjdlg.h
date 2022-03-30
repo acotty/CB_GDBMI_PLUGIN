@@ -15,7 +15,6 @@
 
 class cbProject;
 class wxListBox;
-//class Debugger_GDB_MI;
 class CodeBlocksEvent;
 
 namespace dbg_mi
@@ -27,8 +26,8 @@ namespace dbg_mi
             DebuggerOptionsProjectDlg(wxWindow* parent, Debugger_GDB_MI* debugger, cbProject* project);
             ~DebuggerOptionsProjectDlg() override;
 
-            wxString GetTitle() const override { return _("Debugger"); }
-            wxString GetBitmapBaseName() const override { return _T("debugger"); }
+            wxString GetTitle() const override { return "Debugger GDB/MI"; }
+            wxString GetBitmapBaseName() const override { return "debugger"; }
             void OnApply() override;
             void OnCancel() override {}
         protected:
@@ -44,7 +43,7 @@ namespace dbg_mi
             void LoadCurrentRemoteDebuggingRecord();
             void SaveCurrentRemoteDebuggingRecord();
 
-            Debugger_GDB_MI* m_pDBG;
+            Debugger_GDB_MI* m_pDebuggerGDBMI;
             cbProject* m_pProject;
             wxArrayString m_OldPaths;
             RemoteDebuggingMap m_OldRemoteDebugging;

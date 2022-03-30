@@ -16,23 +16,16 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Project->Properties->Debugger tab:
-    Done:
-        - wire up debugger_project_options_dlg.xrc to display the dialog
-        - added hacked debuggeroptionsprjdlg.cpp/.h files into the project
-    Outstanding:
-        - load variables/data
-        - save variables/data
+1. Disassembly view
 
 ## Medium Priority
 1. Debug -> Memory view dialog
     a) Plugin calls Debugger_GDB_MI::AddMemoryRange
     b) Need to spend time analysing existing code
-2. Disassembly view
-3. Add control to vary the amount/type of logging
-4. Publish plugin to github
-5. Check addresses are 64 or 32 bit compatable
-    An example of this is:
+2. Add control to vary the amount/type of logging
+3. Publish plugin to github
+4. Check addresses are 64 or 32 bit compatible. An example of this is:
+
 #if wxCHECK_VERSION(3, 1, 5)
         if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
 #else
@@ -45,16 +38,17 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
         {
             sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
         }
-
+6. Fix "#warning" messages.
 
 ## Low Priority
-1. Remote debugging 
-2. Create Linux project file
-3. Create MacOS project file
-4. Update Linux makefile build process
-5. Update MSYS2 makefile build process
-6. Update MacOS makefile build process
-7. CPU registry dialog modify to fix value column to say 50 characters.
+1. Send project search paths to GDB. Search paths from  Project->Properties->"Debugger GDB/MI" tab.
+2. Remote debugging - use Project->Properties->"Debugger GDB/MI" tab data.
+3. Create Linux project file
+4. Create MacOS project file
+5. Update Linux makefile build process
+6. Update MSYS2 makefile build process
+7. Update MacOS makefile build process
+8. CPU registry dialog modify to fix value column to say 50 characters.
 
 ## Check List
 
@@ -99,6 +93,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 # COMPLETED ITEMS
 
+* 30MAR2022 Done - Wired up Project->Properties->"Debugger GDB/MI" tab. Loads and saves data only.
 * 30MAR2022 Done - Conditional break points
 * 30MAR2022 Done - Edit watches now working
 * 28MAR2022 Done - Examine Memory Dialog now working

@@ -24,6 +24,7 @@
 #include "events.h"
 #include "gdb_executor.h"
 #include "gdb_logger.h"
+#include "remotedebugging.h"
 
 class TextCtrlLogger;
 class Compiler;
@@ -116,6 +117,13 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual void RequestUpdate(DebugWindows window);
         virtual void OnValueTooltip(const wxString & token, const wxRect & evalRect);
         virtual bool ShowValueTooltip(int style);
+
+        wxArrayString ParseSearchDirs(const cbProject &project);
+        void SetSearchDirs(cbProject &project, const wxArrayString &dirs);
+
+        dbg_mi::RemoteDebuggingMap ParseRemoteDebuggingMap(cbProject &project);
+        void SetRemoteDebuggingMap(cbProject &project, const dbg_mi::RemoteDebuggingMap &map);
+
     protected:
         /** Any descendent plugin should override this virtual method and
           * perform any necessary initialization. This method is called by
@@ -187,13 +195,13 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void DoSendCommand(const wxString & cmd);
         void RunQueue();
         void ParseOutput(wxString const & str);
-        bool SelectCompiler(cbProject & project, Compiler *& compiler,
-                            ProjectBuildTarget *& target, long pid_to_attach);
+        bool SelectCompiler(cbProject & project, Compiler *& compiler, ProjectBuildTarget *& target, long pid_to_attach);
         int StartDebugger(cbProject * project, StartType startType);
         void CommitBreakpoints(bool force);
         void CommitRunCommand(wxString const & command);
         void CommitWatches();
         void KillConsole();
+        TiXmlElement* GetElementForSaving(cbProject &project, const char *elementsToClear);
 
     private:
         wxTimer m_timer_poll_debugger;

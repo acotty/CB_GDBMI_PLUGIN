@@ -876,7 +876,7 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
                                  wxString::Format(_("wxSetEnv(%s , %s"), CB_LIBRARY_ENVVAR, newLibPath),
                                  dbg_mi::LogPaneLogger::LineType::Debug);
     }
-
+#warning Need to add support for source directory adding, see existing code , seach for AddSourceDir "GdbCmd_AddSourceDir" and
     int res = LaunchDebugger(debugger, debuggee, args, working_dir, 0, console, start_type);
 
     if (res != 0)
@@ -897,9 +897,13 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
     return 0;
 }
 
-int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger, wxString const & debuggee,
-                                    wxString const & args, wxString const & working_dir,
-                                    int pid, bool console, StartType start_type)
+int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger,
+                                    wxString const & debuggee,
+                                    wxString const & args,
+                                    wxString const & working_dir,
+                                    int pid,
+                                    bool console,
+                                    StartType start_type)
 {
     m_current_frame.Reset();
 
@@ -1950,4 +1954,185 @@ bool Debugger_GDB_MI::ShowValueTooltip(int style)
     }
 
     return true;
+}
+
+wxArrayString Debugger_GDB_MI::ParseSearchDirs(const cbProject &project)
+{
+    wxArrayString dirs;
+    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+    if (elem)
+    {
+        const TiXmlElement* conf = elem->FirstChildElement("debugger");
+        if (conf)
+        {
+            const TiXmlElement* pathsElem = conf->FirstChildElement("search_path");
+            while (pathsElem)
+            {
+                if (pathsElem->Attribute("add"))
+                {
+                    const wxString &dir = cbC2U(pathsElem->Attribute("add"));
+                    if (dirs.Index(dir) == wxNOT_FOUND)
+                        dirs.Add(dir);
+                }
+                pathsElem = pathsElem->NextSiblingElement("search_path");
+            }
+        }
+    }
+
+    return dirs;
+}
+
+TiXmlElement* Debugger_GDB_MI::GetElementForSaving(cbProject &project, const char *elementsToClear)
+{
+    TiXmlElement *elem = static_cast<TiXmlElement*>(project.GetExtensionsNode());
+
+    // since rev4332, the project keeps a copy of the <Extensions> element
+    // and re-uses it when saving the project (so to avoid losing entries in it
+    // if plugins that use that element are not loaded atm).
+    // so, instead of blindly inserting the element, we must first check it's
+    // not already there (and if it is, clear its contents)
+    TiXmlElement* node = elem->FirstChildElement("debugger");
+    if (!node)
+        node = elem->InsertEndChild(TiXmlElement("debugger"))->ToElement();
+
+    for (TiXmlElement* child = node->FirstChildElement(elementsToClear);
+         child;
+         child = node->FirstChildElement(elementsToClear))
+    {
+        node->RemoveChild(child);
+    }
+    return node;
+}
+
+void Debugger_GDB_MI::SetSearchDirs(cbProject &project, const wxArrayString &dirs)
+{
+    TiXmlElement* node = GetElementForSaving(project, "search_path");
+    if (dirs.GetCount() > 0)
+    {
+        for (size_t i = 0; i < dirs.GetCount(); ++i)
+        {
+            TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
+            path->SetAttribute("add", cbU2C(dirs[i]));
+        }
+    }
+}
+
+dbg_mi::RemoteDebuggingMap Debugger_GDB_MI::ParseRemoteDebuggingMap(cbProject &project)
+{
+    dbg_mi::RemoteDebuggingMap map;
+    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+    if (elem)
+    {
+        const TiXmlElement* conf = elem->FirstChildElement("debugger");
+        if (conf)
+        {
+            const TiXmlElement* rdElem = conf->FirstChildElement("remote_debugging");
+            while (rdElem)
+            {
+                wxString targetName = cbC2U(rdElem->Attribute("target"));
+                ProjectBuildTarget* bt = project.GetBuildTarget(targetName);
+
+                const TiXmlElement* rdOpt = rdElem->FirstChildElement("options");
+                if (rdOpt)
+                {
+                    dbg_mi::RemoteDebugging rd;
+
+                    if (rdOpt->Attribute("conn_type"))
+                        rd.connType = (dbg_mi::RemoteDebugging::ConnectionType)atol(rdOpt->Attribute("conn_type"));
+                    if (rdOpt->Attribute("serial_port"))
+                        rd.serialPort = cbC2U(rdOpt->Attribute("serial_port"));
+
+                    if (rdOpt->Attribute("serial_baud"))
+                        rd.serialBaud = cbC2U(rdOpt->Attribute("serial_baud"));
+                    if (rd.serialBaud.empty())
+                        rd.serialBaud = wxT("115200");
+
+                    if (rdOpt->Attribute("ip_address"))
+                        rd.ip = cbC2U(rdOpt->Attribute("ip_address"));
+                    if (rdOpt->Attribute("ip_port"))
+                        rd.ipPort = cbC2U(rdOpt->Attribute("ip_port"));
+                    if (rdOpt->Attribute("additional_cmds"))
+                        rd.additionalCmds = cbC2U(rdOpt->Attribute("additional_cmds"));
+                    if (rdOpt->Attribute("additional_cmds_before"))
+                        rd.additionalCmdsBefore = cbC2U(rdOpt->Attribute("additional_cmds_before"));
+                    if (rdOpt->Attribute("skip_ld_path"))
+                        rd.skipLDpath = cbC2U(rdOpt->Attribute("skip_ld_path")) != "0";
+                    if (rdOpt->Attribute("extended_remote"))
+                        rd.extendedRemote = cbC2U(rdOpt->Attribute("extended_remote")) != "0";
+                    if (rdOpt->Attribute("additional_shell_cmds_after"))
+                        rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
+                    if (rdOpt->Attribute("additional_shell_cmds_before"))
+                        rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
+
+                    map.insert(map.end(), std::make_pair(bt, rd));
+                }
+
+                rdElem = rdElem->NextSiblingElement("remote_debugging");
+            }
+        }
+    }
+    return map;
+}
+
+void Debugger_GDB_MI::SetRemoteDebuggingMap(cbProject &project, const dbg_mi::RemoteDebuggingMap &rdMap)
+{
+    TiXmlElement* node = GetElementForSaving(project, "remote_debugging");
+
+    if (!rdMap.empty())
+    {
+        typedef std::map<wxString, const dbg_mi::RemoteDebugging*> MapTargetNameToRD;
+        MapTargetNameToRD mapTargetNameToRD;
+
+        for (dbg_mi::RemoteDebuggingMap::const_iterator it = rdMap.begin(); it != rdMap.end(); ++it)
+        {
+            wxString targetName = (it->first ? it->first->GetTitle() : wxString());
+            const dbg_mi::RemoteDebugging& rd = it->second;
+            mapTargetNameToRD.emplace(targetName, &rd);
+        }
+
+        for (MapTargetNameToRD::const_iterator it = mapTargetNameToRD.begin();
+             it != mapTargetNameToRD.end();
+             ++it)
+        {
+            const dbg_mi::RemoteDebugging& rd = *it->second;
+
+            // if no different than defaults, skip it
+            if (rd.serialPort.IsEmpty() && rd.serialBaud == wxT("115200")
+                && rd.ip.IsEmpty() && rd.ipPort.IsEmpty()
+                && !rd.skipLDpath && !rd.extendedRemote
+                && rd.additionalCmds.IsEmpty() && rd.additionalCmdsBefore.IsEmpty()
+                && rd.additionalShellCmdsAfter.IsEmpty()
+                && rd.additionalShellCmdsBefore.IsEmpty())
+            {
+                continue;
+            }
+
+            TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("remote_debugging"))->ToElement();
+            if (!it->first.empty())
+                rdnode->SetAttribute("target", cbU2C(it->first));
+
+            TiXmlElement* tgtnode = rdnode->InsertEndChild(TiXmlElement("options"))->ToElement();
+            tgtnode->SetAttribute("conn_type", (int)rd.connType);
+            if (!rd.serialPort.IsEmpty())
+                tgtnode->SetAttribute("serial_port", cbU2C(rd.serialPort));
+            if (rd.serialBaud != wxT("115200"))
+                tgtnode->SetAttribute("serial_baud", cbU2C(rd.serialBaud));
+            if (!rd.ip.IsEmpty())
+                tgtnode->SetAttribute("ip_address", cbU2C(rd.ip));
+            if (!rd.ipPort.IsEmpty())
+                tgtnode->SetAttribute("ip_port", cbU2C(rd.ipPort));
+            if (!rd.additionalCmds.IsEmpty())
+                tgtnode->SetAttribute("additional_cmds", cbU2C(rd.additionalCmds));
+            if (!rd.additionalCmdsBefore.IsEmpty())
+                tgtnode->SetAttribute("additional_cmds_before", cbU2C(rd.additionalCmdsBefore));
+            if (rd.skipLDpath)
+                tgtnode->SetAttribute("skip_ld_path", "1");
+            if (rd.extendedRemote)
+                tgtnode->SetAttribute("extended_remote", "1");
+            if (!rd.additionalShellCmdsAfter.IsEmpty())
+                tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
+            if (!rd.additionalShellCmdsBefore.IsEmpty())
+                tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
+        }
+    }
 }

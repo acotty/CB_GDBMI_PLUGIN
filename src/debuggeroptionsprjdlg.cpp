@@ -16,6 +16,7 @@
 #include "manager.h"
 #include "globals.h"
 
+#include "plugin.h"
 #include "debuggeroptionsprjdlg.h"
 
 namespace dbg_mi
@@ -30,16 +31,17 @@ namespace dbg_mi
     END_EVENT_TABLE()
 
     DebuggerOptionsProjectDlg::DebuggerOptionsProjectDlg(wxWindow* parent, Debugger_GDB_MI* debugger, cbProject* project)
-        : m_pDBG(debugger),
+        : m_pDebuggerGDBMI(debugger),
         m_pProject(project),
         m_LastTargetSel(-1)
     {
         if (!wxXmlResource::Get()->LoadPanel(this, parent, "pnlDebuggerProjectOptionsGDBMI"))
+        {
             return;
+        }
 
-    #warning DebuggerOptionsProjectDlg missing functionality
-    //    m_OldPaths = dbg_mi::DebuggerGDB::ParseSearchDirs(*project);
-    //    m_OldRemoteDebugging = dbg_mi::DebuggerGDB::ParseRemoteDebuggingMap(*project);
+        m_OldPaths = m_pDebuggerGDBMI->ParseSearchDirs(*project);
+        m_OldRemoteDebugging = m_pDebuggerGDBMI->ParseRemoteDebuggingMap(*project);
         m_CurrentRemoteDebugging = m_OldRemoteDebugging;
 
         wxListBox* control = XRCCTRL(*this, "lstSearchDirs", wxListBox);
@@ -209,7 +211,9 @@ namespace dbg_mi
 
         RemoteDebuggingMap::iterator it = m_CurrentRemoteDebugging.find(bt);
         if (it == m_CurrentRemoteDebugging.end())
+        {
             it = m_CurrentRemoteDebugging.insert(m_CurrentRemoteDebugging.end(), std::make_pair(bt, RemoteDebugging()));
+        }
 
         RemoteDebugging& rd = it->second;
 
@@ -321,14 +325,12 @@ namespace dbg_mi
 
         if (m_OldPaths != newPaths)
         {
-    #warning DebuggerOptionsProjectDlg missing functionality
-    //        dbg_mi::DebuggerGDB::SetSearchDirs(*m_pProject, newPaths);
+            m_pDebuggerGDBMI->SetSearchDirs(*m_pProject, newPaths);
             m_pProject->SetModified(true);
         }
         if (m_OldRemoteDebugging != m_CurrentRemoteDebugging)
         {
-    #warning DebuggerOptionsProjectDlg missing functionality
-    //        dbg_mi::DebuggerGDB::SetRemoteDebuggingMap(*m_pProject, m_CurrentRemoteDebugging);
+            m_pDebuggerGDBMI->SetRemoteDebuggingMap(*m_pProject, m_CurrentRemoteDebugging);
             m_pProject->SetModified(true);
         }
     }
