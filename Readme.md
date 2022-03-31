@@ -1,13 +1,13 @@
 # Description
 This GitHub repo has the source code for the new Code::Blocks GDB/MI debugger. The source is to be built with the current C::B nightly and a GCC compiler that supports C++11. The code is desigend for GDB 9 or later using the GDB/MI version 3 interface.
 
-This uses the GDB Machine Interface instead of the old annotations (deprecated) interface. This has a number of advantages:
+This uses the GDB Machine Interface (GDB/MI) interface. This has a number of advantages:
 
-1. Supports all of the existing GDB debugger features once finished
-2. Quicker
+1. Supports all of the existing GDB annotations debugger plugin features once finished.
+2. In theory quicker as there is less data transferred between C::B and GDB.
 3. Supports GDB Python pretty printing if GDB supports it.
 4. Should be easier easier to add new features compared to the old code.
-5. GDB/MI interface is supported.
+5. GDB/MI interface is supported. The GDB annotations interface is deprecated.
 
 **The debugger is not production quality at this point in time.**
 
@@ -17,15 +17,16 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 ## High Priority
 1. Persist debug data between sessions:
-    See https://alpha0010.github.io/cb-history/patches/2775.html
+    status: very early preliminary code is working, but it will change!!!!
 
 ## Medium Priority
 1. Debug -> Memory view dialog
     a) Plugin calls Debugger_GDB_MI::AddMemoryRange
     b) Need to spend time analysing existing code
 2. Fix "#warning" messages.
-3. Add control to vary the amount/type of logging
-4. Publish plugin to github
+3. Re-test all items!!!! 
+4. Add control to vary the amount/type of logging
+5. Publish plugin to github
 
 ## Low Priority
 1. Send project search paths to GDB. Search paths from  Project->Properties->"Debugger GDB/MI" tab.

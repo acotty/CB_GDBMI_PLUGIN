@@ -45,9 +45,7 @@ namespace dbg_mi
                 m_address(0),
                 m_alreadySet(false),
                 m_breakOnRead(false),
-                m_breakOnWrite(true),
-                m_userData(0)
-
+                m_breakOnWrite(true)
             {
             }
 
@@ -67,8 +65,7 @@ namespace dbg_mi
                 m_address(0),
                 m_alreadySet(false),
                 m_breakOnRead(false),
-                m_breakOnWrite(true),
-                m_userData(0)
+                m_breakOnWrite(true)
             {
             }
 
@@ -309,16 +306,6 @@ namespace dbg_mi
                 m_breakOnWrite = breakOnWrite;
             }
 
-            void * GetUserData()
-            {
-                return m_userData;
-            }
-
-            void SetUserData(void * userData)
-            {
-                m_userData = userData;
-            }
-
         private:
             BreakpointType m_type;          // The type of this breakpoint.
 
@@ -343,10 +330,9 @@ namespace dbg_mi
             wxString m_breakAddress;        // Valid only for type==bptData: address to break when read/written.
             bool m_breakOnRead;             // Valid only for type==bptData: break when memory is read from.
             bool m_breakOnWrite;            // Valid only for type==bptData: break when memory is written to.
-            void* m_userData;               // Custom user data.
-
     };
 
+    typedef std::vector<cb::shared_ptr<dbg_mi::GDBBreakpoint> > GDBBreakpointsContainer;
 
     typedef std::deque<cb::shared_ptr<cbStackFrame> > GDBBacktraceContainer;
     typedef std::deque<cb::shared_ptr<cbThread> > GDBThreadsContainer;

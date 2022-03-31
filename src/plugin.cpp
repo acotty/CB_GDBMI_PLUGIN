@@ -16,17 +16,21 @@
 // CB include files (not GDB)
 #include "sdk.h" // Code::Blocks SDK
 
-#include "plugin.h"
 #include "cbdebugger_interfaces.h"
 #include "cbproject.h"
+#include "cbeditor.h"
 #include "compilercommandgenerator.h"
 #include "compilerfactory.h"
 #include "configurationpanel.h"
 #include "configmanager.h"
+#include "editormanager.h"
 #include "infowindow.h"
 #include "macrosmanager.h"
+#include "manager.h"
 #include "pipedprocess.h"
 #include "projectmanager.h"
+#include "tinyxml/tinyxml.h"
+#include "tinywxuni.h"
 
 // GDB include files
 #include "actions.h"
@@ -39,6 +43,7 @@
 #include "editbreakpointdlg.h"
 #include "editwatchdlg.h"
 #include "debuggeroptionsprjdlg.h"
+#include "plugin.h"
 
 namespace
 {
@@ -125,6 +130,10 @@ void Debugger_GDB_MI::OnAttachReal()
     m_timer_poll_debugger.SetOwner(this, id_gdb_poll_timer);
     DebuggerManager & dbg_manager = *Manager::Get()->GetDebuggerManager();
     dbg_manager.RegisterDebugger(this);
+
+    // Do no use cbEVT_PROJECT_OPEN as the project may not be active!!!!
+    Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE,  new cbEventFunctor<Debugger_GDB_MI, CodeBlocksEvent>(this, &Debugger_GDB_MI::OnProjectOpened));
+    Manager::Get()->RegisterEventSink(cbEVT_PROJECT_CLOSE,     new cbEventFunctor<Debugger_GDB_MI, CodeBlocksEvent>(this, &Debugger_GDB_MI::OnProjectClosed));
 }
 
 void Debugger_GDB_MI::OnReleaseReal(bool appShutDown)
@@ -296,7 +305,7 @@ void Debugger_GDB_MI::OnGDBTerminated(wxCommandEvent & /*event*/)
     KillConsole();
     MarkAsStopped();
 
-    for (GDBBreakpoints::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
+    for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     {
         (*it)->SetIndex(-1);
     }
@@ -817,7 +826,7 @@ struct BreakpointMatchProject
 
 void Debugger_GDB_MI::CleanupWhenProjectClosed(cbProject * project)
 {
-    GDBBreakpoints::iterator it = std::remove_if(m_breakpoints.begin(), m_breakpoints.end(),
+    dbg_mi::GDBBreakpointsContainer::iterator it = std::remove_if(m_breakpoints.begin(), m_breakpoints.end(),
                                                 BreakpointMatchProject(project));
 
     if (it != m_breakpoints.end())
@@ -952,7 +961,7 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger,
     }
 
     m_executor.Stopped(true);
-    //    m_executor.Execute(_T("-enable-timings"));
+    //    m_executor.Execute("-enable-timings");
     CommitBreakpoints(true);
     CommitWatches();
     // Set program arguments
@@ -1024,7 +1033,7 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger,
 
 void Debugger_GDB_MI::CommitBreakpoints(bool force)
 {
-    for (GDBBreakpoints::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
+    for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     {
         // FIXME (obfuscated#): pointers inside the vector can be dangerous!!!
         if ((*it)->GetIndex() == -1 || force)
@@ -1035,11 +1044,10 @@ void Debugger_GDB_MI::CommitBreakpoints(bool force)
         }
     }
 
-    for (GDBBreakpoints::const_iterator it = m_temporary_breakpoints.begin(); it != m_temporary_breakpoints.end(); ++it)
+    for (dbg_mi::GDBBreakpointsContainer::const_iterator it = m_temporary_breakpoints.begin(); it != m_temporary_breakpoints.end(); ++it)
     {
         m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("AddStringCommand: =>-break-insert -t %s:%d<=", (*it)->GetLocation(), (*it)->GetLine()), dbg_mi::LogPaneLogger::LineType::Command);
-        AddStringCommand(wxString::Format(_T("-break-insert -t %s:%d"), (*it)->GetLocation().c_str(),
-                                          (*it)->GetLine()));
+        AddStringCommand(wxString::Format("-break-insert -t %s:%d", (*it)->GetLocation().c_str(), (*it)->GetLine()));
     }
 
     m_temporary_breakpoints.clear();
@@ -1337,7 +1345,7 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 #warning +-------------------------------------------------------+
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> WORK IN PROGRESS <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
 
-    GDBBreakpoints::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
+    dbg_mi::GDBBreakpointsContainer::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
 
     if (it == m_breakpoints.end())
     {
@@ -1408,7 +1416,7 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 
 void Debugger_GDB_MI::DeleteBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 {
-    GDBBreakpoints::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
+    dbg_mi::GDBBreakpointsContainer::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
 
     if (it != m_breakpoints.end())
     {
@@ -1435,7 +1443,7 @@ void Debugger_GDB_MI::DeleteBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
         m_breakpoints.erase(it);
     }
 
-    //    for(GDBBreakpoints::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
+    //    for(dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     //    {
     //        dbg_mi::GDBBreakpoint &current = **it;
     //        if(&current.Get() == breakpoint)
@@ -1467,7 +1475,7 @@ void Debugger_GDB_MI::DeleteAllBreakpoints()
     {
         wxString breaklist;
 
-        for (GDBBreakpoints::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
+        for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
         {
             dbg_mi::GDBBreakpoint & current = **it;
 
@@ -1533,7 +1541,7 @@ void Debugger_GDB_MI::ShiftBreakpoint(int index, int lines_to_shift)
 
 void Debugger_GDB_MI::EnableBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint, bool enable)
 {
-    GDBBreakpoints::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
+    dbg_mi::GDBBreakpointsContainer::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
 
     if (it != m_breakpoints.end())
     {
@@ -1977,7 +1985,7 @@ wxArrayString Debugger_GDB_MI::ParseSearchDirs(const cbProject &project)
             {
                 if (pathsElem->Attribute("add"))
                 {
-                    const wxString &dir = cbC2U(pathsElem->Attribute("add"));
+                    const wxString &dir = pathsElem->Attribute("add");
                     if (dirs.Index(dir) == wxNOT_FOUND)
                         dirs.Add(dir);
                 }
@@ -2019,7 +2027,7 @@ void Debugger_GDB_MI::SetSearchDirs(cbProject &project, const wxArrayString &dir
         for (size_t i = 0; i < dirs.GetCount(); ++i)
         {
             TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
-            path->SetAttribute("add", cbU2C(dirs[i]));
+            path->SetAttribute("add", dirs[i]);
         }
     }
 }
@@ -2036,7 +2044,7 @@ dbg_mi::RemoteDebuggingMap Debugger_GDB_MI::ParseRemoteDebuggingMap(cbProject &p
             const TiXmlElement* rdElem = conf->FirstChildElement("remote_debugging");
             while (rdElem)
             {
-                wxString targetName = cbC2U(rdElem->Attribute("target"));
+                wxString targetName = rdElem->Attribute("target");
                 ProjectBuildTarget* bt = project.GetBuildTarget(targetName);
 
                 const TiXmlElement* rdOpt = rdElem->FirstChildElement("options");
@@ -2045,31 +2053,66 @@ dbg_mi::RemoteDebuggingMap Debugger_GDB_MI::ParseRemoteDebuggingMap(cbProject &p
                     dbg_mi::RemoteDebugging rd;
 
                     if (rdOpt->Attribute("conn_type"))
+                    {
                         rd.connType = (dbg_mi::RemoteDebugging::ConnectionType)atol(rdOpt->Attribute("conn_type"));
+                    }
+
                     if (rdOpt->Attribute("serial_port"))
-                        rd.serialPort = cbC2U(rdOpt->Attribute("serial_port"));
+                    {
+                        rd.serialPort = rdOpt->Attribute("serial_port");
+                    }
 
                     if (rdOpt->Attribute("serial_baud"))
-                        rd.serialBaud = cbC2U(rdOpt->Attribute("serial_baud"));
+                    {
+                        rd.serialBaud = rdOpt->Attribute("serial_baud");
+                    }
+
                     if (rd.serialBaud.empty())
+                    {
                         rd.serialBaud = wxT("115200");
+                    }
 
                     if (rdOpt->Attribute("ip_address"))
-                        rd.ip = cbC2U(rdOpt->Attribute("ip_address"));
+                    {
+                        rd.ip = rdOpt->Attribute("ip_address");
+                    }
+
                     if (rdOpt->Attribute("ip_port"))
-                        rd.ipPort = cbC2U(rdOpt->Attribute("ip_port"));
+                    {
+                        rd.ipPort = rdOpt->Attribute("ip_port");
+                    }
+
                     if (rdOpt->Attribute("additional_cmds"))
-                        rd.additionalCmds = cbC2U(rdOpt->Attribute("additional_cmds"));
+                    {
+                        rd.additionalCmds = rdOpt->Attribute("additional_cmds");
+                    }
+
                     if (rdOpt->Attribute("additional_cmds_before"))
-                        rd.additionalCmdsBefore = cbC2U(rdOpt->Attribute("additional_cmds_before"));
+                    {
+                        rd.additionalCmdsBefore = rdOpt->Attribute("additional_cmds_before");
+                    }
+
                     if (rdOpt->Attribute("skip_ld_path"))
-                        rd.skipLDpath = cbC2U(rdOpt->Attribute("skip_ld_path")) != "0";
+                    {
+                        wxString attrib = rdOpt->Attribute("skip_ld_path");
+                        rd.skipLDpath = !attrib.IsSameAs("0");
+                    }
+
                     if (rdOpt->Attribute("extended_remote"))
-                        rd.extendedRemote = cbC2U(rdOpt->Attribute("extended_remote")) != "0";
+                    {
+                        wxString attrib = rdOpt->Attribute("extended_remote");
+                        rd.extendedRemote = !attrib.IsSameAs("0");
+                    }
+
                     if (rdOpt->Attribute("additional_shell_cmds_after"))
-                        rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
+                    {
+                        rd.additionalShellCmdsAfter = rdOpt->Attribute("additional_shell_cmds_after");
+                    }
+
                     if (rdOpt->Attribute("additional_shell_cmds_before"))
-                        rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
+                    {
+                        rd.additionalShellCmdsBefore = rdOpt->Attribute("additional_shell_cmds_before");
+                    }
 
                     map.insert(map.end(), std::make_pair(bt, rd));
                 }
@@ -2104,10 +2147,14 @@ void Debugger_GDB_MI::SetRemoteDebuggingMap(cbProject &project, const dbg_mi::Re
             const dbg_mi::RemoteDebugging& rd = *it->second;
 
             // if no different than defaults, skip it
-            if (rd.serialPort.IsEmpty() && rd.serialBaud == wxT("115200")
-                && rd.ip.IsEmpty() && rd.ipPort.IsEmpty()
-                && !rd.skipLDpath && !rd.extendedRemote
-                && rd.additionalCmds.IsEmpty() && rd.additionalCmdsBefore.IsEmpty()
+            if (rd.serialPort.IsEmpty()
+                && rd.serialBaud == wxT("115200")
+                && rd.ip.IsEmpty()
+                && rd.ipPort.IsEmpty()
+                && !rd.skipLDpath
+                && !rd.extendedRemote
+                && rd.additionalCmds.IsEmpty()
+                && rd.additionalCmdsBefore.IsEmpty()
                 && rd.additionalShellCmdsAfter.IsEmpty()
                 && rd.additionalShellCmdsBefore.IsEmpty())
             {
@@ -2116,30 +2163,275 @@ void Debugger_GDB_MI::SetRemoteDebuggingMap(cbProject &project, const dbg_mi::Re
 
             TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("remote_debugging"))->ToElement();
             if (!it->first.empty())
-                rdnode->SetAttribute("target", cbU2C(it->first));
+                rdnode->SetAttribute("target", it->first);
 
             TiXmlElement* tgtnode = rdnode->InsertEndChild(TiXmlElement("options"))->ToElement();
             tgtnode->SetAttribute("conn_type", (int)rd.connType);
+
             if (!rd.serialPort.IsEmpty())
-                tgtnode->SetAttribute("serial_port", cbU2C(rd.serialPort));
+            {
+                tgtnode->SetAttribute("serial_port", rd.serialPort);
+            }
+
             if (rd.serialBaud != wxT("115200"))
-                tgtnode->SetAttribute("serial_baud", cbU2C(rd.serialBaud));
+            {
+                tgtnode->SetAttribute("serial_baud", rd.serialBaud);
+            }
+
             if (!rd.ip.IsEmpty())
-                tgtnode->SetAttribute("ip_address", cbU2C(rd.ip));
+            {
+                tgtnode->SetAttribute("ip_address", rd.ip);
+            }
+
             if (!rd.ipPort.IsEmpty())
-                tgtnode->SetAttribute("ip_port", cbU2C(rd.ipPort));
+            {
+                tgtnode->SetAttribute("ip_port", rd.ipPort);
+            }
+
             if (!rd.additionalCmds.IsEmpty())
-                tgtnode->SetAttribute("additional_cmds", cbU2C(rd.additionalCmds));
+            {
+                tgtnode->SetAttribute("additional_cmds", rd.additionalCmds);
+            }
+
             if (!rd.additionalCmdsBefore.IsEmpty())
-                tgtnode->SetAttribute("additional_cmds_before", cbU2C(rd.additionalCmdsBefore));
+            {
+                tgtnode->SetAttribute("additional_cmds_before", rd.additionalCmdsBefore);
+            }
+
             if (rd.skipLDpath)
+            {
                 tgtnode->SetAttribute("skip_ld_path", "1");
+            }
+
             if (rd.extendedRemote)
+            {
                 tgtnode->SetAttribute("extended_remote", "1");
+
+            }
+
             if (!rd.additionalShellCmdsAfter.IsEmpty())
-                tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
+            {
+                tgtnode->SetAttribute("additional_shell_cmds_after", rd.additionalShellCmdsAfter);
+            }
+
             if (!rd.additionalShellCmdsBefore.IsEmpty())
-                tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
+            {
+                tgtnode->SetAttribute("additional_shell_cmds_before", rd.additionalShellCmdsBefore);
         }
     }
+    }
+}
+
+void Debugger_GDB_MI::OnProjectOpened(CodeBlocksEvent& event)
+{
+    // allow others to catch this
+    event.Skip();
+
+    LoadStateFromFile(event.GetProject());
+}
+void Debugger_GDB_MI::OnProjectClosed(CodeBlocksEvent& event)
+{
+    // allow others to catch this
+    event.Skip();
+
+    // the same for remote debugging
+//    GetRemoteDebuggingMap(event.GetProject()).clear();
+
+    SaveStateToFile(event.GetProject());
+
+//  m_pTree->DeleteAllWatches();
+
+    // remove all breakpoints belonging to the closed project
+//  m_State.RemoveAllProjectBreakpoints(event.GetProject());
+ }
+
+void Debugger_GDB_MI::SetNodeText(TiXmlElement* n, const TiXmlText& t)
+{
+    TiXmlNode *c = n->FirstChild();
+    if (c)
+        n->ReplaceChild(c, t);
+    else
+        n->InsertEndChild(t);
+}
+
+
+bool Debugger_GDB_MI::SaveStateToFile(cbProject* pProject)
+{
+    //There are two types of state we should save:
+    //1, breakpoints
+    //2, watches
+
+    //Create a file according to the m_pProject
+    wxString projectFilename = pProject->GetFilename();
+    if (projectFilename.IsEmpty())
+    {
+        return false;
+    }
+    //saved file name&extention
+    wxFileName fname(projectFilename);
+    fname.SetExt("bps");
+
+    //XML file IO
+    const char* ROOT_TAG = "Debugger_layout_file";
+
+    TiXmlDocument doc;
+    doc.SetCondenseWhiteSpace(false);
+    doc.InsertEndChild(TiXmlDeclaration("1.0", "UTF-8", "yes"));
+    TiXmlElement* rootnode = static_cast<TiXmlElement*>(doc.InsertEndChild(TiXmlElement(ROOT_TAG)));
+    if (!rootnode)
+    {
+        return false;
+    }
+
+    //Save debugger name
+    wxString compilerID = pProject->GetCompilerID();
+    int compilerIdx = CompilerFactory::GetCompilerIndex(compilerID );
+    Compiler* pCompiler = CompilerFactory::GetCompiler(compilerIdx);
+    const CompilerPrograms & pCompilerProgsp = pCompiler->GetPrograms();
+    TiXmlElement* pDebuggerNode = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("CompilerInfo")));
+    TiXmlElement* pProgNode;
+    TiXmlText textNode("");
+    textNode.SetCDATA(false);
+
+    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("CompilerName")));
+    textNode.SetValue(pCompiler->GetName());
+    SetNodeText(pProgNode, textNode);
+
+    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("C_Compiler")));
+    //    textNode.SetValue(pCompilerProgsp.C);
+    //    SetNodeText(pProgNode, textNode);
+    //
+    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("CPP_Compiler")));
+    //    textNode.SetValue(pCompilerProgsp.CPP);
+    //    SetNodeText(pProgNode, textNode);
+    //
+    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("DynamicLinker_LD")));
+    //    textNode.SetValue(pCompilerProgsp.LD);
+    //    SetNodeText(pProgNode, textNode);
+    //
+    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("StaticLinker_LIB")));
+    //    textNode.SetValue(pCompilerProgsp.LIB);
+    //    SetNodeText(pProgNode, textNode);
+    //
+    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("Make")));
+    //    textNode.SetValue(pCompilerProgsp.MAKE);
+    //    SetNodeText(pProgNode, textNode);
+
+    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("DBGconfig")));
+    textNode.SetValue(pCompilerProgsp.DBGconfig);
+    SetNodeText(pProgNode, textNode);
+
+    //Save breakpoints
+    TiXmlElement* breakpointsidx = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("BreakpointsList")));
+    for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
+    {
+        dbg_mi::GDBBreakpoint& bp = **it;
+
+        //Only save the breakpoints belong to the current project
+        if (bp.GetProject() == pProject)
+        {
+            TiXmlElement* node = static_cast<TiXmlElement*>(breakpointsidx->InsertEndChild(TiXmlElement("Breakpoint")));
+            //Change the absolute location to relative location
+            wxFileName location(bp.GetFilename());
+            location.MakeRelativeTo(pProject->GetBasePath());
+            //Add file and line
+            node->SetAttribute("file", location.GetFullPath());
+            node->SetAttribute("line", bp.GetLine());
+            node->SetAttribute("type", bp.GetType());
+        }
+    }
+
+    //Save Watches
+    TiXmlElement* watchesidx = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("WatchesList")));
+    for (dbg_mi::GDBWatchesContainer::iterator it = m_watches.begin(); it != m_watches.end(); ++it)
+    {
+        dbg_mi::GDBWatch& watch = **it;
+
+        TiXmlElement* node = static_cast<TiXmlElement*>(watchesidx->InsertEndChild(TiXmlElement("Watch")));
+        node->SetAttribute("symbol", watch.GetSymbol());
+    }
+
+    //Save XML to harddisk
+    return cbSaveTinyXMLDocument(&doc, fname.GetFullPath());
+}
+
+bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
+{
+    wxString projectFilename = pProject->GetFilename();
+    if (projectFilename.IsEmpty())
+    {
+        return false;
+    }
+    wxFileName fname(projectFilename);
+    fname.SetExt("bps");
+
+    //Open XML file
+    TiXmlDocument doc;
+    if (!TinyXML::LoadDocument(fname.GetFullPath(), &doc))
+    {
+        return false;
+    }
+
+    TiXmlElement* root = doc.FirstChildElement("Debugger_layout_file");
+    if (!root)
+    {
+        return false;
+    }
+
+    //Load breakpoints
+    TiXmlElement* group = root->FirstChildElement("BreakpointsList");
+    if (group)
+    {
+        TiXmlElement* elem = group->FirstChildElement("Breakpoint");
+
+        while (elem)
+        {
+            wxString fileName = elem->Attribute("file");
+            if (fileName.IsEmpty())
+            {
+                break;
+            }
+
+            ProjectFile* pProjFile = pProject->GetFileByFilename(fileName);
+            wxString filenamePath = pProjFile->file.GetFullPath();
+
+            int line = 0;
+            if (elem->QueryIntAttribute("line", &line) != TIXML_SUCCESS)
+            {
+                break;
+            }
+
+            cbEditor* ed = Manager::Get()->GetEditorManager()->IsBuiltinOpen( filenamePath );
+            if (ed==NULL)
+            {
+                AddBreakpoint(filenamePath,line);
+            }
+            else
+            {
+                ed->AddBreakpoint(line, true);
+            }
+
+            elem = elem->NextSiblingElement();
+        }
+    }
+
+    //Load watches
+    group = group->NextSiblingElement("WatchesList");
+    if (group)
+    {
+        TiXmlElement* elem = group->FirstChildElement("Watch");
+
+        while (elem)
+        {
+            wxString watchName = elem->Attribute("symbol");
+
+            if (!watchName.IsEmpty())
+            {
+                AddWatch(watchName, false);
+            }
+
+            elem = elem->NextSiblingElement();
+        }
+    }
+    return true;
 }

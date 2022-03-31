@@ -202,6 +202,11 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void CommitWatches();
         void KillConsole();
         TiXmlElement* GetElementForSaving(cbProject &project, const char *elementsToClear);
+        void OnProjectOpened(CodeBlocksEvent& event);
+        void OnProjectClosed(CodeBlocksEvent& event);
+        void SetNodeText(TiXmlElement* n, const TiXmlText& t);
+        bool SaveStateToFile(cbProject* prj);
+        bool LoadStateFromFile(cbProject* prj);
 
     private:
         wxTimer m_timer_poll_debugger;
@@ -210,9 +215,8 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
         dbg_mi::LogPaneLogger * m_pLogger;
-        typedef std::vector<cb::shared_ptr<dbg_mi::GDBBreakpoint> > GDBBreakpoints;
-        GDBBreakpoints m_breakpoints;
-        GDBBreakpoints m_temporary_breakpoints;
+        dbg_mi::GDBBreakpointsContainer m_breakpoints;
+        dbg_mi::GDBBreakpointsContainer m_temporary_breakpoints;
         dbg_mi::GDBBacktraceContainer m_backtrace;
         dbg_mi::GDBThreadsContainer m_threads;
         dbg_mi::GDBWatchesContainer m_watches;
