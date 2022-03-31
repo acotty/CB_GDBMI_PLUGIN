@@ -201,6 +201,23 @@ namespace dbg_mi
             LogPaneLogger * m_logger;
     };
 
+    class GDBDisassemble : public Action
+    {
+        public:
+            GDBDisassemble(wxString disassemblyFlavor, LogPaneLogger * logger);
+            virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+        protected:
+            virtual void OnStart();
+        private:
+            void ParseASMInsmLine(cbDisassemblyDlg * dialog, const ResultValue * pASMLineItem, int iASMIndex);
+            wxString m_disassemblyFlavor;
+            CommandID m_disassemble_frame_info_request_id;
+            CommandID m_disassemble_data_request_id;
+
+            LogPaneLogger * m_logger;
+    };
+
+
     template<typename Notification>
     class GDBSwitchToThread : public Action
     {

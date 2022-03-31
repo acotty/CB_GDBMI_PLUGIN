@@ -1865,42 +1865,49 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
     switch (window)
     {
         case Backtrace:
-        {
-            struct Switcher : dbg_mi::GDBSwitchToFrameInvoker
             {
-                Switcher(Debugger_GDB_MI * plugin, dbg_mi::ActionsMap & actions) :
-                    m_plugin(plugin),
-                    m_actions(actions)
+                struct Switcher : dbg_mi::GDBSwitchToFrameInvoker
                 {
-                }
+                    Switcher(Debugger_GDB_MI * plugin, dbg_mi::ActionsMap & actions) :
+                        m_plugin(plugin),
+                        m_actions(actions)
+                    {
+                    }
 
-                virtual void Invoke(int frame_number)
-                {
-                    typedef dbg_mi::GDBSwitchToFrame<GDBSwitchToFrameNotification> SwitchType;
-                    m_actions.Add(new SwitchType(frame_number, GDBSwitchToFrameNotification(m_plugin), false));
-                }
+                    virtual void Invoke(int frame_number)
+                    {
+                        typedef dbg_mi::GDBSwitchToFrame<GDBSwitchToFrameNotification> SwitchType;
+                        m_actions.Add(new SwitchType(frame_number, GDBSwitchToFrameNotification(m_plugin), false));
+                    }
 
-                Debugger_GDB_MI * m_plugin;
-                dbg_mi::ActionsMap & m_actions;
-            };
-            Switcher * switcher = new Switcher(this, m_actions);
-            m_actions.Add(new dbg_mi::GDBGenerateBacktrace(switcher, m_backtrace, m_current_frame, m_pLogger));
-        }
-        break;
+                    Debugger_GDB_MI * m_plugin;
+                    dbg_mi::ActionsMap & m_actions;
+                };
+                Switcher * switcher = new Switcher(this, m_actions);
+                m_actions.Add(new dbg_mi::GDBGenerateBacktrace(switcher, m_backtrace, m_current_frame, m_pLogger));
+            }
+            break;
 
         case Threads:
             m_actions.Add(new dbg_mi::GDBGenerateThreadsList(m_threads, m_current_frame.GetThreadId(), m_pLogger));
             break;
 
         case CPURegisters:
-        {
-            m_actions.Add(new dbg_mi::GDBGenerateCPUInfoRegisters(m_pLogger));
-        }
-        break;
+            {
+                m_actions.Add(new dbg_mi::GDBGenerateCPUInfoRegisters(m_pLogger));
+            }
+            break;
 
         case Disassembly:
-#warning "not implemented"
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> Missing code for Disassembly window <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
+            {
+#warning +-------------------------------------------------------+
+#warning |        Disassembly - WORK IN PROGRESS              |
+#warning +-------------------------------------------------------+
+m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> Missing code for Disassembly window <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
+
+                wxString flavour = GetActiveConfigEx().GetDisassemblyFlavorCommand();
+                m_actions.Add(new dbg_mi::GDBDisassemble(flavour, m_pLogger));
+            }
             break;
 
         case ExamineMemory:

@@ -16,29 +16,16 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 # OUTSTANDING ITEMS
 
 ## High Priority
-1. Disassembly view
+1. Persist debug data between sessions:
+    See https://alpha0010.github.io/cb-history/patches/2775.html
 
 ## Medium Priority
 1. Debug -> Memory view dialog
     a) Plugin calls Debugger_GDB_MI::AddMemoryRange
     b) Need to spend time analysing existing code
-2. Add control to vary the amount/type of logging
-3. Publish plugin to github
-4. Check addresses are 64 or 32 bit compatible. An example of this is:
-
-#if wxCHECK_VERSION(3, 1, 5)
-        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
-#else
-        if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
-#endif
-        {
-            sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
-        }
-        else
-        {
-            sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
-        }
-6. Fix "#warning" messages.
+2. Fix "#warning" messages.
+3. Add control to vary the amount/type of logging
+4. Publish plugin to github
 
 ## Low Priority
 1. Send project search paths to GDB. Search paths from  Project->Properties->"Debugger GDB/MI" tab.
@@ -49,6 +36,26 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 6. Update MSYS2 makefile build process
 7. Update MacOS makefile build process
 8. CPU registry dialog modify to fix value column to say 50 characters.
+9. Check addresses are 64 or 32 bit compatible. An example of this is:
+        #if wxCHECK_VERSION(3, 1, 5)
+            if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+        #else
+            if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+        #endif
+            {
+                sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
+            }
+            else
+            {
+                sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
+            }
+
+## Future Work
+1. Checkpoints (only available on linux )
+2. Display the return value of a function after "step out"
+3. Skipping functions
+4. record replay (only linux)
+5. More (easy) integration of pretty printing
 
 ## Check List
 
@@ -85,7 +92,11 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 |* Debug show CPU Registers                                  | 27MAR2022 |    Pass    |
 |* Debug show Call Stack                                     | 26MAR2022 |    Pass    |
 |  * Double click on entry should open and go to the line    | 28MAR2022 |    Pass    |
-|* Debug show Disassembly                                    | 26MAR2022 |  *Broken*  |
+|* Debug show Disassembly                                    |           |            |
+|  * Assembly only                                           | 31MAR2022 |    Pass    |
+|  * Mixed mode                                              | 31MAR2022 |    Pass    |
+|  * Adjust button feature                                   | 31MAR2022 |  *Broken*  |
+|  * Save data to file feature                               | 31MAR2022 |    Pass    |
 |* Debug -> Memory Dump Dialog                               | 28MAR2022 |    Pass    | 
 |* Debug -> Memory view Dialog                               | 26MAR2022 |  *Broken*  | 
 |* Show tty for console projects                             | 28MAR2022 |    Pass    |
@@ -93,6 +104,7 @@ This uses the GDB Machine Interface instead of the old annotations (deprecated) 
 
 # COMPLETED ITEMS
 
+* 30MAR2022 Done - Disassembly view working like the existing code (adjust is broken)
 * 30MAR2022 Done - Wired up Project->Properties->"Debugger GDB/MI" tab. Loads and saves data only.
 * 30MAR2022 Done - Conditional break points
 * 30MAR2022 Done - Edit watches now working

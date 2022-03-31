@@ -744,6 +744,281 @@ namespace dbg_mi
     }
 
 
+    GDBDisassemble::GDBDisassemble(wxString disassemblyFlavor, LogPaneLogger * logger) :
+                                    m_disassemblyFlavor(disassemblyFlavor),
+                                    m_logger(logger)
+    {
+    }
+
+    void GDBDisassemble::ParseASMInsmLine(cbDisassemblyDlg * dialog, const ResultValue * pASMLineItem, int iASMIndex)
+    {
+        const ResultValue * pAddress = pASMLineItem->GetTupleValue("address");
+        if (!pAddress)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-disassemble\" GDB/MI asm entry item %d address data. ASM Entry item: %s", iASMIndex, pASMLineItem->MakeDebugString()), LogPaneLogger::LineType::Error);
+        }
+
+        const ResultValue * pFunctionName = pASMLineItem->GetTupleValue("func-name");
+        if (!pFunctionName)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-disassemble\" GDB/MI asm entry item %d func-name data. ASM Entry item: %s", iASMIndex, pASMLineItem->MakeDebugString()), LogPaneLogger::LineType::Error);
+
+        }
+        const ResultValue * pOffset = pASMLineItem->GetTupleValue("offset");
+        if (!pOffset)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-disassemble\" GDB/MI asm entry item %d offset data. ASM Entry item: %s", iASMIndex, pASMLineItem->MakeDebugString()), LogPaneLogger::LineType::Error);
+        }
+
+        const ResultValue * pASMInstruction = pASMLineItem->GetTupleValue("inst");
+        if (!pASMInstruction)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-disassemble\" GDB/MI asm entry item %d inst data. ASM Entry item: %s", iASMIndex, pASMLineItem->MakeDebugString()), LogPaneLogger::LineType::Error);
+        }
+
+        if (pAddress && pFunctionName && pOffset && pASMInstruction)
+        {
+            uint64_t llAddrStart = 0;
+            wxString sAddress = pAddress->GetSimpleValue();
+
+            if (sAddress.ToULongLong(&llAddrStart, 16))
+            {
+                dialog->AddAssemblerLine(llAddrStart, pASMInstruction->GetSimpleValue());
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not convert the \"-data-disassemble\" GDB/MI asm entry item %d address data to a ToULongLong. ASM Entry item: %s", iASMIndex, pASMLineItem->MakeDebugString()), LogPaneLogger::LineType::Error);
+            }
+        }
+    }
+
+    void GDBDisassemble::OnCommandOutput(CommandID const & id, ResultParser const & result)
+    {
+        cbDisassemblyDlg * dialog = Manager::Get()->GetDebuggerManager()->GetDisassemblyDialog();
+
+        //    ^done,frame={level="1",addr="0x0001076c",func="callee3",
+        //      file="../../../devo/gdb/testsuite/gdb.mi/basics.c",
+        //      fullname="/home/foo/bar/devo/gdb/testsuite/gdb.mi/basics.c",line="17",
+        //      arch="i386:x86_64"}
+        if (id == m_disassemble_frame_info_request_id)
+        {
+            if (result.GetResultClass() != ResultParser::ClassDone)
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Wrong result class. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+
+                const ResultValue * pFrame = result.GetResultValue().GetTupleValue(_T("frame"));
+
+                if (pFrame)
+                {
+                        const ResultValue * pAddress = pFrame->GetTupleValue("addr");
+                        if (!pAddress)
+                        {
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the addr in the frame: %s", pFrame->MakeDebugString()), LogPaneLogger::LineType::Error);
+                        }
+
+                        const ResultValue * pFunctionName = pFrame->GetTupleValue("func");
+                        if (!pFunctionName)
+                        {
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the func in the frame: %s", pFrame->MakeDebugString()), LogPaneLogger::LineType::Error);
+                        }
+
+                        const ResultValue * pFileName = pFrame->GetTupleValue("fullname");
+                        if (!pFileName)
+                        {
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the fullname in the frame: %s", pFrame->MakeDebugString()), LogPaneLogger::LineType::Error);
+                        }
+
+                        const ResultValue * pLine = pFrame->GetTupleValue("line");
+                        if (!pLine)
+                        {
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the line in the frame: %s", pFrame->MakeDebugString()), LogPaneLogger::LineType::Error);
+                        }
+
+                        if (pAddress && pFunctionName && pFileName && pLine)
+                        {
+                            uint64_t llAddrStart = 0;
+                            wxString sAddress = pAddress->GetSimpleValue();
+
+                            if (sAddress.ToULongLong(&llAddrStart, 16))
+                            {
+                                cbStackFrame sf;
+                                sf.SetAddress(llAddrStart);
+                                sf.SetSymbol(pFunctionName->GetSimpleValue());
+                                sf.MakeValid(true);
+                                dialog->Clear(sf);
+
+                                dialog->SetActiveAddress(llAddrStart);
+                            }
+                            else
+                            {
+                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not convert the address ToUlongLong in the frame: %s", pFrame->MakeDebugString()), LogPaneLogger::LineType::Error);
+                            }
+                        }
+                }
+                else
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the frame. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                }
+            }
+        }
+
+        // asm_insns=[
+        //    {address=0x00007ff6581118be,func-name=main(),offset=819,inst=mov    $0x6565,%edx},
+        //    {address=0x00007ff6581118c3,func-name=main(),offset=824,inst=mov    %rax,0x3dd(%rsp)},
+        //    {address=0x00007ff6581118cb,func-name=main(),offset=832,inst=mov    %rdx,0x3e5(%rsp)},
+        //    {address=0x00007ff6581118d3,func-name=main(),offset=840,inst=movl   $0x0,0x3ed(%rsp)},
+        //    {address=0x00007ff6581118de,func-name=main(),offset=851,inst=mov    $0x1,%ecx},
+        //    ....
+        // ]
+
+        // {asm_insns=[
+        //      src_and_asm_line=
+        //      {
+        //          line=104,
+        //          file=D:\\Andrew_Development\\Z_Testing_Apps\\Printf_I64\\main.cpp,
+        //          fullname=D:\\Andrew_Development\\Z_Testing_Apps\\Printf_I64\\main.cpp,
+        //          line_asm_insn=
+        //          [
+        //              {address=0x00007ff6581118c8,func-name=main(),offset=829,inst=add    (%rax),%eax},
+        //              {address=0x00007ff6581118ca,func-name=main(),offset=831,inst=add    %cl,-0x77(%rax)},
+        //              {address=0x00007ff6581118cd,func-name=main(),offset=834,inst=xchg   %eax,%esp},
+        //              {address=0x00007ff6581118ce,func-name=main(),offset=835,inst=and    $0xe5,%al},
+        //              {address=0x00007ff6581118d0,func-name=main(),offset=837,inst=add    (%rax),%eax},
+        //              {address=0x00007ff6581118d2,func-name=main(),offset=839,inst=add    %al,%bh},
+        //              {address=0x00007ff6581118d4,func-name=main(),offset=841,inst=test   %ah,0x3(,%rbp,8)},
+        //              {address=0x00007ff6581118db,func-name=main(),offset=848,inst=add    %al,(%rax)},
+        //              {address=0x00007ff6581118dd,func-name=main(),offset=850,inst=add    %bh,0x1(%rcx)}
+        //          ]
+        //      }
+        //      {address=0x00007ff6581118ca,func-name=main(),offset=831,inst=add    %cl,-0x77(%rax)},
+        //      {address=0x00007ff6581118cd,func-name=main(),offset=834,inst=xchg   %eax,%esp},
+        //      {address=0x00007ff6581118ce,func-name=main(),offset=835,inst=and    $0xe5,%al},
+        //    ....
+        // ]
+
+
+        if (id == m_disassemble_data_request_id)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+
+            const ResultValue * pASMArray = result.GetResultValue().GetTupleValue("asm_insns");
+            if (pASMArray)
+            {
+                int iASMArrayCount = pASMArray->GetTupleSize();
+                for (int iASMEntryIndex = 0; iASMEntryIndex < iASMArrayCount; iASMEntryIndex++)
+                {
+                    const ResultValue * pASMLine = pASMArray->GetTupleValueByIndex(iASMEntryIndex);
+                    if (pASMLine)
+                    {
+                        const ResultValue * pFileName = pASMLine->GetTupleValue("fullname");
+                        if (pFileName)
+                        {
+                            const ResultValue * pLine = pASMLine->GetTupleValue("line");
+                            if (pLine)
+                            {
+                                long iLineNo = 0;
+                                wxString sLineNo = pLine->GetSimpleValue();
+
+                                if (sLineNo.ToLong(&iLineNo, 10))
+                                {
+                                    dialog->AddSourceLine(iLineNo, pFileName->GetSimpleValue());
+                                }
+                                else
+                                {
+                                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the line entry ToLong in the frame: %s", pASMLine->MakeDebugString()), LogPaneLogger::LineType::Error);
+                                }
+                            }
+                            else
+                            {
+                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the line in the frame: %s", pASMLine->MakeDebugString()), LogPaneLogger::LineType::Error);
+                            }
+                            const ResultValue * pASMLineArray= pASMLine->GetTupleValue("line_asm_insn");
+
+                            int iASMLineArrayCount = pASMLineArray->GetTupleSize();
+                            for (int iASMLineArrayIndex = 0; iASMLineArrayIndex < iASMLineArrayCount; iASMLineArrayIndex++)
+                            {
+                                const ResultValue * pASMLineArrayLine = pASMLineArray->GetTupleValueByIndex(iASMLineArrayIndex);
+                                if (pASMLineArrayLine)
+                                {
+                                    ParseASMInsmLine(dialog, pASMLineArrayLine, iASMEntryIndex* 1000 + iASMLineArrayIndex);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ParseASMInsmLine(dialog, pASMLine, iASMEntryIndex);
+                        }
+                    }
+                    else
+                    {
+                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-disassemble\" GDB/MI asm entry item %d. ASM Entry item: %s", iASMEntryIndex, pASMLine->MakeDebugString()), LogPaneLogger::LineType::Error);
+                    }
+                }
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-disassemble\" GDB/MI response. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+            }
+            Finish();
+        }
+    }
+
+    void GDBDisassemble::OnStart()
+    {
+        wxString cmdFrame("-stack-info-frame");
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmdFrame), LogPaneLogger::LineType::Debug);
+        m_disassemble_frame_info_request_id = Execute(cmdFrame);
+
+        // Synopsis
+        // -data-disassemble
+        //     [ -s start-addr -e end-addr ]
+        //     | [ -a addr ]
+        //     | [ -f filename -l linenum [ -n lines ] ]
+        //     -- mode
+        //
+        // Where:
+        //
+        // ‘start-addr’is the beginning address (or $pc)
+        // ‘end-addr’  is the end address
+        // ‘addr’      is an address anywhere within (or the name of) the function to disassemble.
+        //                     If an address is specified, the whole function surrounding that address will be
+        //                     disassembled. If a name is specified, the whole function with that name will be
+        //                     disassembled.
+        // ‘filename’  is the name of the file to disassemble
+        // ‘linenum’   is the line number to disassemble around
+        // ‘lines’     is the number of disassembly lines to be produced. If it is -1, the whole function
+        //                     will be disassembled, in case no end-addr is specified. If end-addr is specified
+        //                     as a non-zero value, and lines is lower than the number of disassembly lines
+        //                     between start-addr and end-addr, only lines lines are displayed; if lines is higher
+        //                     than the number of lines between start-addr and end-addr, only the lines up to
+        //                     end-addr are displayed.
+        // ‘mode’      is one of:
+        //                     0 disassembly only
+        //                     1 mixed source and disassembly (deprecated)
+        //                     2 disassembly with raw opcodes
+        //                     3 mixed source and disassembly with raw opcodes (deprecated)
+        //                     4 mixed source and disassembly
+        //                     5 mixed source and disassembly with raw opcodes
+        //
+        // Modes 1 and 3 are deprecated. The output is “source centric” which hasn’t
+        // proved useful in practice. See Section 9.6 [Machine Code], page 128, for a
+        // discussion of the difference between /m and /s output of the disassemble
+        // command
+        int iMode = 0; // Default
+        if (Manager::Get()->GetDebuggerManager()->IsDisassemblyMixedMode())
+        {
+            iMode = 4;
+        }
+
+        wxString cmdData = wxString::Format("-data-disassemble -s \"$pc -100\" -e \"$pc + 100\" -- %d", iMode);  // As per CodeLite debuggergdp.cpp DbgGdb::Disassemble(...) function
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmdData), LogPaneLogger::LineType::Debug);
+        m_disassemble_data_request_id = Execute(cmdData);
+    }
+
     void ParseWatchInfo(ResultValue const & value, int & children_count, bool & dynamic, bool & has_more)
     {
         dynamic = has_more = false;
