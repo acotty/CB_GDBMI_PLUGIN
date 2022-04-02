@@ -8,6 +8,7 @@
 #define _DEBUGGER_GDB_MI_PLUGIN_H_
 
 // System and library includes
+#include <tinyxml2.h>
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
     // For compilers that support precompilation, includes <wx/wx.h>
@@ -100,6 +101,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
 
         // watches
         virtual cb::shared_ptr<cbWatch> AddWatch(const wxString & symbol, bool update);
+        virtual cb::shared_ptr<cbWatch> AddWatch(dbg_mi::GDBWatch * watch, cb_unused bool update);
         virtual cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size, const wxString & symbol, bool update);
         void AddTooltipWatch(const wxString & symbol, wxRect const & rect);
         virtual void DeleteWatch(cb::shared_ptr<cbWatch> watch);
@@ -201,10 +203,9 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void CommitRunCommand(wxString const & command);
         void CommitWatches();
         void KillConsole();
-        TiXmlElement* GetElementForSaving(cbProject &project, const char *elementsToClear);
+        tinyxml2::XMLElement* GetElementForSaving(cbProject &project, const char *elementsToClear);
         void OnProjectOpened(CodeBlocksEvent& event);
         void OnProjectClosed(CodeBlocksEvent& event);
-        void SetNodeText(TiXmlElement* n, const TiXmlText& t);
         bool SaveStateToFile(cbProject* prj);
         bool LoadStateFromFile(cbProject* prj);
 

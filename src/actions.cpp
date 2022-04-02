@@ -1068,7 +1068,7 @@ namespace dbg_mi
 
     void AppendNullChild(cb::shared_ptr<GDBWatch> watch)
     {
-        cbWatch::AddChild(watch, cb::shared_ptr<cbWatch>(new GDBWatch("updating...", watch->ForTooltip())));
+        cbWatch::AddChild(watch, cb::shared_ptr<cbWatch>(new GDBWatch(watch->GetProject(), watch->GetGDBLogger(), "updating...", watch->ForTooltip())));
     }
 
     cb::shared_ptr<GDBWatch> AddChild(cb::shared_ptr<GDBWatch> parent, ResultValue const & child_value, wxString const & symbol,
@@ -1099,7 +1099,7 @@ namespace dbg_mi
         }
         else
         {
-            child = cb::shared_ptr<GDBWatch>(new dbg_mi::GDBWatch(symbol, parent->ForTooltip()));
+            child = cb::shared_ptr<GDBWatch>(new dbg_mi::GDBWatch(parent->GetProject(), parent->GetGDBLogger(), symbol, parent->ForTooltip()));
             ParseWatchValueID(*child, child_value);
             cbWatch::AddChild(parent, child);
         }
@@ -1242,7 +1242,7 @@ namespace dbg_mi
 
                     if (dynamic && has_more)
                     {
-                        child = cb::shared_ptr<GDBWatch>(new GDBWatch(symbol, parent_watch->ForTooltip(), false));
+                        child = cb::shared_ptr<GDBWatch>(new GDBWatch(parent_watch->GetProject(), parent_watch->GetGDBLogger(), symbol, parent_watch->ForTooltip(), false));
                         ParseWatchValueID(*child, *child_value);
                         ExecuteListCommand(child, parent_watch);
                     }
@@ -1473,8 +1473,7 @@ namespace dbg_mi
 
     void GDBWatchCreateAction::OnStart()
     {
-        wxString symbol;
-        m_watch->GetSymbol(symbol);
+        wxString symbol = m_watch->GetSymbol();
         symbol.Replace("\"", "\\\"");
         wxString cmd = wxString::Format("-var-create - @ \"%s\"", symbol);
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Watch: %s",cmd), LogPaneLogger::LineType::UserDisplay);

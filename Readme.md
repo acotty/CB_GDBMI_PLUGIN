@@ -1,7 +1,11 @@
-# Description
-This GitHub repo has the source code for the new Code::Blocks GDB/MI debugger. The source is to be built with the current C::B nightly and a GCC compiler that supports C++11. The code is desigend for GDB 9 or later using the GDB/MI version 3 interface.
+# CODE::BLOCKS  GDB/MI DEBUGGER PLUGIN
 
-This uses the GDB Machine Interface (GDB/MI) interface. This has a number of advantages:
+**The debugger is not production quality yet, but you can check it out as it can debug itself.**
+
+## Description
+This GitHub repo contains the future Code::Blocks GDB/MI debugger plugin. The source is to be built with the current C::B nightly build and GCC compiler that supports C++11 or later (GCC 10 or 11 is recommended). The code is desigend for GDB 9.1 or later using the GDB/MI version 3 interface (GDB 11.2 is recommended).
+
+This GDB/MI debugger plugin has a number of advantages over the existing GDB debugger plugin, like:
 
 1. Supports all of the existing GDB annotations debugger plugin features once finished.
 2. In theory quicker as there is less data transferred between C::B and GDB.
@@ -9,17 +13,26 @@ This uses the GDB Machine Interface (GDB/MI) interface. This has a number of adv
 4. Should be easier easier to add new features compared to the old code.
 5. GDB/MI interface is supported. The GDB annotations interface is deprecated.
 
-**The debugger is not production quality at this point in time.**
+## OUTSTANDING ITEMS
 
-**It can be tested NOW, so give it a go in order to help with finding missing functionality and/or bugs.**
+### High Priority
 
-# OUTSTANDING ITEMS
-
-## High Priority
 1. Persist debug data between sessions:
-    status: very early preliminary code is working, but it will change!!!!
+    status: 
+        preliminary code is working.
+        The code will change, but hopefully the XML file structure coudl stay the same, but with the addition of memory watches
 
-## Medium Priority
+    Working:
+        - line breakpoint saved and loaded
+        - simple data watch data saved and loaded
+    Not done:
+        - non simple breakpoints not coded up, but data is saved and loaded
+        - edited watch is not coded, but data is saved and loaded
+        - memory watch - nothing has been done
+        - option to disable persistence via debugger dialog
+
+### Medium Priority
+
 1. Debug -> Memory view dialog
     a) Plugin calls Debugger_GDB_MI::AddMemoryRange
     b) Need to spend time analysing existing code
@@ -28,7 +41,8 @@ This uses the GDB Machine Interface (GDB/MI) interface. This has a number of adv
 4. Add control to vary the amount/type of logging
 5. Publish plugin to github
 
-## Low Priority
+### Low Priority
+
 1. Send project search paths to GDB. Search paths from  Project->Properties->"Debugger GDB/MI" tab.
 2. Remote debugging - use Project->Properties->"Debugger GDB/MI" tab data.
 3. Create Linux project file
@@ -51,14 +65,15 @@ This uses the GDB Machine Interface (GDB/MI) interface. This has a number of adv
                 sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
             }
 
-## Future Work
+### Future Work
+
 1. Checkpoints (only available on linux )
 2. Display the return value of a function after "step out"
 3. Skipping functions
 4. record replay (only linux)
 5. More (easy) integration of pretty printing
 
-## Check List
+## Testing/Coding/Feature Check List
 
 |                  Item                                      |   Date    |   Result   |
 |------------------------------------------------------------|-----------|------------|
@@ -70,16 +85,18 @@ This uses the GDB Machine Interface (GDB/MI) interface. This has a number of adv
 |  * Next line            (F7)                               | 26MAR2022 |    Pass    |
 |  * Step Into            (Shift-F7)                         | 26MAR2022 |    Pass    |
 |  * Step out             (Ctrl-F7)                          | 26MAR2022 |    Pass    |
-|  * Next instruction     (Alt-F7)                           | 25MAR2022 |   To test  |
-|  * Step into instruction(ALT-Shift-F7)                     | 25MAR2022 |   To test  |
-|  * Set next statement                                      | 25MAR2022 |   To test  |
+|  * Next instruction     (Alt-F7)                           |  To test  |   To test  |
+|  * Step into instruction(ALT-Shift-F7)                     |  To test  |   To test  |
+|  * Set next statement                                      |  To test  |   To test  |
 |  * Notification that the debugging has ended               | 26MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Watches                                                   |           |            |
 |  * Simple data types                                       | 26MAR2022 |    Pass    |
 |  * Simple structure                                        | 26MAR2022 |    Pass    |
 |  * Array of simple structures                              | 26MAR2022 |    Pass    |
 |  * Complex structures                                      | 26MAR2022 |    Pass    |
 |  * Edit watches                                            | 30MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Breakpoints                                               |           |            |
 |  * adding break point after the start of the debugger      | 26MAR2022 |    Pass    |
 |  * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass    |
@@ -89,22 +106,49 @@ This uses the GDB Machine Interface (GDB/MI) interface. This has a number of adv
 |  * Edit break point                                        | 26MAR2022 |    Pass    |
 |    * ignore count before break                             | 26MAR2022 |    Pass    |
 |    * break when expression is true                         | 26MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Debug show Running Threads                                | 26MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Debug show CPU Registers                                  | 27MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Debug show Call Stack                                     | 26MAR2022 |    Pass    |
 |  * Double click on entry should open and go to the line    | 28MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Debug show Disassembly                                    |           |            |
 |  * Assembly only                                           | 31MAR2022 |    Pass    |
 |  * Mixed mode                                              | 31MAR2022 |    Pass    |
 |  * Adjust button feature                                   | 31MAR2022 |  *Broken*  |
 |  * Save data to file feature                               | 31MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Debug -> Memory Dump Dialog                               | 28MAR2022 |    Pass    | 
+|                                                            |           |            |
 |* Debug -> Memory view Dialog                               | 26MAR2022 |  *Broken*  | 
+|                                                            |           |            |
 |* Show tty for console projects                             | 28MAR2022 |    Pass    |
+|                                                            |           |            |
 |* Projects - edit see debuggeroptionsprjdlg                 | 29MAR2022 |  *Broken*  |
+|                                                            |           |            |
+|* GDB/MI Debugger configuration dialog                      |           |            |
+|  * Executable path save/loaded/used                        |  To test  |   To test  |
+|  * Arguments save/loaded/used                              |  To test  |   To test  |
+|  * Arguments used in starting debugger                     |  To test  |   To test  |
+|  * Debugger init commands save/loaded/used                 |  To test  |   To test  |
+|  * Disable startup scripts checkbox save/loaded/used       |  To test  |   To test  |
+|  * Watch function arguments checkbox save/loaded/used      |  To test  |   To test  |
+|  * Watch local variables checkbox save/loaded/used         |  To test  |   To test  |
+|  * Catch C++ exceptions checkbox save/loaded/used          |  To test  |   To test  |
+|  * Evaluate expression under cursor cbox save/loaded/used  |  To test  |   To test  |
+|  * Add other projects paths... checkbox save/loaded/used   |  To test  |   To test  |
+|  * Do not run the debugee checkbox save/loaded/used        |  To test  |   To test  |
+|  * Use python pretty printer checkbox save/loaded/used     |  To test  |   To test  |
+|  * Disassembly flavor drop down list save/loaded/used      |  To test  |   To test  |
+|    * ADD:                                                  |           |            |
+|        * new Checkbox for save/load breakpoint/watch etc   |  Future   |   Future   |
+|                                                            |           |            |
 
-# COMPLETED ITEMS
+## COMPLETED ITEMS
 
+* 02APR2022 Done - watch and line break points are persistent
 * 30MAR2022 Done - Disassembly view working like the existing code (adjust is broken)
 * 30MAR2022 Done - Wired up Project->Properties->"Debugger GDB/MI" tab. Loads and saves data only.
 * 30MAR2022 Done - Conditional break points

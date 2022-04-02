@@ -6,6 +6,7 @@
 
 // System include files
 #include <algorithm>
+#include <tinyxml2.h>
 #include <wx/xrc/xmlres.h>
 #include <wx/wxscintilla.h>
 #ifndef __WX_MSW__
@@ -18,19 +19,15 @@
 
 #include "cbdebugger_interfaces.h"
 #include "cbproject.h"
-#include "cbeditor.h"
 #include "compilercommandgenerator.h"
 #include "compilerfactory.h"
 #include "configurationpanel.h"
 #include "configmanager.h"
-#include "editormanager.h"
 #include "infowindow.h"
 #include "macrosmanager.h"
 #include "manager.h"
 #include "pipedprocess.h"
 #include "projectmanager.h"
-#include "tinyxml/tinyxml.h"
-#include "tinywxuni.h"
 
 // GDB include files
 #include "actions.h"
@@ -44,6 +41,9 @@
 #include "editwatchdlg.h"
 #include "debuggeroptionsprjdlg.h"
 #include "plugin.h"
+
+//XML file root tag for data
+static const char* XML_CFG_ROOT_TAG = "Debugger_layout_file";
 
 namespace
 {
@@ -824,18 +824,30 @@ struct BreakpointMatchProject
     cbProject * project;
 };
 
+
 void Debugger_GDB_MI::CleanupWhenProjectClosed(cbProject * project)
 {
-    dbg_mi::GDBBreakpointsContainer::iterator it = std::remove_if(m_breakpoints.begin(), m_breakpoints.end(),
-                                                BreakpointMatchProject(project));
-
-    if (it != m_breakpoints.end())
+    dbg_mi::GDBBreakpointsContainer::iterator bpIT = std::remove_if(m_breakpoints.begin(), m_breakpoints.end(), BreakpointMatchProject(project));
+    if (bpIT != m_breakpoints.end())
     {
-        m_breakpoints.erase(it, m_breakpoints.end());
-        // FIXME (#obfuscated): Optimize this when multiple projects are closed
-        //                      (during workspace close operation for exmaple).
+        m_breakpoints.erase(bpIT, m_breakpoints.end());
         cbBreakpointsDlg * dlg = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
         dlg->Reload();
+    }
+
+    for (dbg_mi::GDBWatchesContainer::iterator it = m_watches.begin(); it != m_watches.end(); )
+    {
+        cb::shared_ptr<dbg_mi::GDBWatch> watch = *it;
+        if (watch->GetProject() == project)
+        {
+            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Remove watch for \"%s\"", watch->GetSymbol()), dbg_mi::LogPaneLogger::LineType::Debug);
+            cbWatchesDlg *dialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
+            dialog->RemoveWatch(watch);  // This call removed the watch from the GUI and debugger
+        }
+        else
+        {
+            it++;
+        }
     }
 }
 
@@ -1107,7 +1119,8 @@ bool Debugger_GDB_MI::RunToCursor(const wxString & filename, int line, const wxS
     else
     {
         m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("push_back %s:%d", filename, line), dbg_mi::LogPaneLogger::LineType::Command);
-        cb::shared_ptr<dbg_mi::GDBBreakpoint> ptr(new dbg_mi::GDBBreakpoint(filename, line, nullptr));
+        cbProject * project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
+        cb::shared_ptr<dbg_mi::GDBBreakpoint> ptr(new dbg_mi::GDBBreakpoint(project, m_pLogger, filename, line));
         m_temporary_breakpoints.push_back(ptr);
         return Debug(false);
     }
@@ -1284,33 +1297,23 @@ int Debugger_GDB_MI::GetActiveStackFrame() const
 
 cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddBreakpoint(const wxString & filename, int line)
 {
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("%s:%d"), filename, line), dbg_mi::LogPaneLogger::LineType::Debug);
+    cbProject * project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
+    cb::shared_ptr<dbg_mi::GDBBreakpoint> ptr(new dbg_mi::GDBBreakpoint(project, m_pLogger, filename, line));
+    m_breakpoints.push_back(ptr);
+
     if (IsRunning())
     {
         if (!IsStopped())
         {
-            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("%s:%d"), filename, line), dbg_mi::LogPaneLogger::LineType::Debug);
             m_executor.Interupt();
-            cbProject * project;
-            project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
-            cb::shared_ptr<dbg_mi::GDBBreakpoint> ptr(new dbg_mi::GDBBreakpoint(filename, line, project));
-            m_breakpoints.push_back(ptr);
             m_actions.Add(new dbg_mi::GDBBreakpointAddAction(ptr, m_pLogger));
             Continue();
         }
         else
         {
-            cbProject * project;
-            project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
-            cb::shared_ptr<dbg_mi::GDBBreakpoint> ptr(new dbg_mi::GDBBreakpoint(filename, line, project));
-            m_breakpoints.push_back(ptr);
             m_actions.Add(new dbg_mi::GDBBreakpointAddAction(ptr, m_pLogger));
         }
-    }
-    else
-    {
-        cbProject * project = Manager::Get()->GetProjectManager()->FindProjectForFile(filename, nullptr, false, false);
-        cb::shared_ptr<dbg_mi::GDBBreakpoint> ptr(new dbg_mi::GDBBreakpoint(filename, line, project));
-        m_breakpoints.push_back(ptr);
     }
 
     return cb::static_pointer_cast<cbBreakpoint>(m_breakpoints.back());
@@ -1625,7 +1628,8 @@ bool Debugger_GDB_MI::SwitchToThread(int thread_number)
 
 cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(const wxString & symbol, cb_unused bool update)
 {
-    cb::shared_ptr<dbg_mi::GDBWatch> watch(new dbg_mi::GDBWatch(symbol, false));
+
+    cb::shared_ptr<dbg_mi::GDBWatch> watch(new dbg_mi::GDBWatch(m_project, m_pLogger, symbol, false));
     m_watches.push_back(watch);
 
     if (IsRunning())
@@ -1633,7 +1637,22 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(const wxString & symbol, cb_un
         m_actions.Add(new dbg_mi::GDBWatchCreateAction(watch, m_watches, m_pLogger));
     }
 
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Add watch for \"%s\"", watch->GetSymbol()), dbg_mi::LogPaneLogger::LineType::Debug);
     return watch;
+}
+
+cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(dbg_mi::GDBWatch * watch, cb_unused bool update)
+{
+    cb::shared_ptr<dbg_mi::GDBWatch> w(watch);
+    m_watches.push_back(w);
+
+    if (IsRunning())
+    {
+        m_actions.Add(new dbg_mi::GDBWatchCreateAction(w, m_watches, m_pLogger));
+    }
+
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Add watch for \"%s\"", w->GetSymbol()), dbg_mi::LogPaneLogger::LineType::Debug);
+    return w;
 }
 
 cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(uint64_t address, uint64_t size, const wxString & symbol, bool update)
@@ -1656,7 +1675,7 @@ m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> GDBMemoryRangeW
 
 void Debugger_GDB_MI::AddTooltipWatch(const wxString & symbol, wxRect const & rect)
 {
-    cb::shared_ptr<dbg_mi::GDBWatch> w(new dbg_mi::GDBWatch(symbol, true));
+    cb::shared_ptr<dbg_mi::GDBWatch> w(new dbg_mi::GDBWatch(m_project, m_pLogger, symbol, true));
     m_watches.push_back(w);
 
     if (IsRunning())
@@ -1701,7 +1720,7 @@ bool Debugger_GDB_MI::HasWatch(cb::shared_ptr<cbWatch> watch)
 void Debugger_GDB_MI::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
 {
 #warning +-------------------------------------------------------+
-#warning |        ShowWatchProperties - WORK IN PROGRESS              |
+#warning |        ShowWatchProperties - WORK IN PROGRESS         |
 #warning +-------------------------------------------------------+
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> WORK IN PROGRESS <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
 
@@ -1908,11 +1927,6 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
 
         case Disassembly:
             {
-#warning +-------------------------------------------------------+
-#warning |        Disassembly - WORK IN PROGRESS              |
-#warning +-------------------------------------------------------+
-m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> Missing code for Disassembly window <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
-
                 wxString flavour = GetActiveConfigEx().GetDisassemblyFlavorCommand();
                 m_actions.Add(new dbg_mi::GDBDisassemble(flavour, m_pLogger));
             }
@@ -1923,12 +1937,16 @@ m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> Missing code fo
             break;
 
         case MemoryRange:
+// #warning +-------------------------------------------------------+
 #warning "not implemented"
+// #warning +-------------------------------------------------------+
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> Missing code for MemoryRange window <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
             break;
 
         case Watches:
+// #warning +-------------------------------------------------------+
 #warning "not implemented"
+// #warning +-------------------------------------------------------+
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> Missing code for Watches window <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
             break;
 
@@ -1974,13 +1992,15 @@ bool Debugger_GDB_MI::ShowValueTooltip(int style)
 wxArrayString Debugger_GDB_MI::ParseSearchDirs(const cbProject &project)
 {
     wxArrayString dirs;
-    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+#warning need to convert tinyxml to tinyxml2
+#if 0
+    const tinyxml2::XMLElement* elem = project.GetExtensionsNode();
     if (elem)
     {
-        const TiXmlElement* conf = elem->FirstChildElement("debugger");
+        const tinyxml2::XMLElement* conf = elem->FirstChildElement("debugger");
         if (conf)
         {
-            const TiXmlElement* pathsElem = conf->FirstChildElement("search_path");
+            const tinyxml2::XMLElement* pathsElem = conf->FirstChildElement("search_path");
             while (pathsElem)
             {
                 if (pathsElem->Attribute("add"))
@@ -1993,61 +2013,73 @@ wxArrayString Debugger_GDB_MI::ParseSearchDirs(const cbProject &project)
             }
         }
     }
-
+#endif
     return dirs;
 }
 
-TiXmlElement* Debugger_GDB_MI::GetElementForSaving(cbProject &project, const char *elementsToClear)
+tinyxml2::XMLElement* Debugger_GDB_MI::GetElementForSaving(cbProject &project, const char *elementsToClear)
 {
-    TiXmlElement *elem = static_cast<TiXmlElement*>(project.GetExtensionsNode());
+#warning need to convert tinyxml to tinyxml2
+#if 1
+    tinyxml2::XMLElement* node = nullptr;
+#else
+    tinyxml2::XMLElement *elem = project.GetExtensionsNode();
 
     // since rev4332, the project keeps a copy of the <Extensions> element
     // and re-uses it when saving the project (so to avoid losing entries in it
     // if plugins that use that element are not loaded atm).
     // so, instead of blindly inserting the element, we must first check it's
     // not already there (and if it is, clear its contents)
-    TiXmlElement* node = elem->FirstChildElement("debugger");
+    tinyxml2::XMLElement* node = elem->FirstChildElement("debugger");
     if (!node)
-        node = elem->InsertEndChild(TiXmlElement("debugger"))->ToElement();
+    {
+        node = elem->InsertEndChild(tinyxml2::XMLElement("debugger"))->ToElement();
+    }
 
-    for (TiXmlElement* child = node->FirstChildElement(elementsToClear);
+    for (tinyxml2::XMLElement* child = node->FirstChildElement(elementsToClear);
          child;
          child = node->FirstChildElement(elementsToClear))
     {
-        node->RemoveChild(child);
+        node->DeleteChild(child);
     }
+#endif
     return node;
 }
 
 void Debugger_GDB_MI::SetSearchDirs(cbProject &project, const wxArrayString &dirs)
 {
-    TiXmlElement* node = GetElementForSaving(project, "search_path");
-    if (dirs.GetCount() > 0)
+#warning need to convert tinyxml to tinyxml2
+#if 0
+    tinyxml2::XMLElement* node = GetElementForSaving(project, "search_path");
+    if (node && (dirs.GetCount() > 0))
     {
         for (size_t i = 0; i < dirs.GetCount(); ++i)
         {
-            TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
-            path->SetAttribute("add", dirs[i]);
+            tinyxml2::XMLElement* path = node->InsertEndChild(tinyxml2::XMLElement("search_path"))->ToElement();
+            path->SetAttribute("add", dirs[i].mb_str());
         }
     }
+#endif
 }
 
 dbg_mi::RemoteDebuggingMap Debugger_GDB_MI::ParseRemoteDebuggingMap(cbProject &project)
 {
     dbg_mi::RemoteDebuggingMap map;
-    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+#warning need to convert tinyxml to tinyxml2
+#if 0
+    const tinyxml2::XMLElement* elem = project.GetExtensionsNode();
     if (elem)
     {
-        const TiXmlElement* conf = elem->FirstChildElement("debugger");
+        const tinyxml2::XMLElement* conf = elem->FirstChildElement("debugger");
         if (conf)
         {
-            const TiXmlElement* rdElem = conf->FirstChildElement("remote_debugging");
+            const tinyxml2::XMLElement* rdElem = conf->FirstChildElement("remote_debugging");
             while (rdElem)
             {
                 wxString targetName = rdElem->Attribute("target");
                 ProjectBuildTarget* bt = project.GetBuildTarget(targetName);
 
-                const TiXmlElement* rdOpt = rdElem->FirstChildElement("options");
+                const tinyxml2::XMLElement* rdOpt = rdElem->FirstChildElement("options");
                 if (rdOpt)
                 {
                     dbg_mi::RemoteDebugging rd;
@@ -2121,12 +2153,15 @@ dbg_mi::RemoteDebuggingMap Debugger_GDB_MI::ParseRemoteDebuggingMap(cbProject &p
             }
         }
     }
+#endif
     return map;
 }
 
 void Debugger_GDB_MI::SetRemoteDebuggingMap(cbProject &project, const dbg_mi::RemoteDebuggingMap &rdMap)
 {
-    TiXmlElement* node = GetElementForSaving(project, "remote_debugging");
+#warning need to convert tinyxml to tinyxml2
+#if 0
+    tinyxml2::XMLElement* node = GetElementForSaving(project, "remote_debugging");
 
     if (!rdMap.empty())
     {
@@ -2161,41 +2196,41 @@ void Debugger_GDB_MI::SetRemoteDebuggingMap(cbProject &project, const dbg_mi::Re
                 continue;
             }
 
-            TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("remote_debugging"))->ToElement();
+            tinyxml2::XMLElement* rdnode = node->InsertEndChild(tinyxml2::XMLElement("remote_debugging"))->ToElement();
             if (!it->first.empty())
-                rdnode->SetAttribute("target", it->first);
+                rdnode->SetAttribute("target", it->first.mb_str());
 
-            TiXmlElement* tgtnode = rdnode->InsertEndChild(TiXmlElement("options"))->ToElement();
+            tinyxml2::XMLElement* tgtnode = rdnode->InsertEndChild(tinyxml2::XMLElement("options"))->ToElement();
             tgtnode->SetAttribute("conn_type", (int)rd.connType);
 
             if (!rd.serialPort.IsEmpty())
             {
-                tgtnode->SetAttribute("serial_port", rd.serialPort);
+                tgtnode->SetAttribute("serial_port", rd.serialPort.mb_str());
             }
 
             if (rd.serialBaud != wxT("115200"))
             {
-                tgtnode->SetAttribute("serial_baud", rd.serialBaud);
+                tgtnode->SetAttribute("serial_baud", rd.serialBaud.mb_str());
             }
 
             if (!rd.ip.IsEmpty())
             {
-                tgtnode->SetAttribute("ip_address", rd.ip);
+                tgtnode->SetAttribute("ip_address", rd.ip.mb_str());
             }
 
             if (!rd.ipPort.IsEmpty())
             {
-                tgtnode->SetAttribute("ip_port", rd.ipPort);
+                tgtnode->SetAttribute("ip_port", rd.ipPort.mb_str());
             }
 
             if (!rd.additionalCmds.IsEmpty())
             {
-                tgtnode->SetAttribute("additional_cmds", rd.additionalCmds);
+                tgtnode->SetAttribute("additional_cmds", rd.additionalCmds.mb_str());
             }
 
             if (!rd.additionalCmdsBefore.IsEmpty())
             {
-                tgtnode->SetAttribute("additional_cmds_before", rd.additionalCmdsBefore);
+                tgtnode->SetAttribute("additional_cmds_before", rd.additionalCmdsBefore.mb_str());
             }
 
             if (rd.skipLDpath)
@@ -2211,15 +2246,16 @@ void Debugger_GDB_MI::SetRemoteDebuggingMap(cbProject &project, const dbg_mi::Re
 
             if (!rd.additionalShellCmdsAfter.IsEmpty())
             {
-                tgtnode->SetAttribute("additional_shell_cmds_after", rd.additionalShellCmdsAfter);
+                tgtnode->SetAttribute("additional_shell_cmds_after", rd.additionalShellCmdsAfter.mb_str());
             }
 
             if (!rd.additionalShellCmdsBefore.IsEmpty())
             {
-                tgtnode->SetAttribute("additional_shell_cmds_before", rd.additionalShellCmdsBefore);
+                tgtnode->SetAttribute("additional_shell_cmds_before", rd.additionalShellCmdsBefore.mb_str());
+            }
         }
     }
-    }
+#endif
 }
 
 void Debugger_GDB_MI::OnProjectOpened(CodeBlocksEvent& event)
@@ -2229,31 +2265,17 @@ void Debugger_GDB_MI::OnProjectOpened(CodeBlocksEvent& event)
 
     LoadStateFromFile(event.GetProject());
 }
+
 void Debugger_GDB_MI::OnProjectClosed(CodeBlocksEvent& event)
 {
     // allow others to catch this
     event.Skip();
 
-    // the same for remote debugging
-//    GetRemoteDebuggingMap(event.GetProject()).clear();
-
     SaveStateToFile(event.GetProject());
 
-//  m_pTree->DeleteAllWatches();
-
-    // remove all breakpoints belonging to the closed project
-//  m_State.RemoveAllProjectBreakpoints(event.GetProject());
- }
-
-void Debugger_GDB_MI::SetNodeText(TiXmlElement* n, const TiXmlText& t)
-{
-    TiXmlNode *c = n->FirstChild();
-    if (c)
-        n->ReplaceChild(c, t);
-    else
-        n->InsertEndChild(t);
+    // the same for remote debugging
+    // GetRemoteDebuggingMap(event.GetProject()).clear();
 }
-
 
 bool Debugger_GDB_MI::SaveStateToFile(cbProject* pProject)
 {
@@ -2271,88 +2293,60 @@ bool Debugger_GDB_MI::SaveStateToFile(cbProject* pProject)
     wxFileName fname(projectFilename);
     fname.SetExt("bps");
 
-    //XML file IO
-    const char* ROOT_TAG = "Debugger_layout_file";
-
-    TiXmlDocument doc;
-    doc.SetCondenseWhiteSpace(false);
-    doc.InsertEndChild(TiXmlDeclaration("1.0", "UTF-8", "yes"));
-    TiXmlElement* rootnode = static_cast<TiXmlElement*>(doc.InsertEndChild(TiXmlElement(ROOT_TAG)));
+    tinyxml2::XMLDocument doc;
+    // doc.InsertEndChild(tinyxml2::XMLDeclaration("1.0", "UTF-8", "yes"));
+    tinyxml2::XMLNode* rootnode = doc.InsertEndChild(doc.NewElement(XML_CFG_ROOT_TAG));
     if (!rootnode)
     {
         return false;
     }
 
-    //Save debugger name
+    // ********************  Save debugger name ********************
     wxString compilerID = pProject->GetCompilerID();
     int compilerIdx = CompilerFactory::GetCompilerIndex(compilerID );
     Compiler* pCompiler = CompilerFactory::GetCompiler(compilerIdx);
     const CompilerPrograms & pCompilerProgsp = pCompiler->GetPrograms();
-    TiXmlElement* pDebuggerNode = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("CompilerInfo")));
-    TiXmlElement* pProgNode;
-    TiXmlText textNode("");
-    textNode.SetCDATA(false);
 
-    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("CompilerName")));
-    textNode.SetValue(pCompiler->GetName());
-    SetNodeText(pProgNode, textNode);
+    tinyxml2::XMLNode* pCompilerNode = rootnode->InsertEndChild(doc.NewElement("CompilerInfo"));
+    dbg_mi::AddChildNode(pCompilerNode, "CompilerName", pCompiler->GetName());
+    // dbg_mi::AddChildNode(pCompilerNode, "C_Compiler", pCompilerProgsp.C);
+    // dbg_mi::AddChildNode(pCompilerNode, "CPP_Compiler",  pCompilerProgsp.CPP);
+    // dbg_mi::AddChildNode(pCompilerNode, "DynamicLinker_LD",  pCompilerProgsp.LD);
+    // dbg_mi::AddChildNode(pCompilerNode, "StaticLinker_LIB",  pCompilerProgsp.LIB);
+    // dbg_mi::AddChildNode(pCompilerNode, "Make",  pCompilerProgsp.MAKE);
+    dbg_mi::AddChildNode(pCompilerNode, "DBGconfig",  pCompilerProgsp.DBGconfig);
 
-    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("C_Compiler")));
-    //    textNode.SetValue(pCompilerProgsp.C);
-    //    SetNodeText(pProgNode, textNode);
-    //
-    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("CPP_Compiler")));
-    //    textNode.SetValue(pCompilerProgsp.CPP);
-    //    SetNodeText(pProgNode, textNode);
-    //
-    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("DynamicLinker_LD")));
-    //    textNode.SetValue(pCompilerProgsp.LD);
-    //    SetNodeText(pProgNode, textNode);
-    //
-    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("StaticLinker_LIB")));
-    //    textNode.SetValue(pCompilerProgsp.LIB);
-    //    SetNodeText(pProgNode, textNode);
-    //
-    //    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("Make")));
-    //    textNode.SetValue(pCompilerProgsp.MAKE);
-    //    SetNodeText(pProgNode, textNode);
+    // ******************** Save breakpoints ********************
+    tinyxml2::XMLElement* pElementBreakpointList = doc.NewElement("BreakpointsList");
+    pElementBreakpointList->SetAttribute("count", m_breakpoints.size());
+    tinyxml2::XMLNode* pBreakpointMasterNode = rootnode->InsertEndChild(pElementBreakpointList);
 
-    pProgNode = static_cast<TiXmlElement*>(pDebuggerNode->InsertEndChild(TiXmlElement("DBGconfig")));
-    textNode.SetValue(pCompilerProgsp.DBGconfig);
-    SetNodeText(pProgNode, textNode);
-
-    //Save breakpoints
-    TiXmlElement* breakpointsidx = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("BreakpointsList")));
     for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     {
         dbg_mi::GDBBreakpoint& bp = **it;
-
-        //Only save the breakpoints belong to the current project
         if (bp.GetProject() == pProject)
         {
-            TiXmlElement* node = static_cast<TiXmlElement*>(breakpointsidx->InsertEndChild(TiXmlElement("Breakpoint")));
-            //Change the absolute location to relative location
-            wxFileName location(bp.GetFilename());
-            location.MakeRelativeTo(pProject->GetBasePath());
-            //Add file and line
-            node->SetAttribute("file", location.GetFullPath());
-            node->SetAttribute("line", bp.GetLine());
-            node->SetAttribute("type", bp.GetType());
+            bp.SaveBreakpointToXML(pBreakpointMasterNode);
         }
     }
 
-    //Save Watches
-    TiXmlElement* watchesidx = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("WatchesList")));
+    // ********************  Save Watches ********************
+    tinyxml2::XMLElement* pElementWatchesList = doc.NewElement("WatchesList");
+    pElementWatchesList->SetAttribute("count", m_watches.size());
+    tinyxml2::XMLNode* pWatchesMasterNode = rootnode->InsertEndChild(pElementWatchesList);
+
     for (dbg_mi::GDBWatchesContainer::iterator it = m_watches.begin(); it != m_watches.end(); ++it)
     {
         dbg_mi::GDBWatch& watch = **it;
 
-        TiXmlElement* node = static_cast<TiXmlElement*>(watchesidx->InsertEndChild(TiXmlElement("Watch")));
-        node->SetAttribute("symbol", watch.GetSymbol());
+        if (watch.GetProject() == pProject)
+        {
+            watch.SaveWatchToXML(pWatchesMasterNode);
+        }
     }
 
-    //Save XML to harddisk
-    return cbSaveTinyXMLDocument(&doc, fname.GetFullPath());
+    //********************  Save XML to disk ********************
+    return doc.SaveFile(fname.GetFullPath(), false);
 }
 
 bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
@@ -2366,71 +2360,51 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
     fname.SetExt("bps");
 
     //Open XML file
-    TiXmlDocument doc;
-    if (!TinyXML::LoadDocument(fname.GetFullPath(), &doc))
+    tinyxml2::XMLDocument doc;
+
+    tinyxml2::XMLError eResult = doc.LoadFile(fname.GetFullPath());
+    if(eResult != tinyxml2::XMLError::XML_SUCCESS)
     {
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Could not open the file '\%s\" due to the error: %s"),fname.GetFullPath(), doc.ErrorIDToName(eResult) ), dbg_mi::LogPaneLogger::LineType::Error);
+
         return false;
     }
 
-    TiXmlElement* root = doc.FirstChildElement("Debugger_layout_file");
+    tinyxml2::XMLElement* root = doc.FirstChildElement(XML_CFG_ROOT_TAG);
     if (!root)
     {
         return false;
     }
 
     //Load breakpoints
-    TiXmlElement* group = root->FirstChildElement("BreakpointsList");
-    if (group)
+    tinyxml2::XMLElement* pBreakpointList = root->FirstChildElement("BreakpointsList");
+    if (pBreakpointList)
     {
-        TiXmlElement* elem = group->FirstChildElement("Breakpoint");
-
-        while (elem)
+        for(    tinyxml2::XMLElement* pBreakpointElement = pBreakpointList->FirstChildElement("Breakpoint");
+                pBreakpointElement;
+                pBreakpointElement = pBreakpointElement->NextSiblingElement())
         {
-            wxString fileName = elem->Attribute("file");
-            if (fileName.IsEmpty())
-            {
-                break;
-            }
-
-            ProjectFile* pProjFile = pProject->GetFileByFilename(fileName);
-            wxString filenamePath = pProjFile->file.GetFullPath();
-
-            int line = 0;
-            if (elem->QueryIntAttribute("line", &line) != TIXML_SUCCESS)
-            {
-                break;
-            }
-
-            cbEditor* ed = Manager::Get()->GetEditorManager()->IsBuiltinOpen( filenamePath );
-            if (ed==NULL)
-            {
-                AddBreakpoint(filenamePath,line);
-            }
-            else
-            {
-                ed->AddBreakpoint(line, true);
-            }
-
-            elem = elem->NextSiblingElement();
+            dbg_mi::GDBBreakpoint * bp = new dbg_mi::GDBBreakpoint(pProject, m_pLogger);
+            bp->LoadBreakpointFromXML(pBreakpointElement, this);
         }
+        cbBreakpointsDlg * dlg = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
+        dlg->Reload();
     }
 
     //Load watches
-    group = group->NextSiblingElement("WatchesList");
-    if (group)
+    tinyxml2::XMLElement* pElementWatchesList = root->FirstChildElement("WatchesList");
+    if (pElementWatchesList)
     {
-        TiXmlElement* elem = group->FirstChildElement("Watch");
-
-        while (elem)
+        for(    tinyxml2::XMLElement* pWatchElement = pElementWatchesList->FirstChildElement("Watch");
+                pWatchElement;
+                pWatchElement = pWatchElement->NextSiblingElement())
         {
-            wxString watchName = elem->Attribute("symbol");
-
-            if (!watchName.IsEmpty())
+            wxString GDBWatchClassName = dbg_mi::ReadChildNodewxString(pWatchElement, "GDBWatchClassName");
+            if (GDBWatchClassName.IsSameAs("GDBWatch"))
             {
-                AddWatch(watchName, false);
+                dbg_mi::GDBWatch* watch = new dbg_mi::GDBWatch(pProject, m_pLogger, "", false);
+                watch->LoadWatchFromXML(pWatchElement, this);
             }
-
-            elem = elem->NextSiblingElement();
         }
     }
     return true;

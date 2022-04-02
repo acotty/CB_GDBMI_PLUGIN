@@ -7,17 +7,36 @@
 #ifndef _DEBUGGER_GDB_MI_DEFINITIONS_H_
 #define _DEBUGGER_GDB_MI_DEFINITIONS_H_
 
+// System and library includes
 #include <deque>
+#include <tinyxml2.h>
 #include <tr1/memory>
-
 #include <wx/sizer.h>
 #include <wx/string.h>
-
-#include <debuggermanager.h>
 #include <scrollingdialog.h>
+
+// CB includes
+#include <debuggermanager.h>
+
+// GDB include files
+#include "gdb_logger.h"
+
+class Debugger_GDB_MI;
 
 namespace dbg_mi
 {
+    wxString BoolTowxString(bool value);
+    bool wxStringToBool(wxString value);
+
+    void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const wxString value);
+    void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const int iValue);
+    void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const long lValue);
+    void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const bool bValue);
+
+    wxString ReadChildNodewxString(tinyxml2::XMLElement* pElementParent,  const wxString childName);
+    int ReadChildNodeInt(tinyxml2::XMLElement* pElementParent,  const wxString childName);
+    long ReadChildNodeLong(tinyxml2::XMLElement* pElementParent,  const wxString childName);
+    bool ReadChildNodeBool(tinyxml2::XMLElement* pElementParent,  const wxString childName);
 
     class GDBBreakpoint : public cbBreakpoint
     {
@@ -29,9 +48,10 @@ namespace dbg_mi
                 bptData         // Data breakpoint
             };
 
-            GDBBreakpoint() :
+            GDBBreakpoint(cbProject * project, dbg_mi::LogPaneLogger * logger) :
+                m_pLogger(logger),
                 m_type(bptCode),
-                m_project(nullptr),
+                m_project(project),
                 m_filename(wxEmptyString),
                 m_line(-1),
                 m_index(-1),
@@ -49,7 +69,8 @@ namespace dbg_mi
             {
             }
 
-            GDBBreakpoint(const wxString & filename, int line, cbProject * project) :
+            GDBBreakpoint(cbProject * project, dbg_mi::LogPaneLogger * logger, const wxString & filename, int line) :
+                m_pLogger(logger),
                 m_type(bptCode),
                 m_project(project),
                 m_filename(filename),
@@ -108,6 +129,7 @@ namespace dbg_mi
 
             void SetIndex(int index)
             {
+#warning need to call this!!!! search for "bp->index" in existing code
                 m_index = index;
             }
 
@@ -121,16 +143,47 @@ namespace dbg_mi
                 return m_project;
             }
 
+            wxString GetTypewxString()
+            {
+                switch(m_type)
+                {
+                    case BreakpointType::bptCode:
+                        return "bptCode";
+
+                    case BreakpointType::bptFunction:
+                        return "bptFunction";
+
+                    case BreakpointType::bptData:
+                        return "bptData";
+
+                    default:
+                        return "unknown";
+                }
+            }
+
             BreakpointType GetType()
             {
                 return m_type;
             }
 
-            void SeTtype(BreakpointType type)
+            void SetType(wxString type)
             {
-                m_type = type;
+                if (type.IsSameAs("bptCode", false))
+                {
+                    m_type = BreakpointType::bptCode;
+                    return;
+                }
+                if (type.IsSameAs("bptFunction", false))
+                {
+                    m_type = BreakpointType::bptFunction;
+                    return;
+                }
+                if (type.IsSameAs("bptData", false))
+                {
+                    m_type = BreakpointType::bptData;
+                    return;
+                }
             }
-
 
             wxString GetFilename()
             {
@@ -226,6 +279,7 @@ namespace dbg_mi
             {
                 return m_wantsCondition;
             }
+
             void SetIsWantsCondition(bool wantsCondition)
             {
                 m_wantsCondition = wantsCondition;
@@ -306,7 +360,13 @@ namespace dbg_mi
                 m_breakOnWrite = breakOnWrite;
             }
 
+            // GDB additional
+            void SaveBreakpointToXML(tinyxml2::XMLNode* pNodeParent);
+            void LoadBreakpointFromXML(tinyxml2::XMLElement* pElementBreakpoint, Debugger_GDB_MI * dbgGDB);
+
         private:
+            dbg_mi::LogPaneLogger * m_pLogger;
+
             BreakpointType m_type;          // The type of this breakpoint.
 
             cbProject * m_project;          // The Project the file belongs to.
@@ -346,27 +406,44 @@ namespace dbg_mi
               */
             enum WatchFormat
             {
-                Undefined = 0, ///< Format is undefined (whatever the debugger uses by default).
-                Decimal, ///< Variable should be displayed as decimal.
-                Unsigned, ///< Variable should be displayed as unsigned.
-                Hex, ///< Variable should be displayed as hexadecimal (e.g. 0xFFFFFFFF).
-                Binary, ///< Variable should be displayed as binary (e.g. 00011001).
-                Char, ///< Variable should be displayed as a single character (e.g. 'x').
-                Float, ///< Variable should be displayed as floating point number (e.g. 14.35)
+                Undefined = 0,  // Format is undefined (whatever the debugger uses by default).
+                Decimal,        // Variable should be displayed as decimal.
+                Unsigned,       // Variable should be displayed as unsigned.
+                Hex,            // Variable should be displayed as hexadecimal (e.g. 0xFFFFFFFF).
+                Binary,         // Variable should be displayed as binary (e.g. 00011001).
+                Char,           // Variable should be displayed as a single character (e.g. 'x').
+                Float,          // Variable should be displayed as floating point number (e.g. 14.35)
 
                 // do not remove these
-                Last, ///< used for iterations
-                Any ///< used for watches searches
+                Last,           // used for iterations
+                Any             // used for watches searches
             };
+
         public:
-            GDBWatch(wxString const & symbol, bool for_tooltip, bool delete_on_collapse = true) :
+
+            GDBWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, wxString const & symbol, bool for_tooltip, bool delete_on_collapse = true) :
+                m_project(project),
+                m_pLogger(logger),
+                m_GDBWatchClassName("GDBWatch"),
+                m_id(wxEmptyString),
                 m_symbol(symbol),
+                m_value(wxEmptyString),
+                m_type(wxEmptyString),
+                m_format(WatchFormat::Undefined),
+                m_debug_string(wxEmptyString),
                 m_has_been_expanded(false),
                 m_for_tooltip(for_tooltip),
                 m_delete_on_collapse(delete_on_collapse),
                 m_array_start(-1),
-                m_array_end(-1)
+                m_array_end(-1),
+                m_is_array(false),
+                m_forTooltip(false)
             {
+            }
+
+            dbg_mi::LogPaneLogger * GetGDBLogger()
+            {
+                return m_pLogger;
             }
 
             void Reset()
@@ -497,10 +574,17 @@ namespace dbg_mi
                 m_format = format;
             }
 
+            void SetFormat(wxString wFormat)
+            {
+                m_format = GetWatchFormatFromwxString(wFormat);
+            }
+
             WatchFormat GetFormat() const
             {
                 return m_format;
             }
+            wxString GetWatchFormatTowxString();
+            WatchFormat GetWatchFormatFromwxString(wxString wFormat);
 
             wxString GetDebugString() const
             {
@@ -508,9 +592,23 @@ namespace dbg_mi
                 return m_debug_string;
             }
 
-        protected:
+            cbProject * GetProject()
+            {
+                return m_project;
+            }
+
+            // GDB additional
+            void SaveWatchToXML(tinyxml2::XMLNode* pWatchesMasterNode);
+            void LoadWatchFromXML(tinyxml2::XMLElement* pElementWatch, Debugger_GDB_MI* dbgGDB);
+
+       protected:
             virtual void DoDestroy() {}
+
         private:
+            cbProject * m_project;              // The Project the watch belongs to.
+            dbg_mi::LogPaneLogger * m_pLogger;
+
+            wxString m_GDBWatchClassName;
             wxString m_id;
             wxString m_symbol;
             wxString m_value;
@@ -528,7 +626,7 @@ namespace dbg_mi
             bool m_forTooltip;
     };
 
-    typedef std::vector<cb::shared_ptr<GDBWatch> > GDBWatchesContainer;
+    typedef std::vector<cb::shared_ptr<GDBWatch>> GDBWatchesContainer;
 
     cb::shared_ptr<GDBWatch> FindWatch(wxString const & expression, GDBWatchesContainer & watches);
 
