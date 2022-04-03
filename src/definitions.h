@@ -31,11 +31,15 @@ namespace dbg_mi
     void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const wxString value);
     void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const int iValue);
     void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const long lValue);
+    void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const uint64_t lValue);
+    void AddChildNodeHex(tinyxml2::XMLNode* pNodeParent,  const wxString name, const uint64_t llValue);
     void AddChildNode(tinyxml2::XMLNode* pNodeParent,  const wxString name, const bool bValue);
 
     wxString ReadChildNodewxString(tinyxml2::XMLElement* pElementParent,  const wxString childName);
     int ReadChildNodeInt(tinyxml2::XMLElement* pElementParent,  const wxString childName);
     long ReadChildNodeLong(tinyxml2::XMLElement* pElementParent,  const wxString childName);
+    uint64_t ReadChildNodeUint64(tinyxml2::XMLElement* pElementParent,  const wxString childName);
+    uint64_t ReadChildNodeHex(tinyxml2::XMLElement* pElementParent,  const wxString childName);
     bool ReadChildNodeBool(tinyxml2::XMLElement* pElementParent,  const wxString childName);
 
     class GDBBreakpoint : public cbBreakpoint
@@ -597,6 +601,11 @@ namespace dbg_mi
                 return m_project;
             }
 
+            wxString MakeSymbolToAddress() const override
+            {
+                return wxT("&") + m_symbol;
+            }
+
             // GDB additional
             void SaveWatchToXML(tinyxml2::XMLNode* pWatchesMasterNode);
             void LoadWatchFromXML(tinyxml2::XMLElement* pElementWatch, Debugger_GDB_MI* dbgGDB);
@@ -633,7 +642,7 @@ namespace dbg_mi
     class GDBMemoryRangeWatch  : public cbWatch
     {
         public:
-            GDBMemoryRangeWatch(uint64_t address, uint64_t size, const wxString& symbol);
+            GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, uint64_t address, uint64_t size, const wxString& symbol);
 
         public:
             void GetSymbol(wxString &symbol) const override
@@ -682,7 +691,20 @@ namespace dbg_mi
                 return m_size;
             }
 
+            cbProject * GetProject()
+            {
+                return m_project;
+            }
+
+            // GDB additional
+            void SaveWatchToXML(tinyxml2::XMLNode* pWatchesMasterNode);
+            void LoadWatchFromXML(tinyxml2::XMLElement* pElementWatch, Debugger_GDB_MI* dbgGDB);
+
         private:
+            cbProject * m_project;              // The Project the watch belongs to.
+            dbg_mi::LogPaneLogger * m_pLogger;
+            wxString m_GDBWatchClassName;
+
             uint64_t m_address;
             uint64_t m_size;
             wxString m_symbol;
@@ -699,7 +721,6 @@ namespace dbg_mi
     };
 
     typedef std::unordered_map<cb::shared_ptr<cbWatch>, GDBWatchType> GDBMapWatchesToType;
-
 
     // Custom window to display output of DebuggerInfoCmd
     class GDBTextInfoWindow : public wxScrollingDialog

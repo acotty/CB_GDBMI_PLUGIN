@@ -297,6 +297,7 @@ void Debugger_GDB_MI::OnGDBTerminated(wxCommandEvent & /*event*/)
     m_timer_poll_debugger.Stop();
     m_actions.Clear();
     m_executor.Clear();
+
     // Notify debugger plugins for end of debug session
     PluginManager * plm = Manager::Get()->GetPluginManager();
     CodeBlocksEvent evt(cbEVT_DEBUGGER_FINISHED);
@@ -308,6 +309,19 @@ void Debugger_GDB_MI::OnGDBTerminated(wxCommandEvent & /*event*/)
     for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
     {
         (*it)->SetIndex(-1);
+    }
+
+    cbCPURegistersDlg* pDialogCPURegisters = Manager::Get()->GetDebuggerManager()->GetCPURegistersDialog();
+    if (pDialogCPURegisters)
+    {
+        pDialogCPURegisters->Clear();
+    }
+
+    cbDisassemblyDlg* pDialogDisassembly = Manager::Get()->GetDebuggerManager()->GetDisassemblyDialog();
+    if (pDialogDisassembly)
+    {
+        cbStackFrame sf;
+        pDialogDisassembly->Clear(sf);
     }
 }
 
@@ -847,6 +861,41 @@ void Debugger_GDB_MI::CleanupWhenProjectClosed(cbProject * project)
         else
         {
             it++;
+        }
+    }
+
+    cbProject* prj = Manager::Get()->GetProjectManager()->GetActiveProject();
+    if (!prj)
+    {
+        cbBacktraceDlg* pDialogBacktrace = Manager::Get()->GetDebuggerManager()->GetBacktraceDialog();
+        if (pDialogBacktrace)
+        {
+            pDialogBacktrace->Reload();
+        }
+
+        cbBreakpointsDlg* pDialogBreakpoint = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
+        if (pDialogBreakpoint)
+        {
+            pDialogBreakpoint->RemoveAllBreakpoints();
+        }
+
+        cbExamineMemoryDlg * pDialogExamineMemory = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
+        if (pDialogExamineMemory)
+        {
+            pDialogExamineMemory->SetBaseAddress("");
+            pDialogExamineMemory->Clear();
+        }
+
+        cbThreadsDlg* pDialogThreads = Manager::Get()->GetDebuggerManager()->GetThreadsDialog();
+        if (pDialogThreads)
+        {
+            pDialogThreads->Reload();
+        }
+
+        cbWatchesDlg* pDialogWatches = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
+        if (pDialogWatches)
+        {
+            pDialogWatches->RefreshUI();
         }
     }
 }
@@ -1657,8 +1706,7 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(dbg_mi::GDBWatch * watch, cb_u
 
 cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(uint64_t address, uint64_t size, const wxString & symbol, bool update)
 {
-
-    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(address, size, symbol));
+    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_project, m_pLogger, address, size, symbol));
     m_memoryRanges.push_back(watch);
     m_mapWatchesToType[watch] = dbg_mi::GDBWatchType::MemoryRange;
 
@@ -1933,7 +1981,16 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
             break;
 
         case ExamineMemory:
-            m_actions.Add(new dbg_mi::GDBGenerateExamineMemory(m_pLogger));
+            {
+                cbExamineMemoryDlg * dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
+                wxString memaddress = dialog->GetBaseAddress();
+
+                // Check for blank memory string
+                if (!memaddress.IsEmpty())
+                {
+                    m_actions.Add(new dbg_mi::GDBGenerateExamineMemory(m_pLogger));
+                }
+            }
             break;
 
         case MemoryRange:
@@ -2345,7 +2402,22 @@ bool Debugger_GDB_MI::SaveStateToFile(cbProject* pProject)
         }
     }
 
-    //********************  Save XML to disk ********************
+    // ********************  Save Memory Range Watches ********************
+    tinyxml2::XMLElement* pElementMemoryRangeList = doc.NewElement("MemoryRangeList");
+    pElementMemoryRangeList->SetAttribute("count", m_memoryRanges.size());
+    tinyxml2::XMLNode* pMemoryRangeMasterNode = rootnode->InsertEndChild(pElementMemoryRangeList);
+
+    for (dbg_mi::GDBMemoryRangeWatchesContainer::iterator it = m_memoryRanges.begin(); it != m_memoryRanges.end(); ++it)
+    {
+        dbg_mi::GDBMemoryRangeWatch& memoryRange = **it;
+
+        if (memoryRange.GetProject() == pProject)
+        {
+            memoryRange.SaveWatchToXML(pMemoryRangeMasterNode);
+        }
+    }
+
+    // ********************  Save XML to disk ********************
     return doc.SaveFile(fname.GetFullPath(), false);
 }
 
@@ -2376,7 +2448,7 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
         return false;
     }
 
-    //Load breakpoints
+    // ******************** Load breakpoints ********************
     tinyxml2::XMLElement* pBreakpointList = root->FirstChildElement("BreakpointsList");
     if (pBreakpointList)
     {
@@ -2391,7 +2463,7 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
         dlg->Reload();
     }
 
-    //Load watches
+    // ******************** Load watches ********************
     tinyxml2::XMLElement* pElementWatchesList = root->FirstChildElement("WatchesList");
     if (pElementWatchesList)
     {
@@ -2407,5 +2479,24 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
             }
         }
     }
+
+    // ******************** Load Memory Range Watches ********************
+    tinyxml2::XMLElement* pElementMemoryRangeList = root->FirstChildElement("MemoryRangeList");
+    if (pElementMemoryRangeList)
+    {
+        for(    tinyxml2::XMLElement* pWatchElement = pElementMemoryRangeList->FirstChildElement("MemoryRangeWatch");
+                pWatchElement;
+                pWatchElement = pWatchElement->NextSiblingElement())
+        {
+            wxString GDBMemoryRangeWatchName = dbg_mi::ReadChildNodewxString(pWatchElement, "GDBMemoryRangeWatch");
+            if (GDBMemoryRangeWatchName.IsSameAs("GDBMemoryRangeWatch"))
+            {
+                dbg_mi::GDBMemoryRangeWatch* memoryRangeWatch = new dbg_mi::GDBMemoryRangeWatch(pProject, m_pLogger, 0, 0, "");
+                memoryRangeWatch->LoadWatchFromXML(pWatchElement, this);
+            }
+        }
+    }
+
+    // ******************** Finished Load ********************
     return true;
 }

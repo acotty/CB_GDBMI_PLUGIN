@@ -117,7 +117,8 @@ This GDB/MI debugger plugin has a number of advantages over the existing GDB deb
 |   * Edit break point                                        | 26MAR2022 |    Pass    |
 |     * ignore count before break                             | 26MAR2022 |    Pass    |
 |     * break when expression is true                         | 26MAR2022 |    Pass    |
-|   * Break point data saved on project close                 | 02APR2022 |  * NEW *   |
+|   * Break points still there after GDB exit                 | 03APR2022 |    Pass    |
+|   * Break points data saved on project close                | 02APR2022 |  * NEW *   |
 |   * Break points removed after closing the project          | 02APR2022 |    Pass    |
 |   * Break points removed after changing debugger            | 02APR2022 |  *Broken*  |
 |   * Break points created on project open                    | 02APR2022 |    WIP     |
@@ -132,13 +133,13 @@ This GDB/MI debugger plugin has a number of advantages over the existing GDB deb
 |   * Show CPU register dialog                                | 27MAR2022 |    Pass    |
 |   * Close CPU register dialog                               | 27MAR2022 |    Pass    |
 |   * Update on step                                          | 27MAR2022 |    Pass    |
-|   * CPU register dialog cleared on app exit                 |  To test  |   To test  |
+|   * CPU register dialog cleared on GDB exit                 | 03APR2022 |    Pass    |
 |                                                             |           |            |
 | **Debug show Call Stack**                                   |           |            |
 |   * Show call stack dialog                                  | 26MAR2022 |    Pass    |
 |   * Close call stack dialog                                 | 26MAR2022 |    Pass    |
 |   * Double click on entry should open and go to the line    | 28MAR2022 |    Pass    |
-|   * Call stack dialog cleared on app exit                   |  To test  |   To test  |
+|   * Call stack dialog cleared on last project close         |  To test  |   To test  |
 |                                                             |           |            |
 | **Debug show Disassembly**                                  |           |            |
 |   * Show disassembly dialog                                 | 31MAR2022 |    Pass    |
@@ -148,15 +149,15 @@ This GDB/MI debugger plugin has a number of advantages over the existing GDB deb
 |   * Ability to swap between assembly and mixed modes        | 31MAR2022 |    Pass    |
 |   * Adjust button feature                                   | 31MAR2022 |  *Broken*  |
 |   * Save disassembly to a file                              | 31MAR2022 |    Pass    |
-|   * Disassembly dialog cleared on app exit                  |  To test  |   To test  |
+|   * Disassembly dialog cleared on GDB exit                  | 03APR2022 |    Pass    |
 |                                                             |           |            |
 | **Debug -> Memory Dump Dialog**                             |           |            |
 |   * Show memory dump dialog                                 | 31MAR2022 |    Pass    |
 |   * Close memory dump dialog                                | 31MAR2022 |    Pass    |
-|   * Show variable memory from watch dialog                  | 02APR2022 |  *Broken*  |
-|   * Memory dump dialog cleared on app exit                  |  To test  |   To test  |
-|   * Memory dump watches data saved on project close         | 02APR2022 |  * NEW *   |
-|   * Memory dump watches removed after closing the project   | 02APR2022 |  * NEW *   |
+|   * Show variable memory from watch dialog                  | 02APR2022 |    Pass    |
+|   * Memory dump dialog not cleared on GDB exit              | 03APR2022 |    Pass    |
+|   * Memory dump dialog cleared on last project close        | 03APR2022 |    Pass    |
+|   * Memory dump watches data saved on project close         | 02APR2022 |    WIP     |
 |   * Memory dump watches removed after changing debugger     | 02APR2022 |  * NEW *   |
 |   * Memory dump watches created on project open             | 02APR2022 |  * NEW *   |
 |                                                             |           |            |
@@ -165,7 +166,7 @@ This GDB/MI debugger plugin has a number of advantages over the existing GDB deb
 |   * Close memory view dialog                                | 26MAR2022 |    Pass    |
 |   * Show memory information                                 | 02APR2022 |  *Broken*  |
 |   * Show variable memory from watch dialog                  | 02APR2022 |  * NEW *   |
-|   * Memory view dialog cleared on app exit                  |  To test  |   To test  |
+|   * Memory view dialog cleared on last project close        |  To test  |   To test  |
 |   * Memory view watches data saved on project close         | 02APR2022 |  * NEW *   |
 |   * Memory view watches removed after closing the project   | 02APR2022 |  * NEW *   |
 |   * Memory view watches removed after changing debugger     | 02APR2022 |  * NEW *   |
@@ -240,7 +241,11 @@ NOTES:
 
 ## COMPLETED ITEMS
 
-* 02APR2022 Done - watch and line break points are persistent
+* 03APR2022 Done - Disassembly dialog cleared on GDB exit
+* 03APR2022 Done - CPU register dialog cleared on GDB exit 
+* 03APR2022 Done - Memory dump dialog cleared on last project close
+* 03APR2022 Updated - watch -> view memory code changes to show error on memory view and now uses GDB "-data-read-memory-bytes" command
+* 02APR2022 Done - simple watch and simple line break points are persistent
 * 30MAR2022 Done - Disassembly view working like the existing code (adjust is broken)
 * 30MAR2022 Done - Wired up Project->Properties->"Debugger GDB/MI" tab. Loads and saves data only.
 * 30MAR2022 Done - Conditional break points
@@ -261,3 +266,7 @@ NOTES:
 * 24MAR2022 Done - Update file header - C::B GPL text
 * 24MAR2022 Done - Add more logging to help find issues
 
+CODING notes:
+1) PLUGIN.CPP 
+    a) project close , see Debugger_GDB_MI::CleanupWhenProjectClosed, line 850 
+    a) app exist , see Debugger_GDB_MI::OnGDBTerminated ,  line 300 

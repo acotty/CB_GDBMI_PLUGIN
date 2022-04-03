@@ -216,11 +216,11 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
         dbg_mi::LogPaneLogger * m_pLogger;
-        dbg_mi::GDBBreakpointsContainer m_breakpoints;
+        dbg_mi::GDBBreakpointsContainer m_breakpoints;              // XML data save and load done
         dbg_mi::GDBBreakpointsContainer m_temporary_breakpoints;
         dbg_mi::GDBBacktraceContainer m_backtrace;
         dbg_mi::GDBThreadsContainer m_threads;
-        dbg_mi::GDBWatchesContainer m_watches;
+        dbg_mi::GDBWatchesContainer m_watches;                      // XML data save and load done
         dbg_mi::GDBMemoryRangeWatchesContainer m_memoryRanges;
         dbg_mi::GDBMapWatchesToType m_mapWatchesToType;
         dbg_mi::GDBTextInfoWindow * m_command_stream_dialog;
@@ -230,4 +230,5 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         int m_pid_attached;
         bool m_hasStartUpError;
 };
+
 #endif // _DEBUGGER_GDB_MI_PLUGIN_H_

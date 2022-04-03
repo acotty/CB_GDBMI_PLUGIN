@@ -111,6 +111,14 @@ namespace dbg_mi
         return result;
     }
 
+    uint64_t ReadChildNodeUint64(tinyxml2::XMLElement* pElementParent,  const wxString childName)
+    {
+        wxString value = ReadChildNodewxString(pElementParent, childName);
+        uint64_t result;
+        value.ToULongLong(&result, 10);
+        return result;
+    }
+
     uint64_t ReadChildNodeHex(tinyxml2::XMLElement* pElementParent,  const wxString childName)
     {
         wxString value = ReadChildNodewxString(pElementParent, childName);
@@ -422,10 +430,13 @@ namespace dbg_mi
         }
     }
 
-    GDBMemoryRangeWatch::GDBMemoryRangeWatch(uint64_t address, uint64_t size, const wxString& symbol) :
-            m_address(address),
-            m_size(size),
-            m_symbol(symbol)
+    GDBMemoryRangeWatch::GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, uint64_t address, uint64_t size, const wxString& symbol) :
+                m_project(project),
+                m_pLogger(logger),
+                m_GDBWatchClassName("GDBMemoryRangeWatch"),
+                m_address(address),
+                m_size(size),
+                m_symbol(symbol)
     {
     }
 
@@ -470,5 +481,38 @@ namespace dbg_mi
         return value;
     }
 
+    void GDBMemoryRangeWatch::SaveWatchToXML(tinyxml2::XMLNode* pMemoryRangeMasterNode)
+    {
+        tinyxml2::XMLDocument* pDoc = pMemoryRangeMasterNode->GetDocument();
+        tinyxml2::XMLElement* pNewXMLElement = pDoc->NewElement("MemoryRangeWatch");
+        tinyxml2::XMLNode* pNodeMemoryRange= pMemoryRangeMasterNode->InsertEndChild(pNewXMLElement);
+
+        AddChildNode(pNodeMemoryRange, "GDBMemoryRangeWatch", m_GDBWatchClassName);
+        AddChildNode(pNodeMemoryRange, "projectTitle", m_project->GetTitle());   // The Project the file belongs to.
+
+        AddChildNodeHex(pNodeMemoryRange, "address", m_address);
+        AddChildNode(pNodeMemoryRange, "size", m_size);
+        AddChildNode(pNodeMemoryRange, "symbol", m_symbol);
+    }
+
+    void GDBMemoryRangeWatch::LoadWatchFromXML(tinyxml2::XMLElement* pElementWatch, Debugger_GDB_MI * dbgGDB)
+    {
+        //Only load the breakpoints that belong to the current project
+        m_GDBWatchClassName = ReadChildNodewxString(pElementWatch, "GDBMemoryRangeWatch");
+
+        m_address = ReadChildNodeHex(pElementWatch, "address");
+        m_size = ReadChildNodeUint64(pElementWatch, "size");
+        m_symbol = ReadChildNodewxString(pElementWatch, "symbol");
+
+        if (!m_symbol.IsEmpty())
+        {
+#if 0
+            // See debuggermenu.cpp DebuggerMenuHandler::OnAddWatch(...) function
+            cb::shared_ptr<cbWatch> watch = dbgGDB->AddWatch(this, true);
+            cbWatchesDlg *dialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
+            dialog->AddWatch(watch);   // This call adds the watch to the debugger and GUI
+#endif
+        }
+    }
 
 } // namespace dbg_mi

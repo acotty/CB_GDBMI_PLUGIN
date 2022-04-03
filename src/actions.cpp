@@ -601,32 +601,46 @@ namespace dbg_mi
     {
         // example of GDB 11.2 request and response:
         //
-        // request cmd==>100000000000-data-read-memory "cTest" x 1 1 32==<
+        // Request: -data-read-memory-bytes &arrTest 32
         //
-        // Receive ==>100000000000^done,
-        //                              addr="0x000000df705ff4f0",
-        //                              nr-bytes="32",
-        //                              total-bytes="32",
-        //                              next-row="0x000000df705ff510",
-        //                              prev-row="0x000000df705ff4d0",
-        //                              next-page="0x000000df705ff510",
-        //                              prev-page="0x000000df705ff4d0",
-        //                              memory=
-        //                              [
-        //                                  {
-        //                                      addr="0x000000df705ff4f0",
-        //                                      data=[
-        //                                          "0x54","0x68","0x69","0x73","0x20","0x69","0x73","0x20",
-        //                                          "0x61","0x20","0x63","0x68","0x61","0x72","0x20","0x61",
-        //                                          "0x72","0x72","0x61","0x79","0x54","0x68","0x69","0x73",
-        //                                          "0x20","0x69","0x73","0x20","0x61","0x20","0x63","0x68"
-        //                                      ]
-        //                                  }
-        //                              ]<==
+        // Receive ==>190000000000^done,
+        // memory=
+        // [
+        //     {
+        //         begin="0x0000008284fffc40",
+        //         offset="0x0000000000000000",
+        //         end="0x0000008284fffc60",
+        //         contents="000000000154657374204f6e650000000000000000000000000100b501000000"
+        //     }
+        // ]
         //
 
         if (id == m_examine_memory_request_id)
         {
+            if (result.GetResultClass() == ResultParser::ClassError)
+            {
+                const ResultValue & value = result.GetResultValue();
+
+                wxString message;
+                if (Lookup(value, "msg", message))
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Error detected: %s . Check the debugger log for more info!"), message), LogPaneLogger::LineType::Error);
+                }
+                else
+                {
+                    message = _("Error detected, so cannot display memory. Check the debugger log for more info!");
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, message , LogPaneLogger::LineType::Error);
+                }
+
+                cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
+                dialog->Clear();
+                dialog->AddError(message);
+
+                Finish();
+                return;
+            }
+            bool bErrorFound = false;
+            wxString sErrorFound = wxEmptyString;
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
 
             const ResultValue * pMemory = result.GetResultValue().GetTupleValue("memory");
@@ -638,111 +652,108 @@ namespace dbg_mi
                     const ResultValue * pMemBlockEntry = pMemory->GetTupleValueByIndex(iMemBlockIndex);
                     if (pMemBlockEntry)
                     {
-                        const ResultValue * pMemoryAddress = pMemBlockEntry->GetTupleValue("addr");
-                        const ResultValue * pMemoryData = pMemBlockEntry->GetTupleValue("data");
-                        if (pMemoryAddress && pMemoryData)
+                        const ResultValue * pMemoryAddressBegin = pMemBlockEntry->GetTupleValue("begin");
+                        const ResultValue * pMemoryAddressOffset = pMemBlockEntry->GetTupleValue("offset");
+                        const ResultValue * pMemoryAddressEnd = pMemBlockEntry->GetTupleValue("end");
+                        const ResultValue * pMemoryContents = pMemBlockEntry->GetTupleValue("contents");
+                        if (pMemoryAddressBegin && pMemoryAddressOffset && pMemoryAddressEnd && pMemoryContents)
                         {
-                            uint64_t llAddrStart;
-                            wxString sAddressStart = pMemoryAddress->GetSimpleValue();
+                            wxString sAddressBegin  = pMemoryAddressBegin->GetSimpleValue();
+                            wxString sAddressOffset = pMemoryAddressOffset->GetSimpleValue();
+                            wxString sAddressEnd    = pMemoryAddressEnd->GetSimpleValue();
+                            wxString sMemoryContents= pMemoryContents->GetSimpleValue();
+                            uint64_t llAddrbegin, llAddrOffset, llAddrEnd;
 
-                            if (sAddressStart.ToULongLong(&llAddrStart, 16))
+                            if (
+                                    (sAddressBegin.ToULongLong(&llAddrbegin, 16)) &&
+                                    (sAddressOffset.ToULongLong(&llAddrOffset, 16)) &&
+                                    (sAddressEnd.ToULongLong(&llAddrEnd, 16)) &&
+                                    (!sMemoryContents.IsEmpty())
+                               )
                             {
                                 cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
                                 dialog->Begin();
                                 dialog->Clear();
 
-
                                 wxString sAddressToShow;
-                                int iCount = pMemoryData->GetTupleSize();
-                                uint64_t llAddrLineStart = llAddrStart;
+                                uint64_t llAddrLineStart = llAddrbegin;
                                 const int BYTES_DISPPLAY_PER_LINE = 16;
                                 int iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
+
+                                int iCount = llAddrEnd - llAddrbegin;
                                 for (int iAddressIndex = 0; iAddressIndex < iCount; iAddressIndex++)
                                 {
-                                    const ResultValue * pdata_value = pMemoryData->GetTupleValueByIndex(iAddressIndex);
-                                    if (pdata_value)
-                                    {
 #if wxCHECK_VERSION(3, 1, 5)
-                                        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+                                    if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
 #else
-                                        if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+                                    if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
 #endif
-                                        {
-                                            sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
-                                        }
-                                        else
-                                        {
-                                            sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
-                                        }
-
-                                        wxString sHexDataValue = pdata_value->GetSimpleValue();
-                                        // Should be "0x12" (with the quotes)
-                                        if (sHexDataValue.Contains('x'))
-                                        {
-                                            sHexDataValue = sHexDataValue.AfterLast('x');   // got to remove the "0x!!!!
-                                            sHexDataValue = sHexDataValue.Before('\"');     // remove the closing "
-                                        }
-                                        else
-                                        {
-                                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse \"-data-read-memory\" GDB/MI memory value (%s) offset %d as it is now 0xdd. Received id:%s result: - %s", sHexDataValue, iAddressIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
-                                        }
-
-                                        dialog->AddHexByte(sAddressToShow, sHexDataValue);
-                                        iBytesPerLine--;
-                                        if (iBytesPerLine == 0)
-                                        {
-                                            llAddrLineStart = llAddrStart + iAddressIndex;
-                                            iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
-                                        }
+                                    {
+                                        sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
                                     }
                                     else
                                     {
-                                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse \"-data-read-memory\" GDB/MI memory data at offset %d. Received id:%s result: - %s", iAddressIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                                        sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
+                                    }
+                                    wxString sHexDataValue = sMemoryContents.Mid(iAddressIndex*2,2);
+                                    dialog->AddHexByte(sAddressToShow, sHexDataValue);
+                                    iBytesPerLine--;
+                                    if (iBytesPerLine == 0)
+                                    {
+                                        llAddrLineStart = llAddrbegin + iAddressIndex;
+                                        iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
                                     }
                                 }
                                 dialog->End();
                             }
                             else
                             {
-                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse \"-data-read-memory\" GDB/MI memory address field. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                                bErrorFound = true;
+                                sErrorFound = "Could not parse one pf the GDB/MI memory address fields.";
+                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse one pf the GDB/MI memory address fields. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
                             }
                         }
                         else
                         {
-                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-read-memory\" GDB/MI memory field response. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                            bErrorFound = true;
+                            sErrorFound = "Could not find one of he GDB/MI memory address fields";
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not find one of he GDB/MI memory address fields. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
                         }
                     }
                     else
                     {
-                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-read-memory\" GDB/MI memory block %d. Received id:%s result: - %s", iMemBlockIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                        bErrorFound = true;
+                        sErrorFound = wxString::Format("Could not find GDB/MI memory block %d. ", iMemBlockIndex);
+                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not find GDB/MI memory block %d. Received id:%s result: - %s", iMemBlockIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
                     }
                 }
             }
             else
             {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the \"-data-read-memory\" GDB/MI response.. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                bErrorFound = true;
+                sErrorFound = "Could not find the GDB/MI memory response memory field";
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not find the GDB/MI memory response memory field. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
             }
+            if (bErrorFound == true)
+            {
+                cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
+                dialog->Clear();
+                dialog->AddError(sErrorFound);
+            }
+
             Finish();
         }
     }
 
     void GDBGenerateExamineMemory::OnStart()
     {
-        // Concept from Codelite, search for "data-read-memory" and the GDB manual
         // GDB 11.2 manual synopsis:
-        //      -data-read-memory
-        //                        [ -o byte-offset ]    N/A
-        //                        address               === m_address
-        //                        word-format           === x
-        //                        word-size             === 1
-        //                        nr-rows               === 1
-        //                        nr-cols               === m_length
-        //                        [ aschar ]            N/A
-        wxString cmd = wxString::Format("-data-read-memory \"%s\" x 1 1 %d", m_address, m_length);
+        //  -data-read-memory-bytes [ -o offset ]
+        //      address count
+        wxString cmd = wxString::Format("-data-read-memory-bytes %s %d", m_address, m_length);
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmd), LogPaneLogger::LineType::Debug);
         m_examine_memory_request_id = Execute(cmd);
     }
-
 
     GDBDisassemble::GDBDisassemble(wxString disassemblyFlavor, LogPaneLogger * logger) :
                                     m_disassemblyFlavor(disassemblyFlavor),
@@ -1498,7 +1509,115 @@ namespace dbg_mi
 
     void GDBMemoryRangeWatchCreateAction::OnCommandOutput(CommandID const & id, ResultParser const & result)
     {
+        // example of GDB 11.2 request and response:
+        //
+        // Request: -data-read-memory-bytes &arrTest 32
+        //
+        // Receive ==>190000000000^done,
+        // memory=
+        // [
+        //     {
+        //         begin="0x0000008284fffc40",
+        //         offset="0x0000000000000000",
+        //         end="0x0000008284fffc60",
+        //         contents="000000000154657374204f6e650000000000000000000000000100b501000000"
+        //     }
+        // ]
+        //
+
+        if (id == m_memory_range_watch_request_id)
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
+
+            const ResultValue * pMemory = result.GetResultValue().GetTupleValue("memory");
+            if (pMemory)
+            {
+                int iMemBlockCount = pMemory->GetTupleSize();
+                for (int iMemBlockIndex = 0; iMemBlockIndex < iMemBlockCount; iMemBlockIndex++)
+                {
+                    const ResultValue * pMemBlockEntry = pMemory->GetTupleValueByIndex(iMemBlockIndex);
+                    if (pMemBlockEntry)
+                    {
+                        const ResultValue * pMemoryAddressBegin = pMemBlockEntry->GetTupleValue("begin");
+                        const ResultValue * pMemoryAddressOffset = pMemBlockEntry->GetTupleValue("offset");
+                        const ResultValue * pMemoryAddressEnd = pMemBlockEntry->GetTupleValue("end");
+                        const ResultValue * pMemoryContents = pMemBlockEntry->GetTupleValue("contents");
+                        if (pMemoryAddressBegin && pMemoryAddressOffset && pMemoryAddressEnd && pMemoryContents)
+                        {
+                            wxString sAddressBegin  = pMemoryAddressBegin->GetSimpleValue();
+                            wxString sAddressOffset = pMemoryAddressOffset->GetSimpleValue();
+                            wxString sAddressEnd    = pMemoryAddressEnd->GetSimpleValue();
+                            wxString sMemoryContents= pMemoryContents->GetSimpleValue();
+                            uint64_t llAddrbegin, llAddrOffset, llAddrEnd;
+
+                            if (
+                                    (sAddressBegin.ToULongLong(&llAddrbegin, 16)) &&
+                                    (sAddressOffset.ToULongLong(&llAddrOffset, 16)) &&
+                                    (sAddressEnd.ToULongLong(&llAddrEnd, 16)) &&
+                                    (!sMemoryContents.IsEmpty())
+                               )
+                            {
+#warning need to use memory view dialog
+//                                cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
+//                                dialog->Begin();
+//                                dialog->Clear();
+
+                                wxString sAddressToShow;
+                                uint64_t llAddrLineStart = llAddrbegin;
+                                const int BYTES_DISPPLAY_PER_LINE = 16;
+                                int iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
+
+                                int iCount = llAddrEnd - llAddrbegin;
+                                for (int iAddressIndex = 0; iAddressIndex < iCount; iAddressIndex++)
+                                {
+#if wxCHECK_VERSION(3, 1, 5)
+                                    if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+#else
+                                    if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+#endif
+                                    {
+                                        sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
+                                    }
+                                    else
+                                    {
+                                        sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
+                                    }
+                                    wxString sHexDataValue = sMemoryContents.Mid(iAddressIndex*2,2);
+//                                    dialog->AddHexByte(sAddressToShow, sHexDataValue);
+                                    iBytesPerLine--;
+                                    if (iBytesPerLine == 0)
+                                    {
+                                        llAddrLineStart = llAddrbegin + iAddressIndex;
+                                        iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
+                                    }
+                                }
+//                                dialog->End();
+                            }
+                            else
+                            {
+                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse GDB/MI memory address field. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                            }
+                        }
+                        else
+                        {
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the GDB/MI memory field response. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                        }
+                    }
+                    else
+                    {
+                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the GDB/MI memory block %d. Received id:%s result: - %s", iMemBlockIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                    }
+                }
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the GDB/MI response.. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+            }
+            Finish();
+        }
+
 #if 0
+ OLD CODE OLD CODE
         --m_sub_commands_left;
         bool error = false;
         wxString resultDebug = result.MakeDebugString();
@@ -1597,17 +1716,10 @@ namespace dbg_mi
 
     void GDBMemoryRangeWatchCreateAction::OnStart()
     {
-        // Concept from Codelite, search for "data-read-memory" and the GDB manual
         // GDB 11.2 manual synopsis:
-        //      -data-read-memory
-        //                        [ -o byte-offset ]    N/A
-        //                        address               === m_address
-        //                        word-format           === x
-        //                        word-size             === 1
-        //                        nr-rows               === 1
-        //                        nr-cols               === m_length
-        //                        [ aschar ]            N/A
-        wxString cmd = wxString::Format("-data-read-memory \"%s\" x 1 1 %d", m_address, m_length);
+        //  -data-read-memory-bytes [ -o offset ]
+        //      address count
+        wxString cmd = wxString::Format("-data-read-memory-bytes %s %d", m_address, m_length);
         m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmd), LogPaneLogger::LineType::Debug);
         m_memory_range_watch_request_id = Execute(cmd);
     }
