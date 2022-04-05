@@ -106,6 +106,7 @@ namespace dbg_mi
         XRCCTRL(*panel, "chkAddForeignDirs",        wxCheckBox)->SetValue(GetFlag(AddOtherProjectDirs));
         XRCCTRL(*panel, "chkDoNotRun",              wxCheckBox)->SetValue(GetFlag(DoNotRun));
         XRCCTRL(*panel, "chkPrettyPrinters",        wxCheckBox)->SetValue(GetFlag(CheckPrettyPrinters));
+        XRCCTRL(*panel, "chkPersistDebugElements",  wxCheckBox)->SetValue(GetFlag(PersistDebugElements));
         XRCCTRL(*panel, "choDisassemblyFlavor",     wxChoice)->SetSelection(m_config.ReadInt("disassembly_flavor", 0));
         XRCCTRL(*panel, "txtInstructionSet",        wxTextCtrl)->ChangeValue(m_config.Read("instruction_set", wxEmptyString));
         return panel;
@@ -124,6 +125,7 @@ namespace dbg_mi
         m_config.Write("add_other_search_dirs", XRCCTRL(*panel, "chkAddForeignDirs",       wxCheckBox)->GetValue());
         m_config.Write("do_not_run",            XRCCTRL(*panel, "chkDoNotRun",             wxCheckBox)->GetValue());
         m_config.Write("check_pretty_printers", XRCCTRL(*panel, "chkPrettyPrinters",       wxCheckBox)->GetValue());
+        m_config.Write("persist_debug_elements",XRCCTRL(*panel, "chkPersistDebugElements", wxCheckBox)->GetValue());
         m_config.Write("disassembly_flavor",    XRCCTRL(*panel, "choDisassemblyFlavor",    wxChoice)->GetSelection());
         m_config.Write("instruction_set",       XRCCTRL(*panel, "txtInstructionSet",       wxTextCtrl)->GetValue());
         return true;
@@ -156,6 +158,9 @@ namespace dbg_mi
 
             case CheckPrettyPrinters:
                 return m_config.ReadBool("check_pretty_printers", false);
+
+            case PersistDebugElements:
+                return m_config.ReadBool("persist_debug_elements", false);
 
             default:
                 return false;
@@ -195,6 +200,9 @@ namespace dbg_mi
 
             case CheckPrettyPrinters:
                 m_config.Write("check_pretty_printers", value);
+
+            case PersistDebugElements:
+                m_config.Write("persist_debug_elements", value);
 
             default:
                 ;

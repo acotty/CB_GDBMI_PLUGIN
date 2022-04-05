@@ -431,7 +431,7 @@ namespace dbg_mi
                 m_GDBWatchClassName("GDBWatch"),
                 m_id(wxEmptyString),
                 m_symbol(symbol),
-                m_value(wxEmptyString),
+                m_address(wxEmptyString),
                 m_type(wxEmptyString),
                 m_format(WatchFormat::Undefined),
                 m_debug_string(wxEmptyString),
@@ -441,7 +441,9 @@ namespace dbg_mi
                 m_array_start(-1),
                 m_array_end(-1),
                 m_is_array(false),
-                m_forTooltip(false)
+                m_forTooltip(false),
+                m_value(wxEmptyString),
+                m_ValueErrorMessage(false)
             {
             }
 
@@ -453,6 +455,7 @@ namespace dbg_mi
             void Reset()
             {
                 m_id = m_type = m_value = wxEmptyString;
+                m_ValueErrorMessage = false;
                 m_has_been_expanded = false;
                 RemoveChildren();
                 m_array_start = -1;
@@ -542,23 +545,42 @@ namespace dbg_mi
                 return m_symbol;
             }
 
-            void SetSymbol(const wxString& symbol)
+            void SetSymbol(wxString& symbol)
             {
                 m_symbol = symbol;
             }
 
-            void GetValue(wxString & value) const
+            wxString GetAddress() const override
+            {
+                return m_address;
+            }
+            void SetAddress(wxString &address) override
+            {
+                m_address = address;
+            }
+
+            void GetValue(wxString & value) const  override
             {
                 value = m_value;
             }
 
-            bool SetValue(const wxString & value)
+            bool SetValue(const wxString & value) override
             {
                 m_value = value;
                 return true;
             }
 
-            void GetFullWatchString(wxString & full_watch) const
+            bool GetIsValueErrorMessage() override
+            {
+                return m_ValueErrorMessage;
+            }
+
+            void SetIsValueErrorMessage(bool value) override
+            {
+                m_ValueErrorMessage = value;
+            }
+
+            void GetFullWatchString(wxString & full_watch) const override
             {
                 full_watch = m_value;
             }
@@ -620,7 +642,7 @@ namespace dbg_mi
             wxString m_GDBWatchClassName;
             wxString m_id;
             wxString m_symbol;
-            wxString m_value;
+            wxString m_address;
             wxString m_type;
             WatchFormat m_format;
 
@@ -633,6 +655,9 @@ namespace dbg_mi
             long m_array_end;
             bool m_is_array;
             bool m_forTooltip;
+
+            wxString m_value;
+            bool m_ValueErrorMessage;   // True if the m_value is a message instead of data
     };
 
     typedef std::vector<cb::shared_ptr<GDBWatch>> GDBWatchesContainer;
@@ -642,12 +667,31 @@ namespace dbg_mi
     class GDBMemoryRangeWatch  : public cbWatch
     {
         public:
-            GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, uint64_t address, uint64_t size, const wxString& symbol);
+            GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, wxString address, uint64_t size);
 
         public:
             void GetSymbol(wxString &symbol) const override
             {
                 symbol = m_symbol;
+            }
+
+            wxString GetSymbol()
+            {
+                return m_symbol;
+            }
+
+            void SetSymbol(wxString& symbol) override
+            {
+                m_symbol = symbol;
+            }
+
+            wxString GetAddress() const override
+            {
+                return m_address;
+            }
+            void SetAddress(wxString &address) override
+            {
+                m_address = address;
             }
 
             void GetValue(wxString &value) const override
@@ -656,6 +700,17 @@ namespace dbg_mi
             }
 
             bool SetValue(const wxString &value) override;
+
+            bool GetIsValueErrorMessage() override
+            {
+                return m_ValueErrorMessage;
+            }
+
+            void SetIsValueErrorMessage(bool value) override
+            {
+                m_ValueErrorMessage = value;
+            }
+
             void GetFullWatchString(wxString &full_watch) const override
             {
                 full_watch = wxEmptyString;
@@ -681,11 +736,6 @@ namespace dbg_mi
                 return false;
             }
 
-            uint64_t GetAddress() const
-            {
-                return m_address;
-            }
-
             uint64_t GetSize() const
             {
                 return m_size;
@@ -705,10 +755,12 @@ namespace dbg_mi
             dbg_mi::LogPaneLogger * m_pLogger;
             wxString m_GDBWatchClassName;
 
-            uint64_t m_address;
+            wxString m_address;
             uint64_t m_size;
             wxString m_symbol;
             wxString m_value;
+
+            bool m_ValueErrorMessage;
     };
 
     typedef std::vector<cb::shared_ptr<GDBWatch>> GDBWatchesContainer;

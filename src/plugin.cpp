@@ -1393,7 +1393,7 @@ cb::shared_ptr<const cbBreakpoint> Debugger_GDB_MI::GetBreakpoint(int index) con
 void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 {
 #warning +-------------------------------------------------------+
-#warning |        AddMemoryRange - WORK IN PROGRESS              |
+#warning |        UpdateBreakpoint - WORK IN PROGRESS            |
 #warning +-------------------------------------------------------+
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> WORK IN PROGRESS <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
 
@@ -1704,22 +1704,36 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(dbg_mi::GDBWatch * watch, cb_u
     return w;
 }
 
-cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(uint64_t address, uint64_t size, const wxString & symbol, bool update)
+cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(wxString address, uint64_t size, bool update)
 {
-    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_project, m_pLogger, address, size, symbol));
+    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_project, m_pLogger, address, size));
+
+    uint64_t llAddress;
+    wxString blank = wxEmptyString;
+    if (address.ToULongLong(&llAddress, 16))
+    {
+        watch->SetSymbol(blank);
+        watch->SetAddress(address);
+    }
+    else
+    {
+        watch->SetSymbol(address);
+        watch->SetAddress(blank);
+    }
     m_memoryRanges.push_back(watch);
     m_mapWatchesToType[watch] = dbg_mi::GDBWatchType::MemoryRange;
 
     if (IsRunning())
     {
-#warning "not implemented"
+#warning +-------------------------------------------------------+
+#warning |        AddMemoryRange - WORK IN PROGRESS              |
+#warning +-------------------------------------------------------+
 m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> GDBMemoryRangeWatchCreateAction NOT IMPLEMENTED <<<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
-//        m_actions.Add(new dbg_mi::GDBMemoryRangeWatchCreateAction(watch, m_memoryRanges, m_pLogger));
+        m_actions.Add(new dbg_mi::GDBMemoryRangeWatchCreateAction(watch, m_pLogger));
     }
 
     return watch;
 }
-
 
 void Debugger_GDB_MI::AddTooltipWatch(const wxString & symbol, wxRect const & rect)
 {
@@ -2320,7 +2334,10 @@ void Debugger_GDB_MI::OnProjectOpened(CodeBlocksEvent& event)
     // allow others to catch this
     event.Skip();
 
-    LoadStateFromFile(event.GetProject());
+    if (GetActiveConfigEx().GetFlag(dbg_mi::DebuggerConfiguration::PersistDebugElements))
+    {
+        LoadStateFromFile(event.GetProject());
+    }
 }
 
 void Debugger_GDB_MI::OnProjectClosed(CodeBlocksEvent& event)
@@ -2328,7 +2345,10 @@ void Debugger_GDB_MI::OnProjectClosed(CodeBlocksEvent& event)
     // allow others to catch this
     event.Skip();
 
-    SaveStateToFile(event.GetProject());
+    if (GetActiveConfigEx().GetFlag(dbg_mi::DebuggerConfiguration::PersistDebugElements))
+    {
+        SaveStateToFile(event.GetProject());
+    }
 
     // the same for remote debugging
     // GetRemoteDebuggingMap(event.GetProject()).clear();
@@ -2456,8 +2476,28 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
                 pBreakpointElement;
                 pBreakpointElement = pBreakpointElement->NextSiblingElement())
         {
-            dbg_mi::GDBBreakpoint * bp = new dbg_mi::GDBBreakpoint(pProject, m_pLogger);
-            bp->LoadBreakpointFromXML(pBreakpointElement, this);
+            dbg_mi::GDBBreakpoint * bpNew = new dbg_mi::GDBBreakpoint(pProject, m_pLogger);
+            bpNew->LoadBreakpointFromXML(pBreakpointElement, this);
+
+            // Find new breakpoint in the m_breakpoints
+            for (dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
+            {
+                dbg_mi::GDBBreakpoint& bpSearch = **it;
+                if (
+                    (bpSearch.GetProject() == bpNew->GetProject())   &&
+                    (bpSearch.GetFilename() == bpNew->GetFilename()) &&
+                    (bpSearch.GetLine() == bpNew->GetLine())
+                    )
+                {
+                    // Found breakpoint, so update it!!!
+                    bpSearch.SetEnabled(bpNew->GetIsEnabled());
+                    bpSearch.SetIsUseIgnoreCount(bpNew->GetIsUseIgnoreCount());
+                    bpSearch.SetIgnoreCount(bpNew->GetIgnoreCount());
+                    bpSearch.SetIsUseCondition(bpNew->GetIsUseCondition());
+                    bpSearch.SetCondition(bpNew->GetCondition());
+                }
+            }
+
         }
         cbBreakpointsDlg * dlg = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
         dlg->Reload();
@@ -2491,7 +2531,7 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
             wxString GDBMemoryRangeWatchName = dbg_mi::ReadChildNodewxString(pWatchElement, "GDBMemoryRangeWatch");
             if (GDBMemoryRangeWatchName.IsSameAs("GDBMemoryRangeWatch"))
             {
-                dbg_mi::GDBMemoryRangeWatch* memoryRangeWatch = new dbg_mi::GDBMemoryRangeWatch(pProject, m_pLogger, 0, 0, "");
+                dbg_mi::GDBMemoryRangeWatch* memoryRangeWatch = new dbg_mi::GDBMemoryRangeWatch(pProject, m_pLogger, "", 0 );
                 memoryRangeWatch->LoadWatchFromXML(pWatchElement, this);
             }
         }

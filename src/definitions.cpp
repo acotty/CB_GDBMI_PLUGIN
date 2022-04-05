@@ -430,13 +430,13 @@ namespace dbg_mi
         }
     }
 
-    GDBMemoryRangeWatch::GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, uint64_t address, uint64_t size, const wxString& symbol) :
+    GDBMemoryRangeWatch::GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, wxString address, uint64_t size) :
                 m_project(project),
                 m_pLogger(logger),
                 m_GDBWatchClassName("GDBMemoryRangeWatch"),
                 m_address(address),
                 m_size(size),
-                m_symbol(symbol)
+                m_symbol(wxEmptyString)
     {
     }
 
@@ -450,22 +450,23 @@ namespace dbg_mi
         return true;
     }
 
+
     wxString GDBMemoryRangeWatch::MakeSymbolToAddress() const
     {
-        wxString sAddress;
-        uint64_t llAddress = GetAddress();
-#if wxCHECK_VERSION(3, 1, 5)
-        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
-#else
-        if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
-#endif
-        {
-            sAddress = wxString::Format("%#018llx", llAddress); // 18 = 0x + 16 digits
-        }
-        else
-        {
-            sAddress = wxString::Format("%#10llx", llAddress); // 10 = 0x + 8 digits
-        }
+        wxString sAddress = GetAddress();
+//        uint64_t llAddress = GetAddress();
+//#if wxCHECK_VERSION(3, 1, 5)
+//        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+//#else
+//        if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+//#endif
+//        {
+//            sAddress = wxString::Format("%#018llx", llAddress); // 18 = 0x + 16 digits
+//        }
+//        else
+//        {
+//            sAddress = wxString::Format("%#10llx", llAddress); // 10 = 0x + 8 digits
+//        }
 
         return sAddress;
     };
@@ -490,7 +491,7 @@ namespace dbg_mi
         AddChildNode(pNodeMemoryRange, "GDBMemoryRangeWatch", m_GDBWatchClassName);
         AddChildNode(pNodeMemoryRange, "projectTitle", m_project->GetTitle());   // The Project the file belongs to.
 
-        AddChildNodeHex(pNodeMemoryRange, "address", m_address);
+        AddChildNode(pNodeMemoryRange, "address", m_address);
         AddChildNode(pNodeMemoryRange, "size", m_size);
         AddChildNode(pNodeMemoryRange, "symbol", m_symbol);
     }
@@ -500,7 +501,7 @@ namespace dbg_mi
         //Only load the breakpoints that belong to the current project
         m_GDBWatchClassName = ReadChildNodewxString(pElementWatch, "GDBMemoryRangeWatch");
 
-        m_address = ReadChildNodeHex(pElementWatch, "address");
+        m_address = ReadChildNodewxString(pElementWatch, "address");
         m_size = ReadChildNodeUint64(pElementWatch, "size");
         m_symbol = ReadChildNodewxString(pElementWatch, "symbol");
 

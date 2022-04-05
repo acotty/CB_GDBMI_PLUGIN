@@ -1119,13 +1119,13 @@ namespace dbg_mi
         return child;
     }
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void UpdateWatches(LogPaneLogger * logger)
+    void UpdateWatches(LogPaneLogger * logger, int updateType)
     {
 #ifndef TEST_PROJECT
         logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("updating watches"), LogPaneLogger::LineType::Debug);
         //Manager::Get()->GetDebuggerManager()->GetWatchesDialog()->OnDebuggerUpdated();
         CodeBlocksEvent event(cbEVT_DEBUGGER_UPDATED);
-        event.SetInt(int(cbDebuggerPlugin::DebugWindows::Watches));
+        event.SetInt(updateType);
         //event.SetPlugin(m_pDriver->GetDebugger());
         Manager::Get()->ProcessEvent(event);
 #endif
@@ -1142,7 +1142,7 @@ namespace dbg_mi
         }
         else
         {
-            UpdateWatches(logger);
+            UpdateWatches(logger, int(cbDebuggerPlugin::DebugWindows::Watches));
         }
 
 #endif
@@ -1465,7 +1465,7 @@ namespace dbg_mi
         if (error)
         {
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
-            UpdateWatches(m_logger);
+            UpdateWatches(m_logger, int(cbDebuggerPlugin::DebugWindows::Watches));
             Finish();
         }
         else
@@ -1476,7 +1476,7 @@ namespace dbg_mi
                                         __LINE__,
                                         wxString::Format(_("Finished sub commands ID: %s"),  id.ToString()),
                                         LogPaneLogger::LineType::Debug);
-                UpdateWatches(m_logger);
+                UpdateWatches(m_logger, int(cbDebuggerPlugin::DebugWindows::Watches));
                 Finish();
             }
         }
@@ -1501,8 +1501,8 @@ namespace dbg_mi
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    GDBMemoryRangeWatchCreateAction::GDBMemoryRangeWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger) :
-        GDBWatchBaseAction(watches, logger),
+    GDBMemoryRangeWatchCreateAction::GDBMemoryRangeWatchCreateAction(cb::shared_ptr<GDBMemoryRangeWatch> const & watch, LogPaneLogger * logger) :
+//        GDBWatchBaseAction(watchesContainer, logger),
         m_watch(watch)
     {
     }
@@ -1527,6 +1527,29 @@ namespace dbg_mi
 
         if (id == m_memory_range_watch_request_id)
         {
+            if (result.GetResultClass() == ResultParser::ClassError)
+            {
+                const ResultValue & value = result.GetResultValue();
+
+                wxString message;
+                if (Lookup(value, "msg", message))
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Error detected: %s . Check the debugger log for more info!"), message), LogPaneLogger::LineType::Error);
+                }
+                else
+                {
+                    message = _("Error detected, so cannot display memory. Check the debugger log for more info!");
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, message , LogPaneLogger::LineType::Error);
+                }
+
+                m_watch->SetValue(message);
+                m_watch->SetIsValueErrorMessage(true);
+                UpdateWatches(m_logger, int(cbDebuggerPlugin::DebugWindows::MemoryRange));
+                Finish();
+                return;
+            }
+            bool bErrorFound = false;
+            wxString sErrorFound = wxEmptyString;
             m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("result: - %s", result.MakeDebugString()), LogPaneLogger::LineType::Debug);
 
             const ResultValue * pMemory = result.GetResultValue().GetTupleValue("memory");
@@ -1557,161 +1580,52 @@ namespace dbg_mi
                                     (!sMemoryContents.IsEmpty())
                                )
                             {
-#warning need to use memory view dialog
-//                                cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
-//                                dialog->Begin();
-//                                dialog->Clear();
-
-                                wxString sAddressToShow;
-                                uint64_t llAddrLineStart = llAddrbegin;
-                                const int BYTES_DISPPLAY_PER_LINE = 16;
-                                int iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
-
-                                int iCount = llAddrEnd - llAddrbegin;
-                                for (int iAddressIndex = 0; iAddressIndex < iCount; iAddressIndex++)
+                                if (m_watch->GetAddress().IsEmpty())
                                 {
-#if wxCHECK_VERSION(3, 1, 5)
-                                    if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
-#else
-                                    if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
-#endif
-                                    {
-                                        sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
-                                    }
-                                    else
-                                    {
-                                        sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
-                                    }
-                                    wxString sHexDataValue = sMemoryContents.Mid(iAddressIndex*2,2);
-//                                    dialog->AddHexByte(sAddressToShow, sHexDataValue);
-                                    iBytesPerLine--;
-                                    if (iBytesPerLine == 0)
-                                    {
-                                        llAddrLineStart = llAddrbegin + iAddressIndex;
-                                        iBytesPerLine = BYTES_DISPPLAY_PER_LINE;
-                                    }
+                                    m_watch->SetAddress(sAddressBegin);
                                 }
-//                                dialog->End();
+
+                                m_watch->SetValue(sMemoryContents);
+                                m_watch->SetIsValueErrorMessage(false);
+                                UpdateWatches(m_logger, int(cbDebuggerPlugin::DebugWindows::MemoryRange));
                             }
                             else
                             {
-                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse GDB/MI memory address field. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                                bErrorFound = true;
+                                sErrorFound = "Could not parse one pf the GDB/MI memory address fields.";
+                                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse one pf the GDB/MI memory address fields. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
                             }
                         }
                         else
                         {
-                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the GDB/MI memory field response. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                            bErrorFound = true;
+                            sErrorFound = "Could not find one of he GDB/MI memory address fields";
+                            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not find one of he GDB/MI memory address fields. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
                         }
                     }
                     else
                     {
-                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the GDB/MI memory block %d. Received id:%s result: - %s", iMemBlockIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                        bErrorFound = true;
+                        sErrorFound = wxString::Format("Could not find GDB/MI memory block %d. ", iMemBlockIndex);
+                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not find GDB/MI memory block %d. Received id:%s result: - %s", iMemBlockIndex, id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
                     }
                 }
             }
             else
             {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not parse the GDB/MI response.. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+                bErrorFound = true;
+                sErrorFound = "Could not find the GDB/MI memory response memory field";
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Could not find the GDB/MI memory response memory field. Received id:%s result: - %s", id.ToString(), result.MakeDebugString()), LogPaneLogger::LineType::Error);
+            }
+
+            if (bErrorFound == true)
+            {
+                m_watch->SetValue(sErrorFound);
+                m_watch->SetIsValueErrorMessage(true);
+                UpdateWatches(m_logger, int(cbDebuggerPlugin::DebugWindows::MemoryRange));
             }
             Finish();
         }
-
-#if 0
- OLD CODE OLD CODE
-        --m_sub_commands_left;
-        bool error = false;
-        wxString resultDebug = result.MakeDebugString();
-
-        if (result.GetResultClass() == ResultParser::ClassDone)
-        {
-            ResultValue const & value = result.GetResultValue();
-
-            switch (m_step)
-            {
-                case StepCreate:
-                {
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepCreate for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
-                    bool dynamic, has_more;
-                    int children;
-                    ParseWatchInfo(value, children, dynamic, has_more);
-                    ParseWatchValueID(*m_watch, value);
-
-                    if (dynamic && has_more)
-                    {
-                        m_step = StepSetRange;
-#warning need to test this code!!!
-                        Execute("-var-set-update-range \"" + m_watch->GetID() + "\" 0 100");
-                        AppendNullChild(m_watch);
-                    }
-                    else
-                    {
-                        if (children > 0)
-                        {
-                            if (children > 1)
-                            {
-                                m_watch->SetRange(0, children);
-                            }
-
-                            m_step = StepListChildren;
-                            AppendNullChild(m_watch);
-                        }
-                        else
-                        {
-                            Finish();
-                        }
-                    }
-                }
-                break;
-
-                case StepListChildren:
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepListChildren for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
-                    error = !ParseListCommand(id, value);
-                    break;
-
-                case StepSetRange:
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("StepSetRange for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
-#warning code to be added for this case
-                    break;
-
-                default:
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("m_step unknown for ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
-                    break;
-            }
-        }
-        else
-        {
-            if (result.GetResultClass() == ResultParser::ClassError)
-            {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("The expression can't be evaluated! ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
-                m_watch->SetValue("The expression can't be evaluated");
-            }
-            else
-            {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("processing command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Debug);
-            }
-
-            error = true;
-        }
-
-        if (error)
-        {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Command ID: %s ==>%s<=="), id.ToString(), resultDebug), LogPaneLogger::LineType::Error);
-            UpdateWatches(m_logger);
-            Finish();
-        }
-        else
-        {
-            if (m_sub_commands_left == 0)
-            {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                        __LINE__,
-                                        wxString::Format(_("Finished sub commands ID: %s"),  id.ToString()),
-                                        LogPaneLogger::LineType::Debug);
-                UpdateWatches(m_logger);
-                Finish();
-            }
-        }
-#endif
     }
 
     void GDBMemoryRangeWatchCreateAction::OnStart()
@@ -1719,8 +1633,19 @@ namespace dbg_mi
         // GDB 11.2 manual synopsis:
         //  -data-read-memory-bytes [ -o offset ]
         //      address count
-        wxString cmd = wxString::Format("-data-read-memory-bytes %s %d", m_address, m_length);
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmd), LogPaneLogger::LineType::Debug);
+
+        wxString sAddress = m_watch->GetAddress();
+        wxString sSymbol = m_watch->GetSymbol();
+        wxString cmd;
+        if (sSymbol.IsEmpty())
+        {
+            cmd = wxString::Format("-data-read-memory-bytes %s %llu", sAddress, m_watch->GetSize());
+        }
+        else
+        {
+            cmd = wxString::Format("-data-read-memory-bytes %s %llu", sSymbol, m_watch->GetSize());
+        }
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, cmd, LogPaneLogger::LineType::Debug);
         m_memory_range_watch_request_id = Execute(cmd);
     }
 
@@ -1908,7 +1833,7 @@ namespace dbg_mi
                                     wxString::Format(_("WatchUpdateAction::Output - finishing at==>%s<<=="), id.ToString()),
                                     LogPaneLogger::LineType::Debug
                                    );
-            UpdateWatches(m_logger);
+            UpdateWatches(m_logger, int(cbDebuggerPlugin::DebugWindows::Watches));
             Finish();
         }
     }

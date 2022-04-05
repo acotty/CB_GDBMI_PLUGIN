@@ -201,6 +201,25 @@ namespace dbg_mi
             LogPaneLogger * m_logger;
     };
 
+    class GDBMemoryRangeWatchCreateAction : public Action
+    {
+        public:
+            GDBMemoryRangeWatchCreateAction(cb::shared_ptr<GDBMemoryRangeWatch> const & watch, LogPaneLogger * logger);
+            virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+
+        protected:
+            virtual void OnStart();
+
+        private:
+            CommandID m_memory_range_watch_request_id;
+
+            cb::shared_ptr<GDBMemoryRangeWatch> m_watch;
+
+            LogPaneLogger * m_logger;
+    };
+
+
+
     class GDBDisassemble : public Action
     {
         public:
@@ -312,26 +331,6 @@ namespace dbg_mi
             cb::shared_ptr<GDBWatch> m_watch;
             Step m_step;
     };
-
-    class GDBMemoryRangeWatchCreateAction : public GDBWatchBaseAction
-    {
-        public:
-            GDBMemoryRangeWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger);
-            virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
-
-        protected:
-            virtual void OnStart();
-
-        private:
-            uint64_t m_address;
-            uint64_t m_length;
-            CommandID m_memory_range_watch_request_id;
-
-            cb::shared_ptr<GDBWatch> m_watch;
-
-            LogPaneLogger * m_logger;
-    };
-
 
     class GDBWatchCreateTooltipAction : public GDBWatchCreateAction
     {

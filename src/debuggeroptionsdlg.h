@@ -31,6 +31,7 @@ namespace dbg_mi
                 EvalExpression,
                 AddOtherProjectDirs,
                 CheckPrettyPrinters,
+                PersistDebugElements,
                 DoNotRun
             };
 

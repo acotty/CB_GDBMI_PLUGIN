@@ -102,7 +102,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         // watches
         virtual cb::shared_ptr<cbWatch> AddWatch(const wxString & symbol, bool update);
         virtual cb::shared_ptr<cbWatch> AddWatch(dbg_mi::GDBWatch * watch, cb_unused bool update);
-        virtual cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size, const wxString & symbol, bool update);
+        cb::shared_ptr<cbWatch> AddMemoryRange(wxString address, uint64_t size, bool update) override;
         void AddTooltipWatch(const wxString & symbol, wxRect const & rect);
         virtual void DeleteWatch(cb::shared_ptr<cbWatch> watch);
         virtual bool HasWatch(cb::shared_ptr<cbWatch> watch);

@@ -57,7 +57,8 @@ namespace dbg_mi
             long lArrayStart = XRCCTRL(*this, "spnArrStart", wxSpinCtrl)->GetValue();
             long lArrayEnd = lArrayStart + XRCCTRL(*this, "spnArrCount", wxSpinCtrl)->GetValue();
 
-            m_watch->SetSymbol(CleanStringValue(XRCCTRL(*this, "txtKeyword", wxTextCtrl)->GetValue()));
+            wxString symbol = CleanStringValue(XRCCTRL(*this, "txtKeyword", wxTextCtrl)->GetValue());
+            m_watch->SetSymbol(symbol);
             m_watch->SetFormat((GDBWatch::WatchFormat)XRCCTRL(*this, "rbFormat", wxRadioBox)->GetSelection());
             m_watch->SetIsArray(XRCCTRL(*this, "chkArray", wxCheckBox)->GetValue());
             m_watch->SetRangeArray(lArrayStart, lArrayEnd);

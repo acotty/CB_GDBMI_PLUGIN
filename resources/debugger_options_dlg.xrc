@@ -141,6 +141,13 @@
 						</object>
 						<flag>wxEXPAND</flag>
 					</object>
+					<object class="sizeritem">
+						<object class="wxCheckBox" name="chkPersistDebugElements">
+							<label>Presist breakpoints,watches,memory views</label>
+							<tooltip>If enabled, the debugger will persist break points, watches and memory dump between sessions.</tooltip>
+						</object>
+						<flag>wxEXPAND</flag>
+					</object>
 				</object>
 				<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
 				<border>5</border>
