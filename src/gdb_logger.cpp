@@ -30,23 +30,28 @@ namespace dbg_mi
         }
 
         if (
-            m_dbgGDB->HasDebugLog() &&
-            (type != LineType::UserDisplay) &&
-            (type != LineType::Warning) &&
-            (type != LineType::Error)
-        )
-        {
-            // Exit for non UserDisplay messages if not debugging
-#warning in release return!!!!!
-        }
+                !m_dbgGDB->HasDebugLog() &&
+                (
+                    //UserDisplay = 0,
+                    (type == LineType::Info) ||
+                    (type == LineType::Debug) ||
+                    //LineType::Warning,
+                    //LineType::Error,
 
-        if (
-            (type == LineType::Info) ||
-            (type == LineType::Receive_Info)
-        )
+                    //LineType::GDB_Stop_Start,
+                    (type == LineType::Queue) ||
+                    (type == LineType::Command) ||
+                    (type == LineType::CommandResult) ||
+                    (type == LineType::ProgramState) ||
+                    (type == LineType::Event) ||
+                    (type == LineType::Transmit) ||
+                    (type == LineType::Receive) ||
+                    (type == LineType::Receive_NoLine) ||
+                    (type == LineType::Receive_Info)
+                )
+           )
         {
-#warning in release return!!!!!
-            //        return;
+            return;
         }
 
         wxString logMsg = msg;
