@@ -25,8 +25,9 @@ The debugger is able to debug itself and is a viable replacement for the existin
         - line break points                 - save/load working
         - count line break point            - save/load working
         - conditional line break point      - save/load working
-2. Create patch for C::B source and submit
-3. Publish plugin to github
+2. Expand function argument and local variables in the watch window.
+3. Build against the SVN trunk source
+4. Publish plugin to github
 
 ### Medium Priority
 
@@ -35,6 +36,7 @@ The debugger is able to debug itself and is a viable replacement for the existin
     - use Project->Properties->"Debugger GDB/MI" tab data.
 
 3. Re-test all items!!!! 
+4. Create patch for C::B source and submit
 
 
 ### Low Priority
@@ -46,7 +48,6 @@ The debugger is able to debug itself and is a viable replacement for the existin
 5. Update MacOS makefile build process
 6. CPU registry dialog modify to fix value column to say 50 characters.
 7. More (easy) integration of pretty printing
-8. Expand function argument and local variables in the watch window.
 9. Add function break point support. See "#warning" messages.
     src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
         91    #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!! 
@@ -242,7 +243,6 @@ NOTES:
 ## COMPLETED ITEMS
 
 * 07APR2022 Done - Added search paths from Project->Properties->"Debugger GDB/MI" tab to GDB startup
-
 * 07APR2022 Done - Wired up the display of data break point to the break point debugging window
 * 06APR2022 Done - Wired up the ability to create a data break point 
 * 05APR2022 Done - Added function argument and local function variables to watch window (if enabled in debugger config dialog)
