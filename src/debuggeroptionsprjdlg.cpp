@@ -40,8 +40,8 @@ namespace dbg_mi
             return;
         }
 
-        m_OldPaths = m_pDebuggerGDBMI->ParseSearchDirs(*project);
-        m_OldRemoteDebugging = m_pDebuggerGDBMI->ParseRemoteDebuggingMap(*project);
+        m_OldPaths = m_pDebuggerGDBMI->ParseSearchDirs(m_pProject);
+        m_OldRemoteDebugging = m_pDebuggerGDBMI->ParseRemoteDebuggingMap(*m_pProject);
         m_CurrentRemoteDebugging = m_OldRemoteDebugging;
 
         wxListBox* control = XRCCTRL(*this, "lstSearchDirs", wxListBox);

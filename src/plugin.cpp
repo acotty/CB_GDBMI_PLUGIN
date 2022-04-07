@@ -106,7 +106,7 @@ END_EVENT_TABLE()
 // constructor
 Debugger_GDB_MI::Debugger_GDB_MI() :
     cbDebuggerPlugin("GDB/MI", "gdbmi_debugger"),
-    m_project(nullptr),
+    m_pProject(nullptr),
     m_command_stream_dialog(nullptr),
     m_console_pid(-1),
     m_pid_attached(0)
@@ -267,7 +267,8 @@ void Debugger_GDB_MI::OnGDBOutput(wxCommandEvent & event)
                 // Ignore lines like ~"\032\032D:\\Andrew_Development\\Z_Testing_Apps\\Printf_I64\\main.cpp:13:220:beg:0x7ff6af41155a\n"
                 !msg.StartsWith("~\"\\032\\032") &&
                 !msg.Contains(":beg:")
-            )
+            ) &&
+            !msg.StartsWith("~\"Source directories searched: ")
        )
     {
         ParseOutput(msg);
@@ -954,8 +955,7 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
                                  wxString::Format(_("wxSetEnv(%s , %s"), CB_LIBRARY_ENVVAR, newLibPath),
                                  dbg_mi::LogPaneLogger::LineType::Debug);
     }
-#warning Need to add support for source directory adding, see existing code , search for AddSourceDir "GdbCmd_AddSourceDir" and
-    int res = LaunchDebugger(debugger, debuggee, args, working_dir, 0, console, start_type);
+    int res = LaunchDebugger(project, debugger, debuggee, args, working_dir, 0, console, start_type);
 
     if (res != 0)
     {
@@ -964,7 +964,7 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
     }
 
     m_executor.SetAttachedPID(-1);
-    m_project = project;
+    m_pProject = project;
     m_hasStartUpError = false;
 
     if (oldLibPath != newLibPath)
@@ -975,7 +975,8 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
     return 0;
 }
 
-int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger,
+int Debugger_GDB_MI::LaunchDebugger(cbProject * project,
+                                    wxString const & debugger,
                                     wxString const & debuggee,
                                     wxString const & args,
                                     wxString const & working_dir,
@@ -1073,6 +1074,19 @@ int Debugger_GDB_MI::LaunchDebugger(wxString const & debugger,
     {
         DoSendCommand("catch throw");
         DoSendCommand("catch catch");
+    }
+
+    wxString directorySearchPaths = wxEmptyString;
+    const wxArrayString& pdirs = ParseSearchDirs(project);
+    for (size_t i = 0; i < pdirs.GetCount(); ++i)
+    {
+        directorySearchPaths.Append(pdirs[i]);
+        directorySearchPaths.Append(wxPATH_SEP);
+    }
+
+    if (!directorySearchPaths.IsEmpty())
+    {
+        DoSendCommand(wxString::Format("directory %s", directorySearchPaths));
     }
 
     if (pid == 0)
@@ -1407,7 +1421,7 @@ cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddDataBreakpoint(const wxString& 
         const wxString& newDataExpression = dlg.GetDataExpression();
         int sel = dlg.GetSelection();
 
-        cb::shared_ptr<dbg_mi::GDBBreakpoint> bp(new dbg_mi::GDBBreakpoint(m_project, m_pLogger));
+        cb::shared_ptr<dbg_mi::GDBBreakpoint> bp(new dbg_mi::GDBBreakpoint(m_pProject, m_pLogger));
         bp->SetType(dbg_mi::GDBBreakpoint::BreakpointType::bptData);
         bp->SetIsEnabled(enabled);
         bp->SetBreakAddress(newDataExpression);
@@ -1724,7 +1738,7 @@ bool Debugger_GDB_MI::SwitchToThread(int thread_number)
 
 cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(const wxString & symbol, cb_unused bool update)
 {
-    cb::shared_ptr<dbg_mi::GDBWatch> watch(new dbg_mi::GDBWatch(m_project, m_pLogger, symbol, false));
+    cb::shared_ptr<dbg_mi::GDBWatch> watch(new dbg_mi::GDBWatch(m_pProject, m_pLogger, symbol, false));
     m_watches.push_back(watch);
 
     if (IsRunning())
@@ -1752,7 +1766,7 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(dbg_mi::GDBWatch * watch, cb_u
 
 cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(wxString address, uint64_t size, bool update)
 {
-    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_project, m_pLogger, address, size));
+    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_pProject, m_pLogger, address, size));
 
     uint64_t llAddress;
     wxString blank = wxEmptyString;
@@ -1780,7 +1794,7 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(wxString address, uint64
 
 void Debugger_GDB_MI::AddTooltipWatch(const wxString & symbol, wxRect const & rect)
 {
-    cb::shared_ptr<dbg_mi::GDBWatch> w(new dbg_mi::GDBWatch(m_project, m_pLogger, symbol, true));
+    cb::shared_ptr<dbg_mi::GDBWatch> w(new dbg_mi::GDBWatch(m_pProject, m_pLogger, symbol, true));
     m_watches.push_back(w);
 
     if (IsRunning())
@@ -1951,7 +1965,7 @@ void Debugger_GDB_MI::DoWatches()
     {
         if (m_WatchLocalsandArgs == nullptr)
         {
-            m_WatchLocalsandArgs = cb::shared_ptr<dbg_mi::GDBWatch>(new dbg_mi::GDBWatch(m_project, m_pLogger, "Function locals and arguments", false));
+            m_WatchLocalsandArgs = cb::shared_ptr<dbg_mi::GDBWatch>(new dbg_mi::GDBWatch(m_pProject, m_pLogger, "Function locals and arguments", false));
             m_WatchLocalsandArgs->Expand(true);
             m_WatchLocalsandArgs->MarkAsChanged(false);
             cbWatchesDlg *watchesDialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
@@ -2008,7 +2022,7 @@ void Debugger_GDB_MI::DoSendCommand(const wxString & cmd)
 
 void Debugger_GDB_MI::AttachToProcess(const wxString & pid)
 {
-    m_project = NULL;
+    m_pProject = NULL;
     long number;
 
     if (!pid.ToLong(&number))
@@ -2016,7 +2030,8 @@ void Debugger_GDB_MI::AttachToProcess(const wxString & pid)
         return;
     }
 
-    LaunchDebugger(GetActiveConfigEx().GetDebuggerExecutable(),
+    LaunchDebugger(m_pProject,
+                   GetActiveConfigEx().GetDebuggerExecutable(),
                    wxEmptyString,
                    wxEmptyString,
                    wxEmptyString,
@@ -2155,12 +2170,184 @@ bool Debugger_GDB_MI::ShowValueTooltip(int style)
     return true;
 }
 
-wxArrayString Debugger_GDB_MI::ParseSearchDirs(const cbProject &project)
+void Debugger_GDB_MI::StripQuotes(wxString& str)
+{
+    if ((str.GetChar(0) == '\"') && (str.GetChar(str.Length() - 1) == '\"'))
+    {
+        str = str.Mid(1, str.Length() - 2);
+    }
+}
+
+void Debugger_GDB_MI::ConvertToGDBFriendly(wxString& str)
+{
+    if (str.IsEmpty())
+        return;
+
+    str = UnixFilename(str);
+    while (str.Replace("\\", "/"))
+        ;
+    while (str.Replace("//", "/"))
+        ;
+    if ((str.Find(' ') != -1) && (str.GetChar(0) != '"'))
+    {
+        str = "\"" + str + "\"";
+    }
+}
+
+void Debugger_GDB_MI::ConvertToGDBDirectory(wxString& str, wxString base, bool relative)
+{
+    if (str.IsEmpty())
+        return;
+
+    ConvertToGDBFriendly(str);
+    ConvertToGDBFriendly(base);
+    StripQuotes(str);
+    StripQuotes(base);
+
+    if (platform::windows)
+    {
+        int  ColonLocation   = str.Find(':');
+        bool convert_path_83 = false;
+        if (ColonLocation != wxNOT_FOUND)
+        {
+            convert_path_83 = true;
+        }
+        else if (!base.IsEmpty() && str.GetChar(0) != '/')
+        {
+            if (base.GetChar(base.Length()) == '/')
+            {
+                base = base.Mid(0, base.Length() - 2);
+            }
+
+            while (!str.IsEmpty())
+            {
+                base += "/" + str.BeforeFirst('/');
+                if (str.Find('/') != wxNOT_FOUND)
+                {
+                    str = str.AfterFirst('/');
+                }
+                else
+                {
+                    str.Clear();
+                }
+            }
+            convert_path_83 = true;
+        }
+
+        // If can, get 8.3 name for path (Windows only)
+        if (convert_path_83 && str.Contains(' ')) // only if has spaces
+        {
+            wxFileName fn(str); // might contain a file name, too
+            wxString path_83 = fn.GetShortPath();
+            if (!path_83.IsEmpty())
+            {
+                str = path_83; // construct filename again
+            }
+        }
+
+        if (ColonLocation == wxNOT_FOUND || base.IsEmpty())
+        {
+            relative = false; // Can't do it
+        }
+    }
+    else
+    {
+        if ((str.GetChar(0) != '/' && str.GetChar(0) != '~') || base.IsEmpty())
+        {
+            relative = false;
+        }
+    }
+
+    if (relative)
+    {
+        if (platform::windows)
+        {
+            if (str.Find(':') != wxNOT_FOUND)
+            {
+                str = str.Mid(str.Find(':') + 2, str.Length());
+            }
+            if (base.Find(':') != wxNOT_FOUND)
+            {
+                base = base.Mid(base.Find(':') + 2, base.Length());
+            }
+        }
+        else
+        {
+            if (str.GetChar(0) == '/')
+            {
+                str = str.Mid(1, str.Length());
+            }
+            else
+            {
+                if (str.GetChar(0) == '~')
+                {
+                    str = str.Mid(2, str.Length());
+                }
+            }
+
+            if (base.GetChar(0) == '/')
+            {
+                base = base.Mid(1, base.Length());
+            }
+            else
+            {
+                if (base.GetChar(0) == '~')
+                {
+                    base = base.Mid(2, base.Length());
+                }
+            }
+        }
+
+        while (!base.IsEmpty() && !str.IsEmpty())
+        {
+            if (str.BeforeFirst('/') == base.BeforeFirst('/'))
+            {
+                if (str.Find('/') == wxNOT_FOUND)
+                {
+                    str.Clear();
+                }
+                else
+                {
+                    str = str.AfterFirst('/');
+                }
+
+                if (base.Find('/') == wxNOT_FOUND)
+                {
+                    base.Clear();
+                }
+                else
+                {
+                    base = base.AfterFirst('/');
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        while (!base.IsEmpty())
+        {
+            str = "../" + str;
+            if (base.Find('/') == wxNOT_FOUND)
+            {
+                base.Clear();
+            }
+            else
+            {
+                base = base.AfterFirst('/');
+            }
+        }
+    }
+    ConvertToGDBFriendly(str);
+}
+
+
+wxArrayString Debugger_GDB_MI::ParseSearchDirs(cbProject * pProject)
 {
     // NOTE: This is tinyXML as it interacts wtih teh C::B SDK tinyXML code!!!!
 
     wxArrayString dirs;
-    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+    const TiXmlElement* elem = static_cast<const TiXmlElement*>(pProject->GetExtensionsNode());
     if (elem)
     {
         const TiXmlElement* conf = elem->FirstChildElement("debugger");
@@ -2171,9 +2358,13 @@ wxArrayString Debugger_GDB_MI::ParseSearchDirs(const cbProject &project)
             {
                 if (pathsElem->Attribute("add"))
                 {
-                    const wxString &dir = cbC2U(pathsElem->Attribute("add"));
+                    wxString dir = pathsElem->Attribute("add");
                     if (dirs.Index(dir) == wxNOT_FOUND)
+                    {
+                        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(dir); // apply env vars
+                        ConvertToGDBDirectory(dir, "", false);
                         dirs.Add(dir);
+                    }
                 }
                 pathsElem = pathsElem->NextSiblingElement("search_path");
             }

@@ -13,28 +13,6 @@ The debugger is able to debug itself and is a viable replacement for the existin
 ## OUTSTANDING ITEMS
 
 ### High Priority
-1. Project->Properties->"Debugger GDB/MI" tab:
-    a) Wire up the dialog
-    b) Use the dialog data:
-        * Send project search paths to GDB.
-
-2. Fix "#warning" messages.
-    src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
-        91    #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!! 
-        233   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
-        239   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
-        393   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
-        399   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
-
-    \src\plugins\contrib-wip\debuggerGDB_MI\src\plugin.cpp
-        957   #warning Need to add support for source directory adding, see existing code , search for AddSourceDir "GdbCmd_AddSourceDir" and  
-        1552  #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                             
-
-3. Re-test all items!!!! 
-4. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
-
-### Medium Priority
-
 1. Persist debug data between sessions:
     Outstanding
         - watch data                            - save/load working
@@ -49,7 +27,14 @@ The debugger is able to debug itself and is a viable replacement for the existin
         - conditional line break point      - save/load working
 2. Create patch for C::B source and submit
 3. Publish plugin to github
-4. Remote debugging - use Project->Properties->"Debugger GDB/MI" tab data.
+
+### Medium Priority
+
+1. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
+2. Remote debugging 
+    - use Project->Properties->"Debugger GDB/MI" tab data.
+
+3. Re-test all items!!!! 
 
 
 ### Low Priority
@@ -62,6 +47,17 @@ The debugger is able to debug itself and is a viable replacement for the existin
 6. CPU registry dialog modify to fix value column to say 50 characters.
 7. More (easy) integration of pretty printing
 8. Expand function argument and local variables in the watch window.
+9. Add function break point support. See "#warning" messages.
+    src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
+        91    #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!! 
+        233   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+        239   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+        393   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+        399   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+
+    \src\plugins\contrib-wip\debuggerGDB_MI\src\plugin.cpp
+        1566  #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                             
+
 
 ### Future Work
 
@@ -245,7 +241,8 @@ NOTES:
 
 ## COMPLETED ITEMS
 
-* 07APR2022 Done - Fixed non function break points and path warnings.
+* 07APR2022 Done - Added search paths from Project->Properties->"Debugger GDB/MI" tab to GDB startup
+
 * 07APR2022 Done - Wired up the display of data break point to the break point debugging window
 * 06APR2022 Done - Wired up the ability to create a data break point 
 * 05APR2022 Done - Added function argument and local function variables to watch window (if enabled in debugger config dialog)

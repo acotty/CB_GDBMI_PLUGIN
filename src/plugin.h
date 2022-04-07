@@ -122,7 +122,10 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual void OnValueTooltip(const wxString & token, const wxRect & evalRect);
         virtual bool ShowValueTooltip(int style);
 
-        wxArrayString ParseSearchDirs(const cbProject &project);
+        void StripQuotes(wxString& str);
+        void ConvertToGDBFriendly(wxString& str);
+        void ConvertToGDBDirectory(wxString& str, wxString base = "", bool relative = true);
+        wxArrayString ParseSearchDirs(cbProject *project);
         TiXmlElement* GetElementForSaving(cbProject &project, const char *elementsToClear);
         void SetSearchDirs(cbProject &project, const wxArrayString &dirs);
 
@@ -157,11 +160,11 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         virtual void ConvertDirectory(wxString & /*str*/, wxString /*base*/, bool /*relative*/);
         virtual cbProject * GetProject()
         {
-            return m_project;
+            return m_pProject;
         }
         virtual void ResetProject()
         {
-            m_project = NULL;
+            m_pProject = NULL;
         }
         virtual void CleanupWhenProjectClosed(cbProject * project);
         virtual bool CompilerFinished(bool compilerFailed, StartType startType);
@@ -192,7 +195,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void OnTimer(wxTimerEvent & event);
         void OnIdle(wxIdleEvent & event);
         void OnMenuInfoCommandStream(wxCommandEvent & event);
-        int LaunchDebugger(wxString const & debugger, wxString const & debuggee, wxString const & args,
+        int LaunchDebugger(cbProject * project, wxString const & debugger, wxString const & debuggee, wxString const & args,
                            wxString const & working_dir, int pid, bool console, StartType start_type);
         void AddStringCommand(wxString const & command);
         void DoSendCommand(const wxString & cmd);
@@ -212,7 +215,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
 
     private:
         wxTimer m_timer_poll_debugger;
-        cbProject * m_project;
+        cbProject * m_pProject;
 
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
