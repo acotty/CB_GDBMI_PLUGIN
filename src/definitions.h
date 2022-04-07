@@ -133,7 +133,6 @@ namespace dbg_mi
 
             void SetIndex(int index)
             {
-#warning need to call this!!!! search for "bp->index" in existing code
                 m_index = index;
             }
 
@@ -187,6 +186,11 @@ namespace dbg_mi
                     m_type = BreakpointType::bptData;
                     return;
                 }
+            }
+
+            void SetType(BreakpointType type)
+            {
+                m_type = type;
             }
 
             wxString GetFilename()
@@ -359,6 +363,7 @@ namespace dbg_mi
             {
                 return m_breakOnWrite;
             }
+
             void SetIsBreakOnWrite(bool breakOnWrite)
             {
                 m_breakOnWrite = breakOnWrite;

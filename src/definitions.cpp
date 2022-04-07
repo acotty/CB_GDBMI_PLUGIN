@@ -74,7 +74,19 @@ namespace dbg_mi
 
     void AddChildNodeHex(tinyxml2::XMLNode* pNodeParent,  const wxString name, const uint64_t llValue)
     {
-        wxString value =  wxString::Format("%#018llx", llValue);// 18 = 0x + 16 digits
+        wxString value;
+    #if wxCHECK_VERSION(3, 1, 5)
+        if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
+    #else
+        if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
+    #endif
+        {
+            value = wxString::Format("%#018llx", llValue);// 18 = 0x + 16 digits
+        }
+        else
+        {
+            value =  wxString::Format("%#10llx", llValue);// 10 = 0x + 8 digit
+        }
         AddChildNode(pNodeParent, name, value);
     }
 
@@ -209,7 +221,20 @@ namespace dbg_mi
 
     wxString GDBBreakpoint::GetLocation() const
     {
-        return m_filename;
+        switch(m_type)
+        {
+            case BreakpointType::bptCode:
+                return m_filename;
+
+            case BreakpointType::bptFunction:
+                return m_filename;
+
+            case BreakpointType::bptData:
+                return m_breakAddress;
+
+            default:
+                return "unknown";
+        }
     }
 
     int GDBBreakpoint::GetLine() const
@@ -224,12 +249,54 @@ namespace dbg_mi
 
     wxString GDBBreakpoint::GetType() const
     {
-        return _("Code");
+        switch(m_type)
+        {
+            case BreakpointType::bptCode:
+                return "bptCode";
+
+            case BreakpointType::bptFunction:
+                return "bptFunction";
+
+            case BreakpointType::bptData:
+                return "bptData";
+
+            default:
+                return "unknown";
+        }
     }
 
     wxString GDBBreakpoint::GetInfo() const
     {
-        return wxEmptyString;
+        switch(m_type)
+        {
+            case BreakpointType::bptCode:
+                return wxEmptyString;
+
+            case BreakpointType::bptFunction:
+                return wxEmptyString;
+
+            case BreakpointType::bptData:
+                {
+                    if (m_breakOnRead)
+                    {
+                        if (m_breakOnWrite)
+                        {
+                            return "read and write";
+                        }
+                        else
+                        {
+                            return "read only";
+                        }
+                    }
+                    else
+                    {
+                        return "write only";
+                    }
+                }
+
+            default:
+                return "unknown";
+        }
     }
 
     bool GDBBreakpoint::IsEnabled() const

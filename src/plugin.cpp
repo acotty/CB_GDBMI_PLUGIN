@@ -584,34 +584,35 @@ struct Notifications
                     exec.SetChildPID(pid);
                 }
             }
+            else if (notifyType.IsSameAs("library-loaded"))
+            {
+                wxString  targetName;
+                dbg_mi::Lookup(parser.GetResultValue(), "target-name", targetName);
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Notification: %s for %s"), parser.GetAsyncNotifyType(), targetName),
+                                                        dbg_mi::LogPaneLogger::LineType::Receive_Info);
+            }
+            else if (notifyType.IsSameAs("breakpoint-modified"))
+            {
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Notification for breakpoint-modified: %s"), parser.MakeDebugString()),
+                                                        dbg_mi::LogPaneLogger::LineType::Receive_Info);
+            }
+            else if (notifyType.IsSameAs("breakpoint-deleted"))
+            {
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Notification for breakpoint-deleted: %s"), parser.MakeDebugString()),
+                                                        dbg_mi::LogPaneLogger::LineType::Receive_Info);
+            }
             else
             {
-                if (notifyType.IsSameAs("library-loaded"))
-                {
-                    wxString  targetName;
-                    dbg_mi::Lookup(parser.GetResultValue(), "target-name", targetName);
-                    m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                            __LINE__,
-                                                            wxString::Format(_("Notification: %s for %s"), parser.GetAsyncNotifyType(), targetName),
-                                                            dbg_mi::LogPaneLogger::LineType::Receive_Info);
-                }
-                else
-                {
-                    if (notifyType.IsSameAs("breakpoint-modified"))
-                    {
-                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                                __LINE__,
-                                                                wxString::Format(_("Notification for breakpoint-modified: %s"), parser.MakeDebugString()),
-                                                                dbg_mi::LogPaneLogger::LineType::Receive_Info);
-                    }
-                    else
-                    {
-                        m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                                __LINE__,
-                                                                wxString::Format(_("Notification: %s"), parser.MakeDebugString()),
-                                                                dbg_mi::LogPaneLogger::LineType::Receive);
-                    }
-                }
+                m_plugin->GetGDBLogger()->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                                        __LINE__,
+                                                        wxString::Format(_("Notification: %s"), parser.MakeDebugString()),
+                                                        dbg_mi::LogPaneLogger::LineType::Receive);
             }
         }
 
@@ -637,7 +638,7 @@ void Debugger_GDB_MI::UpdateOnFrameChanged(bool wait)
         {
             if ((*it)->GetID().empty() && !(*it)->ForTooltip())
             {
-                m_actions.Add(new dbg_mi::GDBWatchCreateAction(*it, m_watches, m_pLogger));
+                m_actions.Add(new dbg_mi::GDBWatchCreateAction(*it, m_watches, m_pLogger, true));
             }
         }
 
@@ -668,6 +669,10 @@ void Debugger_GDB_MI::UpdateWhenStopped()
     if (dbg_manager->UpdateDisassembly())
     {
         RequestUpdate(Disassembly);
+    }
+    if (IsWindowReallyShown(dbg_manager->GetWatchesDialog()->GetWindow()))
+    {
+        RequestUpdate(Watches);
     }
 
     UpdateOnFrameChanged(false);
@@ -949,7 +954,7 @@ int Debugger_GDB_MI::StartDebugger(cbProject * project, StartType start_type)
                                  wxString::Format(_("wxSetEnv(%s , %s"), CB_LIBRARY_ENVVAR, newLibPath),
                                  dbg_mi::LogPaneLogger::LineType::Debug);
     }
-#warning Need to add support for source directory adding, see existing code , seach for AddSourceDir "GdbCmd_AddSourceDir" and
+#warning Need to add support for source directory adding, see existing code , search for AddSourceDir "GdbCmd_AddSourceDir" and
     int res = LaunchDebugger(debugger, debuggee, args, working_dir, 0, console, start_type);
 
     if (res != 0)
@@ -1132,10 +1137,8 @@ void Debugger_GDB_MI::CommitWatches()
 
     if (!m_watches.empty())
     {
-        // Original Manager::Get()->GetDebuggerManager()->GetWatchesDialog()->UpdateWatches();
         CodeBlocksEvent event(cbEVT_DEBUGGER_UPDATED);
         event.SetInt(int(cbDebuggerPlugin::DebugWindows::Watches));
-        //event.SetPlugin(m_pDriver->GetDebugger());
         Manager::Get()->ProcessEvent(event);
     }
 }
@@ -1371,17 +1374,54 @@ cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddBreakpoint(const wxString & fil
     return cb::static_pointer_cast<cbBreakpoint>(m_breakpoints.back());
 }
 
-cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddDataBreakpoint(const wxString & /*dataExpression*/)
+cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddBreakpoint(cb::shared_ptr<dbg_mi::GDBBreakpoint> bp)
 {
-#warning Debugger_GDB_MI::AddDataBreakpoint() not implemented
-#ifdef __MINGW32__
-    if (IsDebuggerPresent())
+    m_breakpoints.push_back(bp);
+
+    if (IsRunning())
     {
-        DebugBreak();
+        if (!IsStopped())
+        {
+            m_executor.Interupt();
+            m_actions.Add(new dbg_mi::GDBBreakpointAddAction(bp, m_pLogger));
+            Continue();
+        }
+        else
+        {
+            m_actions.Add(new dbg_mi::GDBBreakpointAddAction(bp, m_pLogger));
+        }
     }
-#endif // __MINGW32__
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> NOT IMPLEMENTED< BUT CALLED <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
-    return cb::shared_ptr<cbBreakpoint>();
+
+    return cb::static_pointer_cast<cbBreakpoint>(m_breakpoints.back());
+}
+
+cb::shared_ptr<cbBreakpoint> Debugger_GDB_MI::AddDataBreakpoint(const wxString& dataExpression)
+{
+    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("dataExpression : %s", dataExpression), dbg_mi::LogPaneLogger::LineType::Warning);
+
+    dbg_mi::DataBreakpointDlg dlg(Manager::Get()->GetAppWindow(), dataExpression, true, 1);
+    PlaceWindow(&dlg);
+    if (dlg.ShowModal() == wxID_OK)
+    {
+        bool enabled = dlg.IsBreakpointEnabled();
+        const wxString& newDataExpression = dlg.GetDataExpression();
+        int sel = dlg.GetSelection();
+
+        cb::shared_ptr<dbg_mi::GDBBreakpoint> bp(new dbg_mi::GDBBreakpoint(m_project, m_pLogger));
+        bp->SetType(dbg_mi::GDBBreakpoint::BreakpointType::bptData);
+        bp->SetIsEnabled(enabled);
+        bp->SetBreakAddress(newDataExpression);
+        bp->SetIsBreakOnRead(sel != 1);
+        bp->SetIsBreakOnWrite(sel != 0);
+
+        AddBreakpoint(bp);
+
+        return bp;
+    }
+    else
+    {
+        return cb::shared_ptr<cbBreakpoint>();
+    }
 }
 
 int Debugger_GDB_MI::GetBreakpointsCount() const
@@ -1401,8 +1441,6 @@ cb::shared_ptr<const cbBreakpoint> Debugger_GDB_MI::GetBreakpoint(int index) con
 
 void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 {
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> WORK IN PROGRESS <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
-
     dbg_mi::GDBBreakpointsContainer::iterator it = std::find(m_breakpoints.begin(), m_breakpoints.end(), breakpoint);
 
     if (it == m_breakpoints.end())
@@ -1427,15 +1465,6 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
         }
         case dbg_mi::GDBBreakpoint::bptData:
         {
-#warning +---------------------------------------------------------------+
-#warning |        NOT COMPELTED  for dbg_mi::GDBBreakpoint::bptData      |
-#warning +---------------------------------------------------------------+
-#ifdef __MINGW32__
-    if (IsDebuggerPresent())
-    {
-        DebugBreak();
-    }
-#endif // __MINGW32__
             int old_sel = 0;
             if (bp->GetIsBreakOnRead() && bp->GetIsBreakOnWrite())
             {
@@ -1470,11 +1499,11 @@ void Debugger_GDB_MI::UpdateBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
         bool debuggerIsRunning = !IsStopped();
         if (debuggerIsRunning)
         {
-#warning to be converted
-//            DoBreak(true);
+            m_executor.Interupt(true);
         }
-#warning to be converted
-        // m_State.ResetBreakpoint(bp);
+
+        DeleteBreakpoint(bp);
+        AddBreakpoint(bp);
 
         if (debuggerIsRunning)
         {
@@ -1489,53 +1518,54 @@ void Debugger_GDB_MI::DeleteBreakpoint(cb::shared_ptr<cbBreakpoint> breakpoint)
 
     if (it != m_breakpoints.end())
     {
+
         m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
                                  __LINE__,
                                  wxString::Format(_("%s:%d"), breakpoint->GetLocation(), breakpoint->GetLine()),
                                  dbg_mi::LogPaneLogger::LineType::Debug);
-        int index = (*it)->GetIndex();
+        cb::shared_ptr<dbg_mi::GDBBreakpoint> pBrkPt = *it;
+
+        int index = pBrkPt->GetIndex();
 
         if (index != -1)
         {
-            if (!IsStopped())
+            dbg_mi::GDBBreakpoint::BreakpointType bpType = pBrkPt->GetType();
+            switch (bpType)
             {
-                m_executor.Interupt();
-                AddStringCommand(wxString::Format("-break-delete %d", index));
-                Continue();
-            }
-            else
-            {
-                AddStringCommand(wxString::Format("-break-delete %d", index));
+                case dbg_mi::GDBBreakpoint::bptCode:
+                case dbg_mi::GDBBreakpoint::bptData:
+                {
+                    if (!IsStopped())
+                    {
+                        m_executor.Interupt();
+                        AddStringCommand(wxString::Format("-break-delete %d", index));
+                        Continue();
+                    }
+                    else
+                    {
+                        AddStringCommand(wxString::Format("-break-delete %d", index));
+                    }
+                    break;
+                }
+
+                case dbg_mi::GDBBreakpoint::bptFunction:
+#warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!
+                    #ifdef __MINGW32__
+                        if (IsDebuggerPresent())
+                        {
+                            DebugBreak();
+                        }
+                    #endif // __MINGW32__
+                    break;
+
+                default:
+                    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Unknown breakpoint type: %d",  bpType), dbg_mi::LogPaneLogger::LineType::Error);
+                    break;
             }
         }
 
         m_breakpoints.erase(it);
     }
-
-    //    for(dbg_mi::GDBBreakpointsContainer::iterator it = m_breakpoints.begin(); it != m_breakpoints.end(); ++it)
-    //    {
-    //        dbg_mi::GDBBreakpoint &current = **it;
-    //        if(&current.Get() == breakpoint)
-    //        {
-    //            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__,
-    //                                             __LINE__,
-    //                                             wxString::Format(_("%s:%d"), breakpoint->GetFilename(),breakpoint->GetLine() ),
-    //                                             LogPaneLogger::LineType::Debug);
-    //            if(current.GetIndex() != -1)
-    //            {
-    //                if(!IsStopped())
-    //                {
-    //                    m_executor.Interupt();
-    //                    AddStringCommand(wxString::Format("-break-delete %d", current.GetIndex()));
-    //                    Continue();
-    //                }
-    //                else
-    //                    AddStringCommand(wxString::Format("-break-delete %d", current.GetIndex()));
-    //            }
-    //            m_breakpoints.erase(it);
-    //            return;
-    //        }
-    //    }
 }
 
 void Debugger_GDB_MI::DeleteAllBreakpoints()
@@ -1694,13 +1724,12 @@ bool Debugger_GDB_MI::SwitchToThread(int thread_number)
 
 cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(const wxString & symbol, cb_unused bool update)
 {
-
     cb::shared_ptr<dbg_mi::GDBWatch> watch(new dbg_mi::GDBWatch(m_project, m_pLogger, symbol, false));
     m_watches.push_back(watch);
 
     if (IsRunning())
     {
-        m_actions.Add(new dbg_mi::GDBWatchCreateAction(watch, m_watches, m_pLogger));
+        m_actions.Add(new dbg_mi::GDBWatchCreateAction(watch, m_watches, m_pLogger, true));
     }
 
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Add watch for \"%s\"", watch->GetSymbol()), dbg_mi::LogPaneLogger::LineType::Debug);
@@ -1714,7 +1743,7 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(dbg_mi::GDBWatch * watch, cb_u
 
     if (IsRunning())
     {
-        m_actions.Add(new dbg_mi::GDBWatchCreateAction(w, m_watches, m_pLogger));
+        m_actions.Add(new dbg_mi::GDBWatchCreateAction(w, m_watches, m_pLogger, true));
     }
 
     m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Add watch for \"%s\"", w->GetSymbol()), dbg_mi::LogPaneLogger::LineType::Debug);
@@ -1789,27 +1818,31 @@ void Debugger_GDB_MI::DeleteWatch(cb::shared_ptr<cbWatch> watch)
 
 bool Debugger_GDB_MI::HasWatch(cb::shared_ptr<cbWatch> watch)
 {
+    if (watch == m_WatchLocalsandArgs)
+    {
+        return true;
+    }
     dbg_mi::GDBWatchesContainer::iterator it = std::find(m_watches.begin(), m_watches.end(), watch);
     return it != m_watches.end();
 }
 
+bool Debugger_GDB_MI::IsMemoryRangeWatch(const cb::shared_ptr<cbWatch> &watch)
+{
+    dbg_mi::GDBMapWatchesToType::const_iterator it = m_mapWatchesToType.find(watch);
+    if (it == m_mapWatchesToType.end())
+    {
+        return false;
+    }
+    else
+    {
+        return (it->second == dbg_mi::GDBWatchType::MemoryRange);
+    }
+}
+
 void Debugger_GDB_MI::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
 {
-#warning +-------------------------------------------------------+
-#warning |        ShowWatchProperties - WORK IN PROGRESS         |
-#warning +-------------------------------------------------------+
-#ifdef __MINGW32__
-    if (IsDebuggerPresent())
-    {
-        DebugBreak();
-    }
-#endif // __MINGW32__
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> WORK IN PROGRESS <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
-
     // not supported for child nodes or memory ranges!
-#warning "Following line from exisitng GDB code"
-    //if (watch->GetParent() || IsMemoryRangeWatch(watch))
-    if (watch->GetParent())
+    if (watch->GetParent() || IsMemoryRangeWatch(watch))
     {
         return;
     }
@@ -1819,8 +1852,7 @@ void Debugger_GDB_MI::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
     PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
     {
-#warning "Following line from exisitng GDB code"
-//        DoWatches();
+        DoWatches();
     }
 }
 
@@ -1892,15 +1924,49 @@ void Debugger_GDB_MI::CollapseWatch(cb::shared_ptr<cbWatch> watch)
 
 void Debugger_GDB_MI::UpdateWatch(cb_unused cb::shared_ptr<cbWatch> watch)
 {
-#warning Debugger_GDB_MI::UpdateWatch() this is a blank function
-    m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, ">>>>>>> NOT IMPLEMENTED< BUT CALLED <<<<<<<", dbg_mi::LogPaneLogger::LineType::Warning);
-#ifdef __MINGW32__
-    if (IsDebuggerPresent())
+    dbg_mi::GDBWatchesContainer::iterator it = std::find(m_watches.begin(), m_watches.end(), watch);
+
+    if (it == m_watches.end())
     {
-        DebugBreak();
+        return;
     }
-#endif // __MINGW32__
+
+    if (IsRunning())
+    {
+        m_actions.Add(new dbg_mi::GDBWatchCreateAction(*it, m_watches, m_pLogger, false));
+    }
 }
+
+void Debugger_GDB_MI::DoWatches()
+{
+    if (!IsRunning())
+    {
+        return;
+    }
+
+    dbg_mi::DebuggerConfiguration &config = GetActiveConfigEx();
+
+    bool bWatchFuncLocalsArgs = config.GetFlag(dbg_mi::DebuggerConfiguration::WatchFuncLocalsArgs);
+    if (bWatchFuncLocalsArgs)
+    {
+        if (m_WatchLocalsandArgs == nullptr)
+        {
+            m_WatchLocalsandArgs = cb::shared_ptr<dbg_mi::GDBWatch>(new dbg_mi::GDBWatch(m_project, m_pLogger, "Function locals and arguments", false));
+            m_WatchLocalsandArgs->Expand(true);
+            m_WatchLocalsandArgs->MarkAsChanged(false);
+            cbWatchesDlg *watchesDialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
+            watchesDialog->AddSpecialWatch(m_WatchLocalsandArgs, true);
+        }
+    }
+
+    m_actions.Add(new dbg_mi::GDBStackVariables(m_pLogger, m_WatchLocalsandArgs, bWatchFuncLocalsArgs));
+
+    // Update watches now
+    CodeBlocksEvent event(cbEVT_DEBUGGER_UPDATED);
+    event.SetInt(int(cbDebuggerPlugin::DebugWindows::Watches));
+    Manager::Get()->ProcessEvent(event);
+}
+
 
 void Debugger_GDB_MI::SendCommand(const wxString & cmd, bool debugLog)
 {
@@ -2044,13 +2110,10 @@ void Debugger_GDB_MI::RequestUpdate(DebugWindows window)
             break;
 
         case Watches:
-            m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, _("DebugWindows Watches called!!"), dbg_mi::LogPaneLogger::LineType::Warning);
-#ifdef __MINGW32__
-            if (IsDebuggerPresent())
+            if (IsWindowReallyShown(Manager::Get()->GetDebuggerManager()->GetWatchesDialog()->GetWindow()))
             {
-                DebugBreak();
+                DoWatches();
             }
-#endif // __MINGW32__
             break;
 
         default:

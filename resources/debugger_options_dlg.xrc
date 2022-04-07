@@ -94,16 +94,9 @@
 					<vgap>4</vgap>
 					<growablecols>0</growablecols>
 					<object class="sizeritem">
-						<object class="wxCheckBox" name="chkWatchArgs">
-							<label>Watch function arguments</label>
-							<tooltip>Automatic watches are added for the current function&apos;s arguments</tooltip>
-						</object>
-						<flag>wxEXPAND</flag>
-					</object>
-					<object class="sizeritem">
-						<object class="wxCheckBox" name="chkWatchLocals">
-							<label>Watch local variables</label>
-							<tooltip>Automatic watches are added for all the local variables of the current function</tooltip>
+						<object class="wxCheckBox" name="chkWatchLocalsandArgs">
+							<label>Watch local vaiables and function arguments</label>
+							<tooltip>Automatic watches are added for the current local variables and function&apos;s arguments</tooltip>
 						</object>
 						<flag>wxEXPAND</flag>
 					</object>

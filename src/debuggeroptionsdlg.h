@@ -25,8 +25,7 @@ namespace dbg_mi
             enum Flags
             {
                 DisableInit,
-                WatchFuncArgs,
-                WatchLocals,
+                WatchFuncLocalsArgs,
                 CatchExceptions,
                 EvalExpression,
                 AddOtherProjectDirs,

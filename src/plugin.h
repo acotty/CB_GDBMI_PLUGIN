@@ -84,6 +84,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
 
         // breakpoints calls
         virtual cb::shared_ptr<cbBreakpoint> AddBreakpoint(const wxString & filename, int line);
+        cb::shared_ptr<cbBreakpoint> AddBreakpoint(cb::shared_ptr<dbg_mi::GDBBreakpoint> bp);
         virtual cb::shared_ptr<cbBreakpoint> AddDataBreakpoint(const wxString & dataExpression);
         virtual int GetBreakpointsCount() const;
         virtual cb::shared_ptr<cbBreakpoint> GetBreakpoint(int index);
@@ -106,6 +107,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void AddTooltipWatch(const wxString & symbol, wxRect const & rect);
         virtual void DeleteWatch(cb::shared_ptr<cbWatch> watch);
         virtual bool HasWatch(cb::shared_ptr<cbWatch> watch);
+        bool IsMemoryRangeWatch(const cb::shared_ptr<cbWatch> &watch);
         virtual void ShowWatchProperties(cb::shared_ptr<cbWatch> watch);
         virtual bool SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString & value);
         virtual void ExpandWatch(cb::shared_ptr<cbWatch> watch);
@@ -192,8 +194,6 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void OnMenuInfoCommandStream(wxCommandEvent & event);
         int LaunchDebugger(wxString const & debugger, wxString const & debuggee, wxString const & args,
                            wxString const & working_dir, int pid, bool console, StartType start_type);
-
-    private:
         void AddStringCommand(wxString const & command);
         void DoSendCommand(const wxString & cmd);
         void RunQueue();
@@ -208,6 +208,7 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         void OnProjectClosed(CodeBlocksEvent& event);
         bool SaveStateToFile(cbProject* prj);
         bool LoadStateFromFile(cbProject* prj);
+        void DoWatches();
 
     private:
         wxTimer m_timer_poll_debugger;
@@ -216,11 +217,14 @@ class Debugger_GDB_MI : public cbDebuggerPlugin
         dbg_mi::GDBExecutor m_executor;
         dbg_mi::ActionsMap  m_actions;
         dbg_mi::LogPaneLogger * m_pLogger;
-        dbg_mi::GDBBreakpointsContainer m_breakpoints;              // XML data save and load done
+        dbg_mi::GDBBreakpointsContainer m_breakpoints;
         dbg_mi::GDBBreakpointsContainer m_temporary_breakpoints;
         dbg_mi::GDBBacktraceContainer m_backtrace;
         dbg_mi::GDBThreadsContainer m_threads;
-        dbg_mi::GDBWatchesContainer m_watches;                      // XML data save and load done
+        dbg_mi::GDBWatchesContainer m_watches;
+
+        cb::shared_ptr<dbg_mi::GDBWatch> m_WatchLocalsandArgs;
+
         dbg_mi::GDBMemoryRangeWatchesContainer m_memoryRanges;
         dbg_mi::GDBMapWatchesToType m_mapWatchesToType;
         dbg_mi::GDBTextInfoWindow * m_command_stream_dialog;

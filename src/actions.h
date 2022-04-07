@@ -70,11 +70,31 @@ namespace dbg_mi
             virtual void OnStart();
 
         private:
+            bool OnCommandOutputCodeBreakpoint(ResultParser const & result);
+            bool OnCommandOutputFunctionBreakpoint(ResultParser const & result);
+            bool OnCommandOutputDataBreakpoint(ResultParser const & result);
             cb::shared_ptr<GDBBreakpoint> m_breakpoint;
             CommandID m_initial_cmd, m_disable_cmd;
 
             LogPaneLogger * m_logger;
     };
+
+    class GDBDataBreakpointDeleteAction : public Action
+    {
+        public:
+            GDBDataBreakpointDeleteAction(cb::shared_ptr<GDBBreakpoint> const & breakpoint, LogPaneLogger * logger);
+            virtual ~GDBDataBreakpointDeleteAction();
+            virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+        protected:
+            virtual void OnStart();
+
+        private:
+            cb::shared_ptr<GDBBreakpoint> m_breakpoint;
+            CommandID m_initial_cmd, m_disable_cmd;
+
+            LogPaneLogger * m_logger;
+    };
+
 
     template<typename StopNotification>
     class GDBRunAction : public Action
@@ -91,7 +111,6 @@ namespace dbg_mi
             }
             virtual ~GDBRunAction()
             {
-                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("GDBRunAction::destructor"), LogPaneLogger::LineType::Debug);
             }
 
             virtual void OnCommandOutput(CommandID const & /*id*/, ResultParser const & result)
@@ -218,8 +237,6 @@ namespace dbg_mi
             LogPaneLogger * m_logger;
     };
 
-
-
     class GDBDisassemble : public Action
     {
         public:
@@ -235,7 +252,6 @@ namespace dbg_mi
 
             LogPaneLogger * m_logger;
     };
-
 
     template<typename Notification>
     class GDBSwitchToThread : public Action
@@ -321,7 +337,7 @@ namespace dbg_mi
                 StepSetRange
             };
         public:
-            GDBWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger);
+            GDBWatchCreateAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches, LogPaneLogger * logger, bool bCreateVar);
 
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
         protected:
@@ -330,6 +346,7 @@ namespace dbg_mi
         protected:
             cb::shared_ptr<GDBWatch> m_watch;
             Step m_step;
+            bool m_bCreateVar;
     };
 
     class GDBWatchCreateTooltipAction : public GDBWatchCreateAction
@@ -337,7 +354,7 @@ namespace dbg_mi
         public:
             GDBWatchCreateTooltipAction(cb::shared_ptr<GDBWatch> const & watch, GDBWatchesContainer & watches,
                                      LogPaneLogger * logger, wxRect const & rect) :
-                GDBWatchCreateAction(watch, watches, logger),
+                GDBWatchCreateAction(watch, watches, logger, true),
                 m_rect(rect)
             {
             }
@@ -401,6 +418,24 @@ namespace dbg_mi
             cb::shared_ptr<GDBWatch> m_watch;
             cb::shared_ptr<GDBWatch> m_collapsed_watch;
     };
+
+    class GDBStackVariables : public Action
+    {
+        public:
+            GDBStackVariables(LogPaneLogger * logger, cb::shared_ptr<dbg_mi::GDBWatch> watchLocalsandArgs, bool bWatchFuncLocalsArgs);
+            virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+
+        protected:
+            virtual void OnStart();
+
+        private:
+            cb::shared_ptr<dbg_mi::GDBWatch> m_WatchLocalsandArgs;
+            bool m_bWatchFuncLocalsArgs;
+            CommandID m_stack_list_variables_request_id;
+
+            LogPaneLogger * m_logger;
+    };
+
 
 } // namespace dbg_mi
 

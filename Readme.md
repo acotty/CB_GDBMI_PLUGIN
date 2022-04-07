@@ -13,40 +13,35 @@ The debugger is able to debug itself and is a viable replacement for the existin
 ## OUTSTANDING ITEMS
 
 ### High Priority
-1. Fix "#warning" messages.
-    src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
-        1411  #warning need to test this code!!!       
-        1442  #warning code to be added for this case  
+1. Project->Properties->"Debugger GDB/MI" tab:
+    a) Wire up the dialog
+    b) Use the dialog data:
+        * Send project search paths to GDB.
 
-    src\plugins\contrib-wip\debuggerGDB_MI\src\definitions.h
-        136   #warning need to call this!!!! search for "bp->index" in existing code  
+2. Fix "#warning" messages.
+    src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
+        91    #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!! 
+        233   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+        239   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+        393   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
+        399   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
 
     \src\plugins\contrib-wip\debuggerGDB_MI\src\plugin.cpp
-        952   #warning Need to add support for source directory adding, see existing code , seach for AddSourceDir "GdbCmd_AddSourceDir" and  
-        1376  #warning Debugger_GDB_MI::AddDataBreakpoint() not implemented                                                                   
-        1430  #warning +---------------------------------------------------------------+                                                      
-        1431  #warning |        NOT COMPELTED  for dbg_mi::GDBBreakpoint::bptData      |                                                      
-        1432  #warning +---------------------------------------------------------------+                                                      
-        1473  #warning to be converted                                                                                                        
-        1476  #warning to be converted                                                                                                        
-        1798  #warning +-------------------------------------------------------+                                                              
-        1799  #warning |        ShowWatchProperties - WORK IN PROGRESS         |                                                              
-        1800  #warning +-------------------------------------------------------+                                                              
-        1810  #warning "Following line from exisitng GDB code"                                                                                
-        1822  #warning "Following line from exisitng GDB code"                                                                                
-        1895  #warning Debugger_GDB_MI::UpdateWatch() this is a blank function                                           
+        957   #warning Need to add support for source directory adding, see existing code , search for AddSourceDir "GdbCmd_AddSourceDir" and  
+        1552  #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                             
 
 3. Re-test all items!!!! 
-
+4. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
 
 ### Medium Priority
 
 1. Persist debug data between sessions:
     Outstanding
-        - watch data                        - save/load working
-        - watch data edited                 - not done
+        - watch data                            - save/load working
+        - watch data edited                     - not done
         - memory dump (single memory dialog)    - not done
         - memory view (multiple memory dialog)  - not done
+        - data break point                      - not done
 
     Save/load working
         - line break points                 - save/load working
@@ -54,38 +49,26 @@ The debugger is able to debug itself and is a viable replacement for the existin
         - conditional line break point      - save/load working
 2. Create patch for C::B source and submit
 3. Publish plugin to github
+4. Remote debugging - use Project->Properties->"Debugger GDB/MI" tab data.
+
 
 ### Low Priority
 
-1. Send project search paths to GDB. Search paths from  Project->Properties->"Debugger GDB/MI" tab.
-2. Remote debugging - use Project->Properties->"Debugger GDB/MI" tab data.
-3. Create Linux project file
-4. Create MacOS project file
-5. Update Linux makefile build process
-6. Update MSYS2 makefile build process
-7. Update MacOS makefile build process
-8. CPU registry dialog modify to fix value column to say 50 characters.
-9. Check addresses are 64 or 32 bit compatible. An example of this is:
-        #if wxCHECK_VERSION(3, 1, 5)
-            if (wxPlatformInfo::Get().GetBitness() == wxBITNESS_64)
-        #else
-            if (wxPlatformInfo::Get().GetArchitecture() == wxARCH_64)
-        #endif
-            {
-                sAddressToShow = wxString::Format("%#018llx", llAddrLineStart); // 18 = 0x + 16 digits
-            }
-            else
-            {
-                sAddressToShow = wxString::Format("%#10llx", llAddrLineStart); // 10 = 0x + 8 digits
-            }
-10. More (easy) integration of pretty printing
+1. Create Linux project file
+2. Create MacOS project file
+3. Update Linux makefile build process
+4. Update MSYS2 makefile build process
+5. Update MacOS makefile build process
+6. CPU registry dialog modify to fix value column to say 50 characters.
+7. More (easy) integration of pretty printing
+8. Expand function argument and local variables in the watch window.
 
 ### Future Work
 
 1. Checkpoints (only available on linux )
 2. Display the return value of a function after "step out"
 3. Skipping functions - see https://sourceware.org/gdb/onlinedocs/gdb/Skipping-Over-Functions-and-Files.html
-4. record replay (only linux)
+4. Record replay (only linux)
 
 ## Testing/Coding/Feature Check List
 
@@ -108,6 +91,7 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Skipping over files                                     |  Future   |   Future   |
 |                                                             |           |            |
 | **Watches**                                                 |           |            |
+|   * watches dialog shows function args and local vars       | 06APR2022 |  *Broken*  |
 |   * Add watch before starting the debugger                  | 02APR2022 |   * NEW *  |
 |   * Add watch after starting the debugger                   | 02APR2022 |    Pass    |
 |   * Simple data types                                       | 26MAR2022 |    Pass    |
@@ -121,13 +105,13 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Watches created on project open                         | 02APR2022 |    WIP     |
 |                                                             |           |            |
 | **Breakpoints**                                             |           |            |
-|   * Add break point before starting the debugger            | 02APR2022 |    Pass    |
-|   * Add break point after the starting the debugger         | 26MAR2022 |    Pass    |
-|   * Debug menu option to Toggle break point (F5)            | 26MAR2022 |    Pass    |
+|   * Add line break point before starting the debugger       | 02APR2022 |    Pass    |
+|   * Add line break point after the starting the debugger    | 26MAR2022 |    Pass    |
+|   * Debug menu option to Toggle line break point (F5)       | 26MAR2022 |    Pass    |
 |   * Debug menu option to Remove all breakpoints             | 26MAR2022 |    Pass    |
-|   * Disable/Enable break point via pop up menu              | 28MAR2022 |    Pass    |
-|   * Remove break point                                      | 26MAR2022 |    Pass    |
-|   * Edit break point                                        | 26MAR2022 |    Pass    |
+|   * Disable/Enable line break point via pop up menu         | 28MAR2022 |    Pass    |
+|   * Remove line break point                                 | 26MAR2022 |    Pass    |
+|   * Edit line break point                                   | 26MAR2022 |    Pass    |
 |     * ignore count before break                             | 26MAR2022 |    Pass    |
 |     * break when expression is true                         | 26MAR2022 |    Pass    |
 |   * Break points still there after GDB exit                 | 03APR2022 |    Pass    |
@@ -135,6 +119,14 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Break points removed after closing the project          | 02APR2022 |    Pass    |
 |   * Break points removed after changing debugger            | 02APR2022 |  *Broken*  |
 |   * Break points created on project open                    | 05APR2022 |    Pass    |
+|                                                             |           |            |
+| **Data Breakpoints**                                        |           |            |
+|   * Display data breakpoints in break point dialog          | 07APR2022 |    Pass    |
+|   * Add data break point (right click pop up menu on var)   | 03APR2022 |  *Partial* |
+|   * Add support for deleting already added data break point |  Future   |   Future   |
+|   * Add remove data breakpoints to Remove all breakpoints   |  Future   |   Future   |
+|   * Add support for multiple data break points              |  Future   |   Future   |
+|   * Data break points data is NOT saved on project close    |  To test  |   To test  |
 |                                                             |           |            |
 | **Debug show Running Threads**                              |           |            |
 |   * Show running threads dialog                             | 26MAR2022 |    Pass    |
@@ -253,6 +245,10 @@ NOTES:
 
 ## COMPLETED ITEMS
 
+* 07APR2022 Done - Fixed non function break points and path warnings.
+* 07APR2022 Done - Wired up the display of data break point to the break point debugging window
+* 06APR2022 Done - Wired up the ability to create a data break point 
+* 05APR2022 Done - Added function argument and local function variables to watch window (if enabled in debugger config dialog)
 * 05APR2022 Done - Updated amount of logging when debugger HasDebugLog() enabled or disabled
 * 05APR2022 Done - simple, count and conditional breakpoints persistencey working
 * 05APR2022 Done - Added new Checkbox for save/load breakpoint/watch in teh GDB/MI config dialog
@@ -284,6 +280,4 @@ NOTES:
 * 24MAR2022 Done - Add more logging to help find issues
 
 CODING notes:
-1) PLUGIN.CPP 
-    a) project close , see Debugger_GDB_MI::CleanupWhenProjectClosed, line 850 
-    a) app exist , see Debugger_GDB_MI::OnGDBTerminated ,  line 300 
+GDB Manual that seems to have more examples than the latest:  https://www.manpagez.com/info/gdb/gdb_252.php

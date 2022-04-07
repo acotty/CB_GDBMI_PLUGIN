@@ -99,8 +99,7 @@ namespace dbg_mi
         XRCCTRL(*panel, "txtArguments", wxTextCtrl)->ChangeValue(GetUserArguments(false));
         XRCCTRL(*panel, "txtInit",                  wxTextCtrl)->ChangeValue(GetInitialCommands());
         XRCCTRL(*panel, "txtInit",                  wxTextCtrl)->SetMinSize(wxSize(-1, 75));;
-        XRCCTRL(*panel, "chkWatchArgs",             wxCheckBox)->SetValue(GetFlag(WatchFuncArgs));
-        XRCCTRL(*panel, "chkWatchLocals",           wxCheckBox)->SetValue(GetFlag(WatchLocals));
+        XRCCTRL(*panel, "chkWatchLocalsandArgs",    wxCheckBox)->SetValue(GetFlag(WatchFuncLocalsArgs));
         XRCCTRL(*panel, "chkCatchExceptions",       wxCheckBox)->SetValue(GetFlag(CatchExceptions));
         XRCCTRL(*panel, "chkTooltipEval",           wxCheckBox)->SetValue(GetFlag(EvalExpression));
         XRCCTRL(*panel, "chkAddForeignDirs",        wxCheckBox)->SetValue(GetFlag(AddOtherProjectDirs));
@@ -118,7 +117,7 @@ namespace dbg_mi
         m_config.Write("disable_init",          XRCCTRL(*panel, "chkDisableInit",          wxCheckBox)->GetValue());
         m_config.Write("user_arguments",        XRCCTRL(*panel, "txtArguments",            wxTextCtrl)->GetValue());
         m_config.Write("init_commands",         XRCCTRL(*panel, "txtInit",                 wxTextCtrl)->GetValue());
-        m_config.Write("watch_args",            XRCCTRL(*panel, "chkWatchArgs",            wxCheckBox)->GetValue());
+        m_config.Write("watch_locals_and_args", XRCCTRL(*panel, "chkWatchLocalsandArgs",   wxCheckBox)->GetValue());
         m_config.Write("watch_locals",          XRCCTRL(*panel, "chkWatchLocals",          wxCheckBox)->GetValue());
         m_config.Write("catch_exceptions",      XRCCTRL(*panel, "chkCatchExceptions",      wxCheckBox)->GetValue());
         m_config.Write("eval_tooltip",          XRCCTRL(*panel, "chkTooltipEval",          wxCheckBox)->GetValue());
@@ -138,11 +137,8 @@ namespace dbg_mi
             case DisableInit:
                 return m_config.ReadBool("disable_init", true);
 
-            case WatchFuncArgs:
-                return m_config.ReadBool("watch_args", true);
-
-            case WatchLocals:
-                return m_config.ReadBool("watch_locals", true);
+            case WatchFuncLocalsArgs:
+                return m_config.ReadBool("watch_locals_and_args", true);
 
             case CatchExceptions:
                 return m_config.ReadBool("catch_exceptions", true);
@@ -174,12 +170,8 @@ namespace dbg_mi
                 m_config.Write("disable_init", value);
                 break;
 
-            case WatchFuncArgs:
-                m_config.Write("watch_args", value);
-                break;
-
-            case WatchLocals:
-                m_config.Write("watch_locals", value);
+            case WatchFuncLocalsArgs:
+                m_config.Write("watch_locals_and_args", value);
                 break;
 
             case CatchExceptions:
