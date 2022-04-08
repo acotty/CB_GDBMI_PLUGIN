@@ -118,7 +118,6 @@ namespace dbg_mi
         m_config.Write("user_arguments",        XRCCTRL(*panel, "txtArguments",            wxTextCtrl)->GetValue());
         m_config.Write("init_commands",         XRCCTRL(*panel, "txtInit",                 wxTextCtrl)->GetValue());
         m_config.Write("watch_locals_and_args", XRCCTRL(*panel, "chkWatchLocalsandArgs",   wxCheckBox)->GetValue());
-        m_config.Write("watch_locals",          XRCCTRL(*panel, "chkWatchLocals",          wxCheckBox)->GetValue());
         m_config.Write("catch_exceptions",      XRCCTRL(*panel, "chkCatchExceptions",      wxCheckBox)->GetValue());
         m_config.Write("eval_tooltip",          XRCCTRL(*panel, "chkTooltipEval",          wxCheckBox)->GetValue());
         m_config.Write("add_other_search_dirs", XRCCTRL(*panel, "chkAddForeignDirs",       wxCheckBox)->GetValue());

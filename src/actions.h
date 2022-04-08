@@ -213,7 +213,8 @@ namespace dbg_mi
         protected:
             virtual void OnStart();
         private:
-            wxString m_address;
+            wxString m_symbol;
+            uint64_t m_address;
             int m_length;
             CommandID m_examine_memory_request_id;
 

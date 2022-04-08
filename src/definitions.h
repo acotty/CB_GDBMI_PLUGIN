@@ -316,6 +316,7 @@ namespace dbg_mi
             {
                 return m_address;
             }
+
             void SetAddress(uint64_t address)
             {
                 m_address = address;
@@ -436,7 +437,7 @@ namespace dbg_mi
                 m_GDBWatchClassName("GDBWatch"),
                 m_id(wxEmptyString),
                 m_symbol(symbol),
-                m_address(wxEmptyString),
+                m_address(0),
                 m_type(wxEmptyString),
                 m_format(WatchFormat::Undefined),
                 m_debug_string(wxEmptyString),
@@ -540,7 +541,7 @@ namespace dbg_mi
                 return m_delete_on_collapse;
             }
 
-            void GetSymbol(wxString & symbol) const
+            void GetSymbol(wxString & symbol) const  override
             {
                 symbol = m_symbol;
             }
@@ -550,16 +551,17 @@ namespace dbg_mi
                 return m_symbol;
             }
 
-            void SetSymbol(wxString& symbol)
+            void SetSymbol(const wxString& symbol) override
             {
                 m_symbol = symbol;
             }
 
-            wxString GetAddress() const override
+            uint64_t GetAddress() const override
             {
                 return m_address;
             }
-            void SetAddress(wxString &address) override
+
+            void SetAddress(uint64_t address) override
             {
                 m_address = address;
             }
@@ -647,7 +649,7 @@ namespace dbg_mi
             wxString m_GDBWatchClassName;
             wxString m_id;
             wxString m_symbol;
-            wxString m_address;
+            uint64_t m_address;
             wxString m_type;
             WatchFormat m_format;
 
@@ -672,7 +674,7 @@ namespace dbg_mi
     class GDBMemoryRangeWatch  : public cbWatch
     {
         public:
-            GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, wxString address, uint64_t size);
+            GDBMemoryRangeWatch(cbProject * project, dbg_mi::LogPaneLogger * logger, uint64_t address, uint64_t size, const wxString &symbol);
 
         public:
             void GetSymbol(wxString &symbol) const override
@@ -685,16 +687,16 @@ namespace dbg_mi
                 return m_symbol;
             }
 
-            void SetSymbol(wxString& symbol) override
+            void SetSymbol(const wxString& symbol) override
             {
                 m_symbol = symbol;
             }
 
-            wxString GetAddress() const override
+            uint64_t GetAddress() const override
             {
                 return m_address;
             }
-            void SetAddress(wxString &address) override
+            void SetAddress(uint64_t address) override
             {
                 m_address = address;
             }
@@ -760,7 +762,7 @@ namespace dbg_mi
             dbg_mi::LogPaneLogger * m_pLogger;
             wxString m_GDBWatchClassName;
 
-            wxString m_address;
+            uint64_t m_address;
             uint64_t m_size;
             wxString m_symbol;
             wxString m_value;

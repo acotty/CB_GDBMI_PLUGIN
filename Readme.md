@@ -13,7 +13,9 @@ The debugger is able to debug itself and is a viable replacement for the existin
 ## OUTSTANDING ITEMS
 
 ### High Priority
-1. Persist debug data between sessions:
+1. Build plugin using the SVN trunk source. Needs ticket 1250 merged.
+2. Test plugin against SVN trunk C::B build. see 1) above
+3. Persist debug data between sessions:
     Outstanding
         - watch data                            - save/load working
         - watch data edited                     - not done
@@ -25,18 +27,16 @@ The debugger is able to debug itself and is a viable replacement for the existin
         - line break points                 - save/load working
         - count line break point            - save/load working
         - conditional line break point      - save/load working
-2. Expand function argument and local variables in the watch window.
-3. Build against the SVN trunk source
-4. Publish plugin to github
 
 ### Medium Priority
 
-1. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
-2. Remote debugging 
+1. Expand function argument and local variables in the watch window.
+2. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
+3. Remote debugging 
     - use Project->Properties->"Debugger GDB/MI" tab data.
 
-3. Re-test all items!!!! 
-4. Create patch for C::B source and submit
+4. Re-test all items!!!! 
+5. Create patch for C::B source and submit
 
 
 ### Low Priority
@@ -88,7 +88,7 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Skipping over files                                     |  Future   |   Future   |
 |                                                             |           |            |
 | **Watches**                                                 |           |            |
-|   * watches dialog shows function args and local vars       | 06APR2022 |  *Broken*  |
+|   * watches dialog shows function args and local vars       | 06APR2022 |  *Partial* |
 |   * Add watch before starting the debugger                  | 02APR2022 |   * NEW *  |
 |   * Add watch after starting the debugger                   | 02APR2022 |    Pass    |
 |   * Simple data types                                       | 26MAR2022 |    Pass    |
@@ -166,8 +166,8 @@ The debugger is able to debug itself and is a viable replacement for the existin
 | **Debug -> Memory view Dialog**                             |           |            |
 |   * Show memory view dialog                                 | 26MAR2022 |    Pass    |
 |   * Close memory view dialog                                | 26MAR2022 |    Pass    |
-|   * Show memory information                                 | 02APR2022 |  *Broken*  |
-|   * Show variable memory from watch dialog                  | 02APR2022 |  * NEW *   |
+|   * Show memory information                                 | 02APR2022 |    Pass    |
+|   * Show variable memory from watch dialog                  | 05APR2022 |  * NEW *   |
 |   * Memory view dialog cleared on last project close        |  To test  |   To test  |
 |   * Memory view watches data saved on project close         | 02APR2022 |  * NEW *   |
 |   * Memory view watches removed after closing the project   | 02APR2022 |  * NEW *   |
@@ -218,16 +218,16 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Ensure TCP debugging works                              | 02APR2022 |  *Broken*  |
 |                                                             |           |            |
 | **Operaiting System**                                       |           |            |
-|   * Works on Windows                                        | 02APR2022 |     WIP    |
-|   * Works on Linux                                          |  To test  |   To test  |
-|   * Works on MacOS                                          |  To test  |   To test  |
-|   * Builds on Windows via workspace                         | 02APR2022 |     WIP    |
+|   * Works on Windows                                        | 02APR2022 |    Pass    |
+|   * Works on Linux                                          |  Future   |   Future   |
+|   * Works on MacOS                                          |  Future   |   Future   |
+|   * Builds on Windows via workspace                         | 02APR2022 |    Pass    |
 |   * Builds on Windows via MSYS2 makefile                    |  Future   |   Future   |
 |   * Builds on Linux via workspace                           |  Future   |   Future   |
 |   * Builds on Linux via makefile                            |  Future   |   Future   |
 |   * Builds on MacOS via workspace                           |  Future   |   Future   |
 |   * Builds on MacOS via makefile                            |  Future   |   Future   |
-|   * Create and test GDM/MI cbplugin for Windows             | 02APR2022 |     WIP    |
+|   * Create and test GDM/MI cbplugin for Windows             | 02APR2022 |    Pass    |
 |   * Create and test GDM/MI cbplugin for Linux               |  Future   |   Future   |
 |   * Create and test GDM/MI cbplugin for MacOS               |  Future   |   Future   |
 |                                                             |           |            |
@@ -242,6 +242,7 @@ NOTES:
 
 ## COMPLETED ITEMS
 
+* 08APR2022 Done - Create patch for SVN code for C::B code changes. See https://sourceforge.net/p/codeblocks/tickets/1250/
 * 07APR2022 Done - Added search paths from Project->Properties->"Debugger GDB/MI" tab to GDB startup
 * 07APR2022 Done - Wired up the display of data break point to the break point debugging window
 * 06APR2022 Done - Wired up the ability to create a data break point 
@@ -278,3 +279,8 @@ NOTES:
 
 CODING notes:
 GDB Manual that seems to have more examples than the latest:  https://www.manpagez.com/info/gdb/gdb_252.php
+
+
+========
+** C::B SVN SRC build changes:**
+1) Add SRC\BASE\TINYXML2 directory.

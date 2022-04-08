@@ -910,7 +910,20 @@ namespace dbg_mi
         m_logger(logger)
     {
         cbExamineMemoryDlg * dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
-        m_address = dialog->GetBaseAddress();
+
+        wxString sBaseAddress = dialog->GetBaseAddress();
+        uint64_t llBaseAddress;
+        if (sBaseAddress.ToULongLong(&llBaseAddress, 16))
+        {
+            m_symbol = wxEmptyString;
+            m_address = llBaseAddress;
+        }
+        else
+        {
+            m_symbol = sBaseAddress;
+            m_address = 0;
+        }
+
         m_length = dialog->GetBytes();
     }
 
@@ -1067,8 +1080,17 @@ namespace dbg_mi
         // GDB 11.2 manual synopsis:
         //  -data-read-memory-bytes [ -o offset ]
         //      address count
-        wxString cmd = wxString::Format("-data-read-memory-bytes %s %d", m_address, m_length);
-        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("%s", cmd), LogPaneLogger::LineType::Debug);
+        wxString cmd;
+
+        if (m_symbol.IsEmpty())
+        {
+            cmd = wxString::Format("-data-read-memory-bytes %#018llx %d", m_address, m_length);
+        }
+        else
+        {
+            cmd = wxString::Format("-data-read-memory-bytes %s %d", m_symbol, m_length);
+        }
+        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, cmd, LogPaneLogger::LineType::Debug);
         m_examine_memory_request_id = Execute(cmd);
     }
 
@@ -1921,9 +1943,9 @@ namespace dbg_mi
                                     (!sMemoryContents.IsEmpty())
                                )
                             {
-                                if (m_watch->GetAddress().IsEmpty())
+                                if (m_watch->GetAddress() == 0)
                                 {
-                                    m_watch->SetAddress(sAddressBegin);
+                                    m_watch->SetAddress(llAddrbegin);
                                 }
 
                                 m_watch->SetValue(sMemoryContents);
@@ -1975,12 +1997,12 @@ namespace dbg_mi
         //  -data-read-memory-bytes [ -o offset ]
         //      address count
 
-        wxString sAddress = m_watch->GetAddress();
         wxString sSymbol = m_watch->GetSymbol();
         wxString cmd;
         if (sSymbol.IsEmpty())
         {
-            cmd = wxString::Format("-data-read-memory-bytes %s %llu", sAddress, m_watch->GetSize());
+            uint64_t llAddress = m_watch->GetAddress();
+            cmd = wxString::Format("-data-read-memory-bytes %#018llx %llu", llAddress, m_watch->GetSize());
         }
         else
         {

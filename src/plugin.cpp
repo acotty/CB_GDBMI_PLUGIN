@@ -1764,28 +1764,19 @@ cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddWatch(dbg_mi::GDBWatch * watch, cb_u
     return w;
 }
 
-cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(wxString address, uint64_t size, bool update)
+cb::shared_ptr<cbWatch> Debugger_GDB_MI::AddMemoryRange(uint64_t llAddress, uint64_t llSize, const wxString &symbol, bool update)
 {
-    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_pProject, m_pLogger, address, size));
+    cb::shared_ptr<dbg_mi::GDBMemoryRangeWatch> watch(new dbg_mi::GDBMemoryRangeWatch(m_pProject, m_pLogger, llAddress, llSize, symbol));
 
-    uint64_t llAddress;
-    wxString blank = wxEmptyString;
-    if (address.ToULongLong(&llAddress, 16))
-    {
-        watch->SetSymbol(blank);
-        watch->SetAddress(address);
-    }
-    else
-    {
-        watch->SetSymbol(address);
-        watch->SetAddress(blank);
-    }
+    watch->SetSymbol(symbol);
+    watch->SetAddress(llAddress);
+
     m_memoryRanges.push_back(watch);
     m_mapWatchesToType[watch] = dbg_mi::GDBWatchType::MemoryRange;
 
     if (IsRunning())
     {
-        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Adding watch for: address:%s  size:%lld", address, size), dbg_mi::LogPaneLogger::LineType::Warning);
+        m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("Adding watch for: address: %#018llx  size:%lld", llAddress, llSize), dbg_mi::LogPaneLogger::LineType::Warning);
         m_actions.Add(new dbg_mi::GDBMemoryRangeWatchCreateAction(watch, m_pLogger));
     }
 
@@ -2785,7 +2776,7 @@ bool Debugger_GDB_MI::LoadStateFromFile(cbProject* pProject)
             wxString GDBMemoryRangeWatchName = dbg_mi::ReadChildNodewxString(pWatchElement, "GDBMemoryRangeWatch");
             if (GDBMemoryRangeWatchName.IsSameAs("GDBMemoryRangeWatch"))
             {
-                dbg_mi::GDBMemoryRangeWatch* memoryRangeWatch = new dbg_mi::GDBMemoryRangeWatch(pProject, m_pLogger, "", 0 );
+                dbg_mi::GDBMemoryRangeWatch* memoryRangeWatch = new dbg_mi::GDBMemoryRangeWatch(pProject, m_pLogger, 0, 0, wxEmptyString );
                 memoryRangeWatch->LoadWatchFromXML(pWatchElement, this);
             }
         }
