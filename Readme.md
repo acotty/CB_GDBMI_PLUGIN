@@ -1,21 +1,18 @@
 # CODE::BLOCKS  GDB/MI DEBUGGER PLUGIN
 
-<font size="4" style="color:red">**NOTE: As of 05-Apr-2022 there C::B source code changes needed in order to build the plugin and these have not been submitted, so you will not be able to build the debugger at the moment!!**
+<font size="4" style="color:red">
+** You will need to manually apply the https://sourceforge.net/p/codeblocks/tickets/1250/ patch to be able to build the plugin.**
 </font>
 
 ## Description
 
-This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plugin.
-The source is being worked on in order to ensure that it has at least the same features as the current C::B 20.03 GDB plugin.
-
-The debugger is able to debug itself and is a viable replacement for the existing GDB plugin.
+This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plugin. The debugger is able to debug itself and is a viable replacement for the existing GDB plugin.
 
 ## OUTSTANDING ITEMS
 
 ### High Priority
-1. Build plugin using the SVN trunk source. Needs ticket 1250 merged.
-2. Test plugin against SVN trunk C::B build. see 1) above
-3. Persist debug data between sessions:
+1. Fix wxWidget assert when expanding cbProject structure.
+2. Persist debug data between sessions:
     Outstanding
         - watch data                            - save/load working
         - watch data edited                     - not done
@@ -27,19 +24,21 @@ The debugger is able to debug itself and is a viable replacement for the existin
         - line break points                 - save/load working
         - count line break point            - save/load working
         - conditional line break point      - save/load working
+3. Expand function argument and local variables in the watch window.
+4. ** Wait for SF ticket 1250 changed to be merged in order to move forward for SF trunk work!!!!**
 
 ### Medium Priority
 
-1. Expand function argument and local variables in the watch window.
-2. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
-3. Remote debugging 
+1. Build plugin using the SVN trunk source. Needs ticket 1250 merged.
+2. Test plugin against SVN trunk C::B build. see 1) above. Needs ticket 1250 merged.
+3. Create patch for C::B source and submit - zip directory or include a link to github repo.
+3. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
+4. Remote debugging 
     - use Project->Properties->"Debugger GDB/MI" tab data.
-
-4. Re-test all items!!!! 
-5. Create patch for C::B source and submit
+5. Re-test all items!!!! 
 
 
-### Low Priority
+### Low Priority / Future Work
 
 1. Create Linux project file
 2. Create MacOS project file
@@ -58,14 +57,10 @@ The debugger is able to debug itself and is a viable replacement for the existin
 
     \src\plugins\contrib-wip\debuggerGDB_MI\src\plugin.cpp
         1566  #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                             
-
-
-### Future Work
-
-1. Checkpoints (only available on linux )
-2. Display the return value of a function after "step out"
-3. Skipping functions - see https://sourceware.org/gdb/onlinedocs/gdb/Skipping-Over-Functions-and-Files.html
-4. Record replay (only linux)
+10. Checkpoints (only available on linux )
+11. Display the return value of a function after "step out"
+12. Skipping functions - see https://sourceware.org/gdb/onlinedocs/gdb/Skipping-Over-Functions-and-Files.html
+13. Record replay (only linux)
 
 ## Testing/Coding/Feature Check List
 
@@ -95,6 +90,7 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Simple structure                                        | 26MAR2022 |    Pass    |
 |   * Array of simple structures                              | 26MAR2022 |    Pass    |
 |   * Complex structures                                      | 26MAR2022 |    Pass    |
+|   * Can expand cbProject complex structures                 | 10APR2022 |  *Broken*  |
 |   * Edit watches                                            | 30MAR2022 |    Pass    |
 |   * Watches data saved on project close                     | 02APR2022 |  * NEW *   |
 |   * Watches removed after closing the project               | 02APR2022 |    Pass    |
@@ -211,6 +207,7 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |                                                             |           |            |
 | **Pretty Printing**                                         |           |            |
 |   * Ensure pretty printing works                            |  To test  |   To test  |
+|   * Document how pretty printing works/is configured        |  Future   |   Future   |
 |                                                             |           |            |
 | **Remote Debugging**                                        |           |            |
 |   * Use data from debuggeroptionsprjdlg dialog              | 02APR2022 |  *Broken*  |
@@ -232,6 +229,8 @@ The debugger is able to debug itself and is a viable replacement for the existin
 |   * Create and test GDM/MI cbplugin for MacOS               |  Future   |   Future   |
 |                                                             |           |            |
 
+The table above was last updated on 10-Apr-2022.
+
 NOTES:
  "PASS"     - initial testing showed the item worked as expected, but changes since may have broken it... Please raise an issue if you find it broken.
  "WIP"      - working on this item
@@ -239,48 +238,3 @@ NOTES:
  "* NEW *"  - new feature that is not (or does not work) in the existing GDB debugger
  "To test"  - not tested or not tested as it relies on other items and as such it is not worth testing now.
  "Future"   - new functionality that another developer will need help with or do if time does not permit
-
-## COMPLETED ITEMS
-
-* 08APR2022 Done - Create patch for SVN code for C::B code changes. See https://sourceforge.net/p/codeblocks/tickets/1250/
-* 07APR2022 Done - Added search paths from Project->Properties->"Debugger GDB/MI" tab to GDB startup
-* 07APR2022 Done - Wired up the display of data break point to the break point debugging window
-* 06APR2022 Done - Wired up the ability to create a data break point 
-* 05APR2022 Done - Added function argument and local function variables to watch window (if enabled in debugger config dialog)
-* 05APR2022 Done - Updated amount of logging when debugger HasDebugLog() enabled or disabled
-* 05APR2022 Done - simple, count and conditional breakpoints persistencey working
-* 05APR2022 Done - Added new Checkbox for save/load breakpoint/watch in teh GDB/MI config dialog
-* 05Apr2022 Fixed - Debug -> Memory view dialog now displaying memory.... But C::B source needs changes!!!!
-* 03APR2022 Done - Disassembly dialog cleared on GDB exit
-* 03APR2022 Done - Disassembly dialog cleared on GDB exit
-* 03APR2022 Done - CPU register dialog cleared on GDB exit 
-* 03APR2022 Done - Memory dump dialog cleared on last project close
-* 03APR2022 Updated - watch -> view memory code changes to show error on memory view and now uses GDB "-data-read-memory-bytes" command
-* 02APR2022 Done - simple watch and simple line break points are persistent
-* 30MAR2022 Done - Disassembly view working like the existing code (adjust is broken)
-* 30MAR2022 Done - Wired up Project->Properties->"Debugger GDB/MI" tab. Loads and saves data only.
-* 30MAR2022 Done - Conditional break points
-* 30MAR2022 Done - Edit watches now working
-* 28MAR2022 Done - Examine Memory Dialog now working
-* 28MAR2022 Done - fixed Disable/enable break point via pop up menu
-* 28MAR2022 Done - Show tty for console projects 
-* 27MAR2022 Done - CPU Registers showing and updating
-* 26MAR2022 Fixed - display of structures with multiple depths now working
-* 26MAR2022 Done - Debug "simple" source code sample with the following "data" types:
-* 26MAR2022 Done - First pass of the check list completed
-* 26MAR2022 Done - Project file now creates the debugger_gdbmi.cbplugin file with the non striped DLL (still includes debugging)
-* 25MAR2022 Done - Update logged data to be more readable/understanding
-* 25MAR2022 Fixed - removed array watch limit of 100
-* 25MAR2022 Fixed - updates of array items > 9
-* 24MAR2022 Done - Update logging - merge new logging code
-* 24MAR2022 Done - Fix warnings
-* 24MAR2022 Done - Update file header - C::B GPL text
-* 24MAR2022 Done - Add more logging to help find issues
-
-CODING notes:
-GDB Manual that seems to have more examples than the latest:  https://www.manpagez.com/info/gdb/gdb_252.php
-
-
-========
-** C::B SVN SRC build changes:**
-1) Add SRC\BASE\TINYXML2 directory.

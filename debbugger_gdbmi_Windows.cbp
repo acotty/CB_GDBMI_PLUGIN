@@ -68,10 +68,10 @@
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-D_WIN$(#CB_BUILD.OSBITS)" />
 			<Add directory="./src" />
+			<Add directory="./tinyxml2" />
 			<Add directory="$(#CB_BUILD.INCLUDE)" />
 			<Add directory="$(#CB_BUILD)/sdk/wxscintilla/include/" />
 			<Add directory="$(#CB_BUILD.INCLUDE)/tinyxml/" />
-			<Add directory="$(#CB_BUILD)/base/tinyxml2/" />
 			<Add directory="$(#WXWIDGETS.include)" />
 			<Add directory="$(#WXWIDGETS.lib)/gcc_dll$(#WXWIDGETS.WX_CFG)/msw$(#WXWIDGETS.WX_SUFFIX)" />
 		</Compiler>
@@ -82,7 +82,6 @@
 			<Add option="-Wl,--add-stdcall-alias" />
 			<Add option="-Wl,--enable-auto-import" />
 			<Add option="-Wl,--no-undefined" />
-			<Add library="tinyxml2" />
 			<Add library="wxmsw$(#WXWIDGETS.WX_VERSION)$(#WXWIDGETS.WX_SUFFIX)" />
 			<Add library="codeblocks" />
 			<Add directory="$(#CB_BUILD)/devel$(#WXWIDGETS.WX_VERSION)_$(#CB_BUILD.OSBITS)" />
@@ -133,6 +132,8 @@
 		<Unit filename="src/remotedebugging.h" />
 		<Unit filename="src/updated_variable.cpp" />
 		<Unit filename="src/updated_variable.h" />
+		<Unit filename="tinyxml2/tinyxml2.cpp" />
+		<Unit filename="tinyxml2/tinyxml2.h" />
 		<Extensions>
 			<cbSystemView>
 				<target name="#project#">
