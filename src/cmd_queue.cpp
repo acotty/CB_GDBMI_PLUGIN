@@ -207,16 +207,18 @@ namespace dbg_mi
             if (!action.Finished())
             {
                 ++it;
+                if (logger && ( action.ShowStallCountActionsMapRunMessage()))
+                {
+                    logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("action [id: %d] has not finished.", action.GetID()), LogPaneLogger::LineType::Warning );
+                }
             }
             else
             {
+                action.ClearStallCountActionsMapRun();
+
                 if (logger && action.HasPendingCommands())
                 {
-                    logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                          __LINE__,
-                                          wxString::Format("action[%p id: %d] has pending commands but is being removed", &action, action.GetID()),
-                                          LogPaneLogger::LineType::Debug
-                                         );
+                    logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("action [ID %d] has pending commands but is being removed", action.GetID()), LogPaneLogger::LineType::Debug);
                 }
 
                 delete *it;

@@ -1,8 +1,21 @@
 # CODE::BLOCKS  GDB/MI DEBUGGER PLUGIN
 
+
+<center><p><font size="6" style="color:blue">DEVELOPMENT HAS STOPPED<br> WAITING FOR<br>HTTPS://SOURCEFORGE.NET/P/CODEBLOCKS/TICKETS/1250/<br>TO BE APPPLIED TO THE C::B TRUNK!!!!!!</font></p></center>
+
+
+
+---
+
+
 <font size="4" style="color:red">
-** You will need to manually apply the https://sourceforge.net/p/codeblocks/tickets/1250/ patch to be able to build the plugin.**
+You will need to manually apply the https://sourceforge.net/p/codeblocks/tickets/1250/ patch to be able to build the plugin.
 </font>
+
+
+---
+
+
 
 ## Description
 
@@ -11,7 +24,7 @@ This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plu
 ## OUTSTANDING ITEMS
 
 ### High Priority
-1. Fix wxWidget assert when expanding cbProject structure.
+1. Stop development until SF ticket 1250 has been merged into the trunk!!!!
 2. Persist debug data between sessions:
     Outstanding
         - watch data                            - save/load working
@@ -25,7 +38,6 @@ This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plu
         - count line break point            - save/load working
         - conditional line break point      - save/load working
 3. Expand function argument and local variables in the watch window.
-4. ** Wait for SF ticket 1250 changed to be merged in order to move forward for SF trunk work!!!!**
 
 ### Medium Priority
 

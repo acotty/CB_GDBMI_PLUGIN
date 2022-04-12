@@ -420,16 +420,23 @@ namespace dbg_mi
     {
         if (!m_process)
         {
+            if (m_logger)
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("m_process: false, so aborting SendString: %s%s"), id.ToString(), cmd), LogPaneLogger::LineType::Error);
+            }
             return false;
         }
 
-        if (!m_stopped && m_logger)
+        if (m_logger)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                    __LINE__,
-                                    wxString::Format(_("GDBExecutor is not stopped, but command (%s) was executed!"), cmd),
-                                    LogPaneLogger::LineType::Debug
-                                   );
+            if (m_stopped)
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("SendString: %s%s"), id.ToString(), cmd), LogPaneLogger::LineType::Transmit);
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("GDBExecutor is not stopped!")), LogPaneLogger::LineType::Warning);
+            }
         }
 
         m_process->SendString(id.ToString() + cmd);

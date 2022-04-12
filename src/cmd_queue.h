@@ -98,13 +98,15 @@ namespace dbg_mi
                 int id;
             };
             typedef std::deque<Command> PendingCommands;
+
         public:
             Action() :
                 m_id(-1),
                 m_last_command_id(0),
                 m_started(false),
                 m_finished(false),
-                m_wait_previous(false)
+                m_wait_previous(false),
+                m_StallCountActionsMapRun(0)
             {
             }
 
@@ -191,6 +193,16 @@ namespace dbg_mi
                 }
             }
 
+            bool ShowStallCountActionsMapRunMessage()
+            {
+                ++m_StallCountActionsMapRun;
+                return ( m_StallCountActionsMapRun%50 == 0);
+            }
+
+            void ClearStallCountActionsMapRun()
+            {
+                m_StallCountActionsMapRun = 0;
+            }
 
 
         public:
@@ -204,6 +216,7 @@ namespace dbg_mi
             bool m_started;
             bool m_finished;
             bool m_wait_previous;
+            long m_StallCountActionsMapRun;
     };
 
     class CommandExecutor

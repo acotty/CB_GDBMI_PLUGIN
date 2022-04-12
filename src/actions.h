@@ -368,29 +368,22 @@ namespace dbg_mi
     {
         public:
             GDBWatchesUpdateAction(GDBWatchesContainer & watches, LogPaneLogger * logger);
-
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+
         protected:
             virtual void OnStart();
 
         private:
             bool ParseUpdate(ResultParser const & result);
-        private:
             CommandID   m_update_command;
     };
 
     class GDBWatchExpandedAction : public GDBWatchBaseAction
     {
         public:
-            GDBWatchExpandedAction(cb::shared_ptr<GDBWatch> parent_watch, cb::shared_ptr<GDBWatch> expanded_watch,
-                                GDBWatchesContainer & watches, LogPaneLogger * logger) :
-                GDBWatchBaseAction(watches, logger),
-                m_watch(parent_watch),
-                m_expanded_watch(expanded_watch)
-            {
-            }
-
+            GDBWatchExpandedAction(cb::shared_ptr<GDBWatch> parent_watch, cb::shared_ptr<GDBWatch> expanded_watch, GDBWatchesContainer & watches, LogPaneLogger * logger);
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result);
+
         protected:
             virtual void OnStart();
 
