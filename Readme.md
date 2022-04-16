@@ -1,30 +1,23 @@
 # CODE::BLOCKS  GDB/MI DEBUGGER PLUGIN
 
-
-<center><p><font size="6" style="color:blue">DEVELOPMENT HAS STOPPED<br> WAITING FOR<br>HTTPS://SOURCEFORGE.NET/P/CODEBLOCKS/TICKETS/1250/<br>TO BE APPPLIED TO THE C::B TRUNK!!!!!!</font></p></center>
-
-
-
----
-
-
-<font size="4" style="color:red">
-You will need to manually apply the https://sourceforge.net/p/codeblocks/tickets/1250/ patch to be able to build the plugin.
-</font>
-
-
----
-
-
-
 ## Description
 
 This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plugin. The debugger is able to debug itself and is a viable replacement for the existing GDB plugin.
 
+
 ## OUTSTANDING ITEMS
 
 ### High Priority
-1. Stop development until SF ticket 1250 has been merged into the trunk!!!!
+
+These are banked up waiting for the next nightly to be released:
+1. Build plugin using the SVN trunk source.
+2. Test plugin against SVN trunk C::B build.
+3. Fix bug reports....
+4. 
+
+### Medium Priority
+
+1. Create patch for C::B source and submit - zip directory or include a link to github repo.
 2. Persist debug data between sessions:
     Outstanding
         - watch data                            - save/load working
@@ -39,16 +32,10 @@ This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plu
         - conditional line break point      - save/load working
 3. Expand function argument and local variables in the watch window.
 
-### Medium Priority
-
-1. Build plugin using the SVN trunk source. Needs ticket 1250 merged.
-2. Test plugin against SVN trunk C::B build. see 1) above. Needs ticket 1250 merged.
-3. Create patch for C::B source and submit - zip directory or include a link to github repo.
-3. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
-4. Remote debugging 
+4. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
+5. Remote debugging 
     - use Project->Properties->"Debugger GDB/MI" tab data.
-5. Re-test all items!!!! 
-
+6. Re-test all items!!!! 
 
 ### Low Priority / Future Work
 
