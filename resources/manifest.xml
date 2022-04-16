@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <CodeBlocks_plugin_manifest_file>
-    <SdkVersion major="2" minor="16"  release="0" />
+    <SdkVersion major="2" minor="17"  release="0" />
     <Plugin name="debugger_gdbmi">
-        <Value version="0.2.0" />
+        <Value version="0.4.0" />
         <Value title="Debugger GDB/MI" />
         <Value description="GDB/MI debugger" />
-        <Value author="Teodor Petrov a.k.a obfuscated" />
+        <Value author="Andrew Cottrell" />
         <Value authorEmail="" />
         <Value authorWebsite="" />
-        <Value thanksTo="" />
+        <Value thanksTo="Original dev: Teodor Petrov a.k.a obfuscated" />
         <Value license="GPL" />
     </Plugin>
 </CodeBlocks_plugin_manifest_file>
