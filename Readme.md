@@ -5,6 +5,17 @@
 This GitHub repo contains the source code for a Code::Blocks GDB/MI debugger plugin. The debugger is able to debug itself and is a viable replacement for the existing GDB plugin.
 
 
+## Updates / Testing Results / Dev Work
+
+If you need help with using the plugin then wait for it to be production ready.
+
+Please use the discussion for any test results that pass and are shown as working in the table.
+
+Please create a new issue (if it does not allready exist) for any test in the table below that fail and are shown as working in the table.
+
+If you fix any outstanding issue please fork this repo and create a pull request.
+
+
 ## OUTSTANDING ITEMS
 
 ### High Priority
@@ -13,53 +24,50 @@ These are banked up waiting for the next nightly to be released:
 1. Build plugin using the SVN trunk source.
 2. Test plugin against SVN trunk C::B build.
 3. Fix bug reports....
-4. 
 
 ### Medium Priority
 
 1. Create patch for C::B source and submit - zip directory or include a link to github repo.
-2. Persist debug data between sessions:
-    Outstanding
+2. When time permits re-test all items!!!! 
+
+### Low Priority / Future Work
+
+  * Persist debug data between sessions:
+     Outstanding:
         - watch data                            - save/load working
         - watch data edited                     - not done
         - memory dump (single memory dialog)    - not done
         - memory view (multiple memory dialog)  - not done
         - data break point                      - not done
 
-    Save/load working
+     Save/load working:
         - line break points                 - save/load working
         - count line break point            - save/load working
         - conditional line break point      - save/load working
-3. Expand function argument and local variables in the watch window.
-
-4. Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
-5. Remote debugging 
-    - use Project->Properties->"Debugger GDB/MI" tab data.
-6. Re-test all items!!!! 
-
-### Low Priority / Future Work
-
-1. Create Linux project file
-2. Create MacOS project file
-3. Update Linux makefile build process
-4. Update MSYS2 makefile build process
-5. Update MacOS makefile build process
-6. CPU registry dialog modify to fix value column to say 50 characters.
-7. More (easy) integration of pretty printing
-9. Add function break point support. See "#warning" messages.
-    src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
+  * Expand function argument and local variables in the watch window.
+  * Add ability delete data watch point https://ftp.gnu.org/old-gnu/Manuals/gdb/html_node/gdb_31.html
+  * Remote debugging 
+       - use Project->Properties->"Debugger GDB/MI" tab data.
+  * Create Linux project file
+  * Create MacOS project file
+  * Update Linux makefile build process
+  * Update MSYS2 makefile build process
+  * Update MacOS makefile build process
+  * CPU registry dialog modify to fix value column to say 50 characters.
+  * More (easy) integration of pretty printing
+  * Add function break point support. See "#warning" messages.
+     src\plugins\contrib-wip\debuggerGDB_MI\src\actions.cpp
         91    #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!! 
         233   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
         239   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
         393   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
         399   #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                            
-
-    \src\plugins\contrib-wip\debuggerGDB_MI\src\plugin.cpp
+     \src\plugins\contrib-wip\debuggerGDB_MI\src\plugin.cpp
         1566  #warning dbg_mi::GDBBreakpoint::BreakpointType::bptFunction not supported yet!!                             
-10. Checkpoints (only available on linux )
-11. Display the return value of a function after "step out"
-12. Skipping functions - see https://sourceware.org/gdb/onlinedocs/gdb/Skipping-Over-Functions-and-Files.html
-13. Record replay (only linux)
+  * Checkpoints (only available on linux )
+  * Display the return value of a function after "step out"
+  * Skipping functions - see https://sourceware.org/gdb/onlinedocs/gdb/Skipping-Over-Functions-and-Files.html
+  * Record replay (only linux)
 
 ## Testing/Coding/Feature Check List
 
@@ -94,7 +102,7 @@ These are banked up waiting for the next nightly to be released:
 |   * Watches data saved on project close                     | 02APR2022 |  * NEW *   |
 |   * Watches removed after closing the project               | 02APR2022 |    Pass    |
 |   * Watches removed after changing debugger                 | 02APR2022 |  *Broken*  |
-|   * Watches created on project open                         | 02APR2022 |    WIP     |
+|   * Watches created on project open                         | 19APR2022 |    Pass    |
 |                                                             |           |            |
 | **Breakpoints**                                             |           |            |
 |   * Add line break point before starting the debugger       | 02APR2022 |    Pass    |
