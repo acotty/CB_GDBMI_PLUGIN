@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="debbugger GDB MI" />
+		<Option default_target="debbugger_gdb_mi_cbplugin" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="debbugger_gdb_mi">
+				<Option output="../../../devel31_64/share/CodeBlocks/plugins/debugger_gdbmi" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../devel31_64" />
+				<Option object_output="../../../.objs31_64/plugins/contrib/debugger_gdbmi" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option parameters="-p debug -ns -ni --debug-log --multiple-instance " />
+				<Option host_application="../../../devel31_64/codeblocks.exe" />
+				<Option run_host_application_in_terminal="0" />
+				<ExtraCommands>
+					<Add before="cmd /c if not exist $(TARGET_OUTPUT_DIR) mkdir $(TARGET_OUTPUT_DIR)" />
+					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).cbplugin del $(TARGET_OUTPUT_BASENAME).cbplugin" />
+					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).dll      del $(TARGET_OUTPUT_BASENAME).dll" />
+					<Add after="cmd /c if exist ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip del ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip" />
+					<Add after="zip -jq9 ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip resources\manifest.xml resources/*.xrc" />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Target title="debbugger_gdb_mi_cbplugin">
+				<Option output="../../../devel31_64/share/CodeBlocks/plugins/debugger_gdbmi" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../devel31_64" />
+				<Option object_output="../../../.objs31_64/plugins/contrib/debugger_gdbmi" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option parameters="-p debug -ns -ni --debug-log --multiple-instance " />
+				<Option host_application="../../../devel31_64/codeblocks.exe" />
+				<Option run_host_application_in_terminal="0" />
+				<ExtraCommands>
+					<Add before="cmd /c if not exist $(TARGET_OUTPUT_DIR) mkdir $(TARGET_OUTPUT_DIR)" />
+					<Add after="cmd /c if exist ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip del ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip" />
+					<Add after="zip -jq9 ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip resources\manifest.xml resources/*.xrc" />
+					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).cbplugin del $(TARGET_OUTPUT_BASENAME).cbplugin" />
+					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).dll      del $(TARGET_OUTPUT_BASENAME).dll" />
+					<Add after="cmd /c copy $(TARGET_OUTPUT_FILE) ." />
+					<Add after="zip -jq9 $(TARGET_OUTPUT_BASENAME).cbplugin $(TARGET_OUTPUT_BASENAME).dll  ..\..\..\devel31_64\share\CodeBlocks\$(TARGET_OUTPUT_BASENAME).zip" />
+					<Add after="cmd /c if exist $(TARGET_OUTPUT_BASENAME).dll      del $(TARGET_OUTPUT_BASENAME).dll" />
+					<Mode after="always" />
+				</ExtraCommands>
+			</Target>
+			<Environment>
+				<Variable name="WX_CFG" value="" />
+				<Variable name="WX_SUFFIX" value="u" />
+				<Variable name="WX_VERSION" value="31" />
+			</Environment>
+		</Build>
+		<VirtualTargets>
+			<Add alias="All" targets="debbugger_gdb_mi_cbplugin;" />
+			<Add alias="Nocbplugin" targets="debbugger_gdb_mi;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c++17" />
+			<Add option="$(#CB_RELEASE_TYPE)" />
+			<Add option="-pipe" />
+			<Add option="-fmessage-length=0" />
+			<Add option="-fexceptions" />
+			<Add option="-mthreads" />
+			<Add option="-fno-keep-inline-dllexport" />
+			<Add option="-DBUILDING_PLUGIN" />
+			<Add option="-DHAVE_W32API_H" />
+			<Add option="-D__WXMSW__" />
+			<Add option="-DWXUSINGDLL" />
+			<Add option="-DcbDEBUG" />
+			<Add option="-DwxUSE_UNICODE" />
+			<Add option="-D_WIN64" />
+			<Add directory="./src" />
+			<Add directory="./tinyxml2" />
+			<Add directory="../../../include" />
+			<Add directory="../../../sdk/wxscintilla/include/" />
+			<Add directory="../../../include/tinyxml/" />
+			<Add directory="$(#WX31_64.INCLUDE)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+		</Compiler>
+		<Linker>
+			<Add option="-mthreads" />
+			<Add option="-Wl,--enable-auto-image-base" />
+			<Add option="-Wl,--add-stdcall-alias" />
+			<Add option="-Wl,--enable-auto-import" />
+			<Add option="-Wl,--no-undefined" />
+			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
+			<Add library="codeblocks" />
+			<Add directory="../../../devel31_64" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
+		</Linker>
+		<Unit filename="Makefile.am" />
+		<Unit filename="Readme.md" />
+		<Unit filename="configure.ac" />
+		<Unit filename="resources/breakpoints.xrc" />
+		<Unit filename="resources/debugger_options_dlg.xrc" />
+		<Unit filename="resources/debugger_project_options_dlg.xrc" />
+		<Unit filename="resources/edit_watches_dlg.xrc" />
+		<Unit filename="resources/manifest.xml" />
+		<Unit filename="src/actions.cpp" />
+		<Unit filename="src/actions.h" />
+		<Unit filename="src/cmd_queue.cpp" />
+		<Unit filename="src/cmd_queue.h" />
+		<Unit filename="src/cmd_result_parser.cpp" />
+		<Unit filename="src/cmd_result_parser.h" />
+		<Unit filename="src/cmd_result_tokens.cpp" />
+		<Unit filename="src/cmd_result_tokens.h" />
+		<Unit filename="src/databreakpointdlg.cpp" />
+		<Unit filename="src/databreakpointdlg.h" />
+		<Unit filename="src/debuggeroptionsdlg.cpp" />
+		<Unit filename="src/debuggeroptionsdlg.h" />
+		<Unit filename="src/debuggeroptionsprjdlg.cpp" />
+		<Unit filename="src/debuggeroptionsprjdlg.h" />
+		<Unit filename="src/definitions.cpp" />
+		<Unit filename="src/definitions.h" />
+		<Unit filename="src/editbreakpointdlg.cpp" />
+		<Unit filename="src/editbreakpointdlg.h" />
+		<Unit filename="src/editwatchdlg.cpp" />
+		<Unit filename="src/editwatchdlg.h" />
+		<Unit filename="src/escape.cpp" />
+		<Unit filename="src/escape.h" />
+		<Unit filename="src/events.cpp" />
+		<Unit filename="src/events.h" />
+		<Unit filename="src/frame.cpp" />
+		<Unit filename="src/frame.h" />
+		<Unit filename="src/gdb_executor.cpp" />
+		<Unit filename="src/gdb_executor.h" />
+		<Unit filename="src/gdb_logger.cpp" />
+		<Unit filename="src/gdb_logger.h" />
+		<Unit filename="src/helpers.cpp" />
+		<Unit filename="src/helpers.h" />
+		<Unit filename="src/plugin.cpp" />
+		<Unit filename="src/plugin.h" />
+		<Unit filename="src/remotedebugging.h" />
+		<Unit filename="src/updated_variable.cpp" />
+		<Unit filename="src/updated_variable.h" />
+		<Unit filename="tinyxml2/tinyxml2.cpp" />
+		<Unit filename="tinyxml2/tinyxml2.h" />
+		<Extensions>
+			<cbSystemView>
+				<target name="#project#">
+					<svdFile path="" />
+				</target>
+			</cbSystemView>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
