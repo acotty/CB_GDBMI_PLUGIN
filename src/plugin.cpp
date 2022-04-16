@@ -1130,7 +1130,8 @@ void Debugger_GDB_MI::CommitBreakpoints(bool force)
     for (dbg_mi::GDBBreakpointsContainer::const_iterator it = m_temporary_breakpoints.begin(); it != m_temporary_breakpoints.end(); ++it)
     {
         m_pLogger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("AddStringCommand: =>-break-insert -t %s:%d<=", (*it)->GetLocation(), (*it)->GetLine()), dbg_mi::LogPaneLogger::LineType::Command);
-        AddStringCommand(wxString::Format("-break-insert -t %s:%d", (*it)->GetLocation().c_str(), (*it)->GetLine()));
+        wxString sLocation = (*it)->GetLocation();
+        AddStringCommand(wxString::Format("-break-insert -t %s:%d", sLocation.c_str(), (*it)->GetLine()));
     }
 
     m_temporary_breakpoints.clear();

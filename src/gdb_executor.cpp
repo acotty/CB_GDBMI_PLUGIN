@@ -442,6 +442,7 @@ namespace dbg_mi
         m_process->SendString(id.ToString() + cmd);
         return true;
     }
+
     void GDBExecutor::DoClear()
     {
         m_stopped = true;

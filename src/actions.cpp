@@ -4,12 +4,15 @@
  *
 */
 
+// System and library includes
 #include <wx/platinfo.h>
 
+// CB includes
 #include <cbdebugger_interfaces.h>
 #include <cbplugin.h>
 #include <logmanager.h>
 
+// GDB/MI include files
 #include "actions.h"
 #include "cmd_result_parser.h"
 #include "frame.h"

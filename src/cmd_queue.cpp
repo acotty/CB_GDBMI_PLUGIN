@@ -4,7 +4,6 @@
  *
 */
 
-
 #include "cmd_queue.h"
 #include <wx/wxcrt.h>
 
@@ -51,15 +50,25 @@ namespace dbg_mi
         }
     }
 
+    CommandExecutor::CommandExecutor() :
+        m_last(0),
+        m_logger(NULL)
+    {
+    }
+
+    CommandExecutor::~CommandExecutor()
+    {
+    }
+
     CommandID CommandExecutor::Execute(wxString const & cmd)
     {
         dbg_mi::CommandID id(0, m_last++);
 
         if (m_logger)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("cmd==>%s%s==<",  id.ToString(), cmd), LogPaneLogger::LineType::Command);
-            AddCommandQueue(id.ToString() + cmd);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("cmd: %s%s",  id.ToString(), cmd), LogPaneLogger::LineType::Command);
         }
+        AddCommandQueue(id.ToString() + cmd);
 
         if (DoExecute(id, cmd))
         {
@@ -70,20 +79,20 @@ namespace dbg_mi
             return dbg_mi::CommandID();
         }
     }
+
     void CommandExecutor::ExecuteSimple(dbg_mi::CommandID const & id, wxString const & cmd)
     {
         if (m_logger)
         {
-            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("cmd==>%s%s==<",  id.ToString(), cmd), LogPaneLogger::LineType::Command);
-            AddCommandQueue(id.ToString() + cmd);
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format("cmd: %s%s",  id.ToString(), cmd), LogPaneLogger::LineType::Command);
         }
+        AddCommandQueue(id.ToString() + cmd);
 
         DoExecute(id, cmd);
     }
 
     bool CommandExecutor::ProcessOutput(wxString const & output)
     {
-        //dbg_mi::CommandID id;
         Result r;
 
         if (dbg_mi::ParseGDBOutputLine(output, r.id, r.output))
@@ -112,6 +121,110 @@ namespace dbg_mi
         m_last = 0;
         m_results.clear();
         DoClear();
+    }
+
+    dbg_mi::ResultParser * CommandExecutor::GetResult(dbg_mi::CommandID & id)
+    {
+        dbg_mi::ResultParser * parser = new dbg_mi::ResultParser;
+
+        if (m_results.empty())
+        {
+            m_logger->LogGDBMsgType(__PRETTY_FUNCTION__, __LINE__, wxString::Format(_("Results are empty!!!")), dbg_mi::LogPaneLogger::LineType::Error);
+
+            delete parser;
+            parser = nullptr;
+        }
+        else
+        {
+            Result const & r = m_results.front();
+            id = r.id;
+
+            if (parser->Parse(r.output))
+            {
+                dbg_mi::ResultParser::Class rClass = parser->GetResultClass();
+
+                if (
+                    (rClass == dbg_mi::ResultParser::ClassStopped)                      ||
+                    (r.output.StartsWith("=library-loaded,id="))                        ||
+                    (r.output.StartsWith("=breakpoint-modified,bkpt="))                 ||
+                    (r.output.StartsWith("^done"))
+                )
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                            __LINE__,
+                                            wxString::Format(_("Parsing: id: %s parser ==>%s<== for ==>%s<=="), id.ToString(), parser->MakeDebugString(), r.output),
+                                            dbg_mi::LogPaneLogger::LineType::Info
+                                           );
+                }
+                else
+                {
+                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                            __LINE__,
+                                            wxString::Format(_("Parsing : id: %s parser ==>%s<== for ==>%s<=="), id.ToString(), parser->MakeDebugString(), r.output),
+                                            dbg_mi::LogPaneLogger::LineType::Receive
+                                           );
+                }
+            }
+            else
+            {
+                m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
+                                        __LINE__,
+                                        wxString::Format(_("Received parsing failed : id: %s for %s"), id.ToString(), r.output),
+                                        dbg_mi::LogPaneLogger::LineType::Error);
+                delete parser;
+                parser = nullptr;
+            }
+        }
+
+        m_results.pop_front();
+        return parser;
+    }
+
+    void CommandExecutor::SetLogger(dbg_mi::LogPaneLogger * logger)
+    {
+        m_logger = logger;
+    }
+
+    dbg_mi::LogPaneLogger * CommandExecutor::GetLogger()
+    {
+        return m_logger;
+    }
+
+    int32_t CommandExecutor::GetLastID() const
+    {
+        return m_last;
+    }
+
+    void CommandExecutor::AddCommandQueue(wxString const & command)
+    {
+        m_CMDQueue.push_back(command);
+    }
+
+    int CommandExecutor::GetCommandQueueCount() const
+    {
+        return m_CMDQueue.size();
+    }
+
+    wxString const & CommandExecutor::GetQueueCommand(long index) const
+    {
+        static const wxString emptyString = wxEmptyString;
+
+        if (index < (long) m_CMDQueue.size())
+        {
+            return m_CMDQueue[index];
+        }
+
+        return  emptyString;
+    }
+
+    void CommandExecutor::ClearQueueCommand()
+    {
+        m_CMDQueue.clear();
+    }
+
+    bool CommandExecutor::HasOutput() const
+    {
+        return !m_results.empty();
     }
 
     ActionsMap::ActionsMap() :
@@ -151,6 +264,19 @@ namespace dbg_mi
         for (Actions::const_iterator it = m_actions.begin(); it != m_actions.end(); ++it)
         {
             if ((*it)->GetID() == id)
+            {
+                return *it;
+            }
+        }
+
+        return NULL;
+    }
+
+    Action * ActionsMap::FindStalled()
+    {
+        for (Actions::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
+        {
+            if (!(*it)->Finished())
             {
                 return *it;
             }

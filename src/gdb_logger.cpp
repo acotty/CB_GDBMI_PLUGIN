@@ -85,13 +85,13 @@ namespace dbg_mi
             case LineType::Error:
                 msgDeliminators = "**";
                 msgType = " ERROR";
-                #ifdef __MINGW32__
-                    if (IsDebuggerPresent())
-                    {
-                        // Check the call stack to find where the error log originated from and fix the issue!!!!
-                        DebugBreak();
-                    }
-                #endif // __MINGW32__
+//                #ifdef __MINGW32__
+//                    if (IsDebuggerPresent())
+//                    {
+//                        // Check the call stack to find where the error log originated from and fix the issue!!!!
+//                        DebugBreak();
+//                    }
+//                #endif // __MINGW32__
                 break;
 
             case LineType::Queue:

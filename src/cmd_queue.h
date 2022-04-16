@@ -204,7 +204,6 @@ namespace dbg_mi
                 m_StallCountActionsMapRun = 0;
             }
 
-
         public:
             virtual void OnCommandOutput(CommandID const & id, ResultParser const & result) = 0;
         protected:
@@ -228,114 +227,23 @@ namespace dbg_mi
                 wxString output;
             };
         public:
-            CommandExecutor() :
-                m_last(0),
-                m_logger(NULL)
-            {
-            }
-            virtual ~CommandExecutor() {}
+            CommandExecutor();
+            virtual ~CommandExecutor();
 
             CommandID Execute(wxString const & cmd);
             void ExecuteSimple(dbg_mi::CommandID const & id, wxString const & cmd);
-
             virtual wxString GetOutput() = 0;
-
-            bool HasOutput() const
-            {
-                return !m_results.empty();
-            }
+            bool HasOutput() const;
             bool ProcessOutput(wxString const & output);
-
             void Clear();
-
-            dbg_mi::ResultParser * GetResult(dbg_mi::CommandID & id)
-            {
-                assert(!m_results.empty());
-                Result const & r = m_results.front();
-                id = r.id;
-                dbg_mi::ResultParser * parser = new dbg_mi::ResultParser;
-
-                if (parser->Parse(r.output))
-                {
-                    dbg_mi::ResultParser::Class rClass = parser->GetResultClass();
-
-                    if (
-                        (rClass == dbg_mi::ResultParser::ClassStopped)                      ||
-                        (r.output.StartsWith("=library-loaded,id="))                        ||
-                        (r.output.StartsWith("=breakpoint-modified,bkpt="))                 ||
-                        (r.output.StartsWith("^done"))
-                    )
-                    {
-                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                __LINE__,
-                                                wxString::Format(_("Parsing: id: %s parser ==>%s<== for ==>%s<=="), id.ToString(), parser->MakeDebugString(), r.output),
-                                                dbg_mi::LogPaneLogger::LineType::Info
-                                               );
-                    }
-                    else
-                    {
-                        m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                                __LINE__,
-                                                wxString::Format(_("Parsing : id: %s parser ==>%s<== for ==>%s<=="), id.ToString(), parser->MakeDebugString(), r.output),
-                                                dbg_mi::LogPaneLogger::LineType::Receive
-                                               );
-                    }
-                }
-                else
-                {
-                    m_logger->LogGDBMsgType(__PRETTY_FUNCTION__,
-                                            __LINE__,
-                                            wxString::Format(_("Received parsing failed : id: %s for %s"), id.ToString(), r.output),
-                                            dbg_mi::LogPaneLogger::LineType::Error);
-                    delete parser;
-                    parser = NULL;
-                }
-
-                m_results.pop_front();
-                return parser;
-            }
-
-            void SetLogger(dbg_mi::LogPaneLogger * logger)
-            {
-                m_logger = logger;
-            }
-
-            dbg_mi::LogPaneLogger * GetLogger()
-            {
-                return m_logger;
-            }
-
-            int32_t GetLastID() const
-            {
-                return m_last;
-            }
-
-            void AddCommandQueue(wxString const & command)
-            {
-                m_CMDQueue.push_back(command);
-            }
-
-            int GetCommandQueueCount() const
-            {
-                return m_CMDQueue.size();
-            }
-
-            wxString const & GetQueueCommand(long index) const
-            {
-                static const wxString emptyString = wxEmptyString;
-
-                if (index < (long) m_CMDQueue.size())
-                {
-                    return m_CMDQueue[index];
-                }
-
-                return  emptyString;
-            }
-
-            void ClearQueueCommand()
-            {
-                m_CMDQueue.clear();
-            }
+            dbg_mi::ResultParser * GetResult(dbg_mi::CommandID & id);
+            void SetLogger(dbg_mi::LogPaneLogger * logger);
+            dbg_mi::LogPaneLogger * GetLogger();
+            int32_t GetLastID() const;
+            void AddCommandQueue(wxString const & command);
+            int GetCommandQueueCount() const;
+            wxString const & GetQueueCommand(long index) const;
+            void ClearQueueCommand();
 
         protected:
             virtual bool DoExecute(dbg_mi::CommandID const & id, wxString const & cmd) = 0;
@@ -360,6 +268,7 @@ namespace dbg_mi
             void Add(Action * action);
             Action * Find(int id);
             Action const * Find(int id) const;
+            Action * FindStalled();
             void Clear();
             int GetLastID() const
             {
@@ -385,7 +294,6 @@ namespace dbg_mi
         {
             CommandID id;
             ResultParser * parser = exec.GetResult(id);
-
             if (!parser)
             {
                 return false;
@@ -413,7 +321,6 @@ namespace dbg_mi
 
             delete parser;
         }
-
         return true;
     }
 
